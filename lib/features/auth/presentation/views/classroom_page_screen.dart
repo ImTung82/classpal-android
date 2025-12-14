@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../dashboard/presentation/views/dashboard_screen.dart'; // Thêm import này
+
+// Import 2 dashboard
+import '../../../dashboard/presentation/views/owner_dashboard_screen.dart'; // Màn hình Lớp trưởng
+import '../../../dashboard/presentation/views/student_dashboard_screen.dart'; // Màn hình Sinh viên
 
 class ClassroomPageScreen extends StatelessWidget {
   const ClassroomPageScreen({super.key});
@@ -45,20 +48,26 @@ class ClassroomPageScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
+          // --- DANH SÁCH LỚP HỌC ---
+          
+          // Case 1: Lớp trưởng (Owner) -> Vào DashboardScreen
           _classCard(
-            context: context, // Thêm context
+            context: context,
             color: Colors.deepPurple,
             title: 'Lớp CNTT K20',
-            role: 'Lớp trưởng',
+            role: 'Lớp trưởng', 
             code: 'KTF742',
           ),
+
+          // Case 2: Thành viên (Member) -> Vào StudentDashboardScreen
           _classCard(
             context: context,
             color: Colors.orange,
             title: 'Lớp Toán K20',
-            role: 'Thành viên',
+            role: 'Thành viên', 
             code: 'AHUJ88',
           ),
+          
           _classCard(
             context: context,
             color: Colors.pink,
@@ -66,14 +75,17 @@ class ClassroomPageScreen extends StatelessWidget {
             role: 'Thành viên',
             code: 'HIDQW',
           ),
+          
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 14),
+          
           Center(
             child: Text('Hoặc', style: GoogleFonts.roboto(color: Colors.grey)),
           ),
           const SizedBox(height: 16),
 
+          // Các nút này tạm thời chỉ để hiển thị
           _createClassButton(),
           const SizedBox(height: 12),
           _joinClassButton(),
@@ -82,9 +94,9 @@ class ClassroomPageScreen extends StatelessWidget {
     );
   }
 
-  /// Card lớp học
+  /// Card lớp học (Đã xử lý logic điều hướng theo Role)
   Widget _classCard({
-    required BuildContext context, // Thêm context
+    required BuildContext context,
     required Color color,
     required String title,
     required String role,
@@ -92,9 +104,18 @@ class ClassroomPageScreen extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
+        // --- LOGIC QUAN TRỌNG Ở ĐÂY ---
+        if (role == 'Lớp trưởng') {
+          // Điều hướng sang Dashboard của Lớp trưởng
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        } else {
+          // Điều hướng sang Dashboard của Sinh viên
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
+          );
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -231,12 +252,7 @@ class ClassroomPageScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(
-                      255,
-                      107,
-                      142,
-                      187,
-                    ).withOpacity(0.2),
+                    color: const Color.fromARGB(255, 107, 142, 187).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.login, color: Colors.blue),

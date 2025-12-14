@@ -70,7 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 1.4,
+                  childAspectRatio: 1.25,
                 ),
                 itemCount: stats.length,
                 itemBuilder: (context, index) {

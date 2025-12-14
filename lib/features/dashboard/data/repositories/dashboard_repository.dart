@@ -1,23 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/dashboard_models.dart';
 
-// 1. Provider
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
-  return MockDashboardRepository(); // Sau này đổi thành RealDashboardRepository
+  return MockDashboardRepository();
 });
 
-// 2. Interface (Hợp đồng)
 abstract class DashboardRepository {
+  // Cho Lớp trưởng
   Future<List<StatData>> fetchStats();
   Future<List<DutyData>> fetchDuties();
   Future<List<EventData>> fetchEvents();
+  
+  // Cho Sinh viên
+  Future<StudentTaskData> fetchStudentTask();
+  Future<List<GroupMemberData>> fetchGroupMembers();
 }
 
-// 3. Mock Implementation (Giả lập)
 class MockDashboardRepository implements DashboardRepository {
   @override
   Future<List<StatData>> fetchStats() async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Giả vờ mạng lag
+    await Future.delayed(const Duration(milliseconds: 500)); 
     return [
       StatData("Tổng sinh viên", "50", "+2", 1, 0xFF4A84F8),
       StatData("Sự kiện sắp tới", "3", "", 2, 0xFFA855F7),
@@ -42,6 +44,23 @@ class MockDashboardRepository implements DashboardRepository {
     return [
       EventData("Hội thảo Khởi nghiệp 2024", "15/12/2024", 42, 50),
       EventData("Tham quan Doanh nghiệp", "20/12/2024", 35, 50),
+    ];
+  }
+
+  @override
+  Future<StudentTaskData> fetchStudentTask() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return StudentTaskData("Trực nhật - Tổ 3", "06/12 - 13/12/2024");
+  }
+
+  @override
+  Future<List<GroupMemberData>> fetchGroupMembers() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return [
+      GroupMemberData("Đặng Văn G", "0xFF7C3AED"), // Tím
+      GroupMemberData("Mai Thị H", "0xFF2563EB"), // Xanh dương
+      GroupMemberData("Lê Văn I", "0xFFDB2777"), // Hồng
+      GroupMemberData("Phạm Văn K", "0xFF059669"), // Xanh lá
     ];
   }
 }

@@ -1,4 +1,3 @@
-// Chỉ chứa khuôn dữ liệu, không chứa logic
 class StatData {
   final String title;
   final String value;
@@ -25,4 +24,21 @@ class EventData {
   final int total;
 
   EventData(this.title, this.date, this.current, this.total);
+}
+
+// --- MODELS CHO SINH VIÊN ---
+
+class StudentTaskData {
+  final String title;       // VD: "Trực nhật - Tổ 3"
+  final String dateRange;   // VD: "06/12 - 13/12/2024"
+  final bool isCompleted;
+
+  StudentTaskData(this.title, this.dateRange, {this.isCompleted = false});
+}
+
+class GroupMemberData {
+  final String name;
+  final String avatarColor; // Mã màu Hex (VD: "0xFF7C3AED")
+
+  GroupMemberData(this.name, this.avatarColor);
 }

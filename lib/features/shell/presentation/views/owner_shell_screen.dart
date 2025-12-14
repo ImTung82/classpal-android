@@ -24,7 +24,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
 
   String _getSubtitleForIndex(int index) {
     switch (index) {
-      case 0: return "Lớp trưởng";
+      case 0: return "Trang chủ";
       case 1: return "Quản lý Đội nhóm";
       case 2: return "Phân công Trực nhật";
       case 3: return "Quản lý Tài sản";

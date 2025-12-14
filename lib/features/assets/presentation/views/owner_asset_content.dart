@@ -7,7 +7,7 @@ import '../view_models/asset_providers.dart';
 import '../widgets/asset_card.dart';
 import '../widgets/asset_history_item.dart';
 import '../widgets/small_stat_card.dart';
-
+import '../widgets/add_asset.dart';
 class OwnerAssetContent extends ConsumerWidget {
   const OwnerAssetContent({super.key});
 
@@ -40,7 +40,7 @@ class OwnerAssetContent extends ConsumerWidget {
           SizedBox(
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () { showAddAssetOverlay(context);},
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text("Thêm tài sản"),
               style: ElevatedButton.styleFrom(

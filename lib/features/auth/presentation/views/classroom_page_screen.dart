@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../dashboard/presentation/views/dashboard_screen.dart'; // Thêm import này
 
 class ClassroomPageScreen extends StatelessWidget {
   const ClassroomPageScreen({super.key});
@@ -45,18 +46,21 @@ class ClassroomPageScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           _classCard(
+            context: context, // Thêm context
             color: Colors.deepPurple,
             title: 'Lớp CNTT K20',
             role: 'Lớp trưởng',
             code: 'KTF742',
           ),
           _classCard(
+            context: context,
             color: Colors.orange,
             title: 'Lớp Toán K20',
             role: 'Thành viên',
             code: 'AHUJ88',
           ),
           _classCard(
+            context: context,
             color: Colors.pink,
             title: 'Lớp Vật lý K21',
             role: 'Thành viên',
@@ -80,76 +84,84 @@ class ClassroomPageScreen extends StatelessWidget {
 
   /// Card lớp học
   Widget _classCard({
+    required BuildContext context, // Thêm context
     required Color color,
     required String title,
     required String role,
     required String code,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.school, color: Colors.white),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  code,
-                  style: GoogleFonts.roboto(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.school, color: Colors.white),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  role,
-                  style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    code,
+                    style: GoogleFonts.roboto(
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
-          ),
-          const Icon(Icons.arrow_forward, color: Colors.grey),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    role,
+                    style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }

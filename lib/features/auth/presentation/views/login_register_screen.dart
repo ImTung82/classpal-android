@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart'; // Import Lucide
 import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 import '../view_models/auth_view_model.dart';
-
+import '../views/classroom_page_screen.dart';
 class LoginRegisterScreen extends ConsumerStatefulWidget {
   const LoginRegisterScreen({super.key});
 
@@ -275,6 +275,11 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                   name: isLogin ? null : _nameController.text,
                   onSuccess: (msg) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const ClassroomPageScreen(),
+                      ),
+                    );
                   },
                   onError: (err) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.red));

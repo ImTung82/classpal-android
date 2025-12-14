@@ -8,6 +8,8 @@ import '../widgets/asset_card.dart';
 import '../widgets/asset_history_item.dart';
 import '../widgets/small_stat_card.dart';
 import '../widgets/add_asset.dart';
+import '../widgets/edit_asset.dart';
+
 class OwnerAssetContent extends ConsumerWidget {
   const OwnerAssetContent({super.key});
 
@@ -40,13 +42,17 @@ class OwnerAssetContent extends ConsumerWidget {
           SizedBox(
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: () { showAddAssetOverlay(context);},
+              onPressed: () {
+                showAddAssetOverlay(context);
+              },
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text("Thêm tài sản"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB), // Blue
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ),
@@ -109,7 +115,13 @@ class OwnerAssetContent extends ConsumerWidget {
                     return AssetCard(
                       asset: asset,
                       onViewHistory: () {},
-                      onEdit: () {},
+                      onEdit: () {
+                        showEditAssetOverlay(
+                          context,
+                          name: asset.name,
+                          category: asset.category,
+                        );
+                      },
                       onDelete: () {},
                     );
                   }).toList(),

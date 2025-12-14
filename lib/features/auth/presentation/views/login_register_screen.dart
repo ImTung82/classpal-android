@@ -4,11 +4,13 @@ import 'package:lucide_icons/lucide_icons.dart'; // Import Lucide
 import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 import '../view_models/auth_view_model.dart';
 import '../views/classroom_page_screen.dart';
+
 class LoginRegisterScreen extends ConsumerStatefulWidget {
   const LoginRegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginRegisterScreen> createState() => _LoginRegisterScreenState();
+  ConsumerState<LoginRegisterScreen> createState() =>
+      _LoginRegisterScreenState();
 }
 
 class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
@@ -56,7 +58,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
             const SizedBox(height: 60),
             _buildHeader(),
             const SizedBox(height: 30),
-            
+
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -102,7 +104,8 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         icon: LucideIcons.lock, // Dùng Lucide Icon
                         isPassword: true,
                         isObscure: isObscure,
-                        onVisibilityToggle: () => authViewModel.togglePasswordVisibility(),
+                        onVisibilityToggle: () =>
+                            authViewModel.togglePasswordVisibility(),
                       ),
 
                       if (isLogin) ...[
@@ -113,15 +116,16 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                             onPressed: () {},
                             child: Text(
                               "Quên mật khẩu?",
-                              style: GoogleFonts.roboto( // Dùng Google Fonts
+                              style: GoogleFonts.roboto(
+                                // Dùng Google Fonts
                                 color: const Color(0xFF4A84F8),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
-                      ] else 
-                         const SizedBox(height: 30),
+                      ] else
+                        const SizedBox(height: 30),
 
                       const SizedBox(height: 20),
 
@@ -149,10 +153,18 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
             ],
           ),
-          child: const Icon(LucideIcons.users, size: 40, color: Color(0xFF4A84F8)), // Icon Lucide
+          child: const Icon(
+            LucideIcons.users,
+            size: 40,
+            color: Color(0xFF4A84F8),
+          ), // Icon Lucide
         ),
         const SizedBox(height: 16),
         Text(
@@ -178,33 +190,118 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
 
   Widget _buildTabSwitcher(bool isLogin, AuthViewModel vm) {
     return Container(
+      height: 50, // Định chiều cao cố định để tính toán cho chuẩn
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(30)),
-      child: Row(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Stack(
         children: [
-          _buildTabItem(title: "Đăng nhập", isActive: isLogin, onTap: () => isLogin ? null : vm.toggleAuthMode()),
-          _buildTabItem(title: "Đăng ký", isActive: !isLogin, onTap: () => !isLogin ? null : vm.toggleAuthMode()),
+          // LỚP 1: HỘP MÀU TRẮNG (CÁI SẼ TRƯỢT QUA TRƯỢT LẠI)
+          AnimatedAlign(
+            alignment: isLogin ? Alignment.centerLeft : Alignment.centerRight,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut, // Đường cong chuyển động mượt mà
+            child: FractionallySizedBox(
+              widthFactor: 0.5, // Chiếm đúng 50% chiều rộng
+              heightFactor: 1.0, // Chiếm 100% chiều cao (trừ padding)
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // LỚP 2: TEXT VÀ NÚT BẤM (NẰM ĐÈ LÊN TRÊN ĐỂ BẤM ĐƯỢC)
+          Row(
+            children: [
+              _buildSlidingTabItem(
+                title: "Đăng nhập",
+                isSelected: isLogin,
+                onTap: () => isLogin ? null : vm.toggleAuthMode(),
+              ),
+              _buildSlidingTabItem(
+                title: "Đăng ký",
+                isSelected: !isLogin,
+                onTap: () => !isLogin ? null : vm.toggleAuthMode(),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTabItem({required String title, required bool isActive, required VoidCallback onTap}) {
+  // Widget con hỗ trợ cho cách làm mới
+  Widget _buildSlidingTabItem({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.translucent, // Để bấm được vùng trong suốt
+        child: Container(
+          alignment: Alignment.center,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            style: GoogleFonts.roboto(
+              // Màu chữ chuyển đổi mượt mà
+              color: isSelected ? Colors.black : Colors.grey[600],
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            child: Text(title),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required String title,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(
+            milliseconds: 250,
+          ), // Tăng thời gian lên xíu cho mượt
+          curve: Curves.easeInOut, // Thêm curve để chuyển động tự nhiên hơn
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
+            // [FIX LỖI MÀU ĐEN]: Dùng Colors.white.withOpacity(0) thay vì Colors.transparent
+            color: isActive ? Colors.white : Colors.white.withOpacity(0.0),
             borderRadius: BorderRadius.circular(30),
-            boxShadow: isActive ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : [],
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [], // Khi không active thì không có shadow
           ),
           child: Text(
             title,
             textAlign: TextAlign.center,
             style: GoogleFonts.roboto(
+              // Animation màu chữ cũng sẽ mượt theo AnimatedContainer
               color: isActive ? Colors.black : Colors.grey[600],
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -218,7 +315,14 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
-      child: Text(text, style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+      child: Text(
+        text,
+        style: GoogleFonts.roboto(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: Colors.black87,
+        ),
+      ),
     );
   }
 
@@ -232,7 +336,10 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     VoidCallback? onVisibilityToggle,
   }) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: TextField(
         controller: controller,
         obscureText: isPassword ? isObscure : false,
@@ -243,14 +350,24 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
           prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
           suffixIcon: isPassword
               ? IconButton(
-                  icon: Icon(isObscure ? LucideIcons.eye : LucideIcons.eyeOff, color: Colors.grey[400], size: 20),
+                  icon: Icon(
+                    isObscure ? LucideIcons.eye : LucideIcons.eyeOff,
+                    color: Colors.grey[400],
+                    size: 20,
+                  ),
                   onPressed: onVisibilityToggle,
                 )
               : null,
           hintText: hintText,
           hintStyle: TextStyle(color: Colors.grey[400]),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4A84F8))),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF4A84F8)),
+          ),
         ),
       ),
     );
@@ -263,7 +380,13 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(colors: gradientColors),
-        boxShadow: [BoxShadow(color: gradientColors[0].withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors[0].withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: ElevatedButton(
         onPressed: isLoading
@@ -274,7 +397,12 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                   password: _passwordController.text,
                   name: isLogin ? null : _nameController.text,
                   onSuccess: (msg) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(msg),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (_) => const ClassroomPageScreen(),
@@ -282,20 +410,35 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                     );
                   },
                   onError: (err) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.red));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(err), backgroundColor: Colors.red),
+                    );
                   },
                 );
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: isLoading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
             : Text(
                 isLogin ? "Đăng nhập" : "Đăng ký",
-                style: GoogleFonts.roboto(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
       ),
     );

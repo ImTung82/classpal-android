@@ -8,6 +8,7 @@ import '../../../../core/widgets/app_menu_drawer.dart';
 
 import '../../../dashboard/presentation/views/owner_dashboard_content.dart'; 
 import '../../../teams/presentation/views/owner_team_content.dart'; 
+import '../../../duties/presentation/views/owner_duty_content.dart';
 
 class OwnerShellScreen extends ConsumerStatefulWidget {
   const OwnerShellScreen({super.key});
@@ -25,7 +26,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   final List<Widget> _pages = [
     const OwnerDashboardContent(),   
     const OwnerTeamContent(),   
-    const Center(child: Text("Màn hình Trực nhật")),
+    const OwnerDutyContent(),
     const Center(child: Text("Màn hình Tài sản")),   
     const Center(child: Text("Màn hình Sự kiện")),   
     const Center(child: Text("Màn hình Quỹ lớp")),   

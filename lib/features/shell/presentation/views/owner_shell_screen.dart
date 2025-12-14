@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/app_header.dart'; 
 import '../../../../core/widgets/app_bottom_nav.dart';
+// [IMPORT MỚI] Import Widget Menu
+import '../../../../core/widgets/app_menu_drawer.dart';
 
-// Import màn hình nội dung Dashboard
 import '../../../dashboard/presentation/views/owner_dashboard_content.dart'; 
-
-// [QUAN TRỌNG] Import màn hình Teams của Lớp Trưởng
 import '../../../teams/presentation/views/owner_team_content.dart'; 
 
 class OwnerShellScreen extends ConsumerStatefulWidget {
@@ -19,21 +18,25 @@ class OwnerShellScreen extends ConsumerStatefulWidget {
 
 class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   int _currentIndex = 0;
+  
+  // [THÊM] Key để điều khiển Scaffold (Mở Drawer)
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Danh sách màn hình
   final List<Widget> _pages = [
-    const OwnerDashboardContent(),   // Tab 0: Dashboard
-    const TeamManagementContent(),   // Tab 1: Đội nhóm (Đã thay thế Placeholder bằng màn hình thật)
-    const Center(child: Text("Màn hình Trực nhật")), // Tab 2
-    const Center(child: Text("Màn hình Tài sản")),   // Tab 3
-    const Center(child: Text("Màn hình Sự kiện")),   // Tab 4
-    const Center(child: Text("Màn hình Quỹ lớp")),   // Tab 5
+    const OwnerDashboardContent(),   
+    const OwnerTeamContent(),   
+    const Center(child: Text("Màn hình Trực nhật")),
+    const Center(child: Text("Màn hình Tài sản")),   
+    const Center(child: Text("Màn hình Sự kiện")),   
+    const Center(child: Text("Màn hình Quỹ lớp")),   
   ];
 
   String _getSubtitleForIndex(int index) {
+     // ... (Giữ nguyên logic cũ) ...
+     // Viết lại ngắn gọn cho bạn copy nếu cần:
     switch (index) {
       case 0: return "Lớp trưởng";
-      case 1: return "Quản lý Đội nhóm"; // Subtitle cho tab Teams
+      case 1: return "Quản lý Đội nhóm";
       case 2: return "Phân công Trực nhật";
       case 3: return "Quản lý Tài sản";
       case 4: return "Sự kiện lớp";
@@ -45,29 +48,29 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // [THÊM] Gắn Key vào Scaffold
       backgroundColor: Colors.white,
       
-      // Header
+      // [THÊM] Khai báo endDrawer (Drawer mở từ bên phải)
+      endDrawer: const AppMenuDrawer(isOwner: true), 
+
       appBar: AppHeader(
         title: "Lớp CNTT K20",
         subtitle: _getSubtitleForIndex(_currentIndex), 
-        onMenuPressed: () {},
+        onMenuPressed: () {
+          // [SỬA] Gọi hàm mở Drawer thông qua Key
+          _scaffoldKey.currentState?.openEndDrawer();
+        },
       ),
       
-      // Body (Giữ trạng thái cuộn)
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
       
-      // Footer
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }

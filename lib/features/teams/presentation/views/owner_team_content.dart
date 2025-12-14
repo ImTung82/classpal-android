@@ -7,14 +7,14 @@ import '../view_models/team_view_model.dart';
 import '../widgets/group_card.dart';
 import '../widgets/unassigned_member_item.dart';
 
-class TeamManagementContent extends ConsumerStatefulWidget {
-  const TeamManagementContent({super.key});
+class OwnerTeamContent extends ConsumerStatefulWidget {
+  const OwnerTeamContent({super.key});
 
   @override
-  ConsumerState<TeamManagementContent> createState() => _TeamManagementContentState();
+  ConsumerState<OwnerTeamContent> createState() => _OwnerTeamContentState();
 }
 
-class _TeamManagementContentState extends ConsumerState<TeamManagementContent> {
+class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
   int _selectedTabIndex = 0; 
 
   @override

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/app_header.dart'; 
 import '../../../../core/widgets/app_bottom_nav.dart';
-import '../../../dashboard/presentation/views/student_dashboard_content.dart'; 
+import '../../../dashboard/presentation/views/student_dashboard_content.dart';
+import '../../../teams/presentation/views/student_team_content.dart';
 
 class StudentShellScreen extends ConsumerStatefulWidget {
   const StudentShellScreen({super.key});
@@ -15,7 +16,7 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
   int _currentIndex = 0;
   final List<Widget> _pages = [
     const StudentDashboardContent(),
-    const Center(child: Text("Đội nhóm của tôi")),
+    const StudentTeamContent(),
     const Center(child: Text("Lịch trực nhật")),
     const Center(child: Text("Tài sản lớp")),
     const Center(child: Text("Sự kiện")),

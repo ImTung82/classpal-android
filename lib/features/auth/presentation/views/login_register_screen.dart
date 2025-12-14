@@ -43,100 +43,103 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradientColors,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            _buildHeader(),
-            const SizedBox(height: 30),
+          child: Column(
+            children: [
+              const SizedBox(height: 60),
+              _buildHeader(),
+              const SizedBox(height: 30),
 
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(40),
-                    topRight: Radius.circular(40),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
                   ),
-                ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTabSwitcher(isLogin, authViewModel),
-                      const SizedBox(height: 30),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTabSwitcher(isLogin, authViewModel),
+                        const SizedBox(height: 30),
 
-                      if (!isLogin) ...[
-                        _buildLabel("Họ và tên"),
+                        if (!isLogin) ...[
+                          _buildLabel("Họ và tên"),
+                          _buildTextField(
+                            controller: _nameController,
+                            hintText: "Nguyễn Văn A",
+                            icon: LucideIcons.user, // Dùng Lucide Icon
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+
+                        _buildLabel("Email"),
                         _buildTextField(
-                          controller: _nameController,
-                          hintText: "Nguyễn Văn A",
-                          icon: LucideIcons.user, // Dùng Lucide Icon
+                          controller: _emailController,
+                          hintText: "email@example.com",
+                          icon: LucideIcons.mail, // Dùng Lucide Icon
+                          inputType: TextInputType.emailAddress,
                         ),
+
                         const SizedBox(height: 20),
-                      ],
 
-                      _buildLabel("Email"),
-                      _buildTextField(
-                        controller: _emailController,
-                        hintText: "email@example.com",
-                        icon: LucideIcons.mail, // Dùng Lucide Icon
-                        inputType: TextInputType.emailAddress,
-                      ),
+                        _buildLabel("Mật khẩu"),
+                        _buildTextField(
+                          controller: _passwordController,
+                          hintText: "••••••••",
+                          icon: LucideIcons.lock, // Dùng Lucide Icon
+                          isPassword: true,
+                          isObscure: isObscure,
+                          onVisibilityToggle: () =>
+                              authViewModel.togglePasswordVisibility(),
+                        ),
 
-                      const SizedBox(height: 20),
-
-                      _buildLabel("Mật khẩu"),
-                      _buildTextField(
-                        controller: _passwordController,
-                        hintText: "••••••••",
-                        icon: LucideIcons.lock, // Dùng Lucide Icon
-                        isPassword: true,
-                        isObscure: isObscure,
-                        onVisibilityToggle: () =>
-                            authViewModel.togglePasswordVisibility(),
-                      ),
-
-                      if (isLogin) ...[
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              "Quên mật khẩu?",
-                              style: GoogleFonts.roboto(
-                                // Dùng Google Fonts
-                                color: const Color(0xFF4A84F8),
-                                fontWeight: FontWeight.bold,
+                        if (isLogin) ...[
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                "Quên mật khẩu?",
+                                style: GoogleFonts.roboto(
+                                  // Dùng Google Fonts
+                                  color: const Color(0xFF4A84F8),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ] else
-                        const SizedBox(height: 30),
+                        ] else
+                          const SizedBox(height: 30),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      _buildSubmitButton(isLogin, isLoading, authViewModel),
-                      const SizedBox(height: 20),
-                    ],
+                        _buildSubmitButton(isLogin, isLoading, authViewModel),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

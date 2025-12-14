@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../view_models/team_view_model.dart';
 import '../widgets/group_card.dart';
 import '../widgets/unassigned_member_item.dart';
+import '../widgets/create_team_dialog.dart'; // [IMPORT] Widget vừa tạo
 
 class OwnerTeamContent extends ConsumerStatefulWidget {
   const OwnerTeamContent({super.key});
@@ -16,6 +17,27 @@ class OwnerTeamContent extends ConsumerStatefulWidget {
 
 class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
   int _selectedTabIndex = 0; 
+
+  void _showCreateTeamDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return CreateTeamDialog(
+          onSubmit: (name, color) {
+            // Hiển thị thông báo giả lập
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Đã tạo $name thành công!"),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +53,7 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
           Text("Tổ chức và phân công thành viên", style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14)),
           const SizedBox(height: 16),
 
+          // Tab Switcher
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(25)),
@@ -44,10 +67,11 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
           const SizedBox(height: 16),
 
           if (_selectedTabIndex == 0) ...[
+            // Nút Tạo tổ mới
             SizedBox(
               width: double.infinity, height: 48,
               child: ElevatedButton.icon(
-                onPressed: () {}, 
+                onPressed: _showCreateTeamDialog, // [GỌI HÀM Ở ĐÂY]
                 icon: const Icon(LucideIcons.plus), 
                 label: const Text("Tạo tổ mới"),
                 style: ElevatedButton.styleFrom(
@@ -59,6 +83,7 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
             ),
             const SizedBox(height: 20),
 
+            // ... (Giữ nguyên phần danh sách Group và Unassigned như code cũ)
             groupsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Text('Lỗi: $err'),
@@ -102,6 +127,7 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
   }
 
   Widget _buildTabButton(int index, String text) {
+    // ... (Giữ nguyên code cũ)
     final isSelected = _selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(

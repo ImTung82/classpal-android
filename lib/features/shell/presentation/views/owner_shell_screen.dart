@@ -9,7 +9,6 @@ import '../../../../core/widgets/app_menu_drawer.dart';
 import '../../../dashboard/presentation/views/owner_dashboard_content.dart'; 
 import '../../../teams/presentation/views/owner_team_content.dart'; 
 import '../../../duties/presentation/views/owner_duty_content.dart';
-import '../../../funds/presentation/views/owner_fund_content.dart';
 
 class OwnerShellScreen extends ConsumerStatefulWidget {
   const OwnerShellScreen({super.key});
@@ -30,7 +29,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
     const OwnerDutyContent(),
     const Center(child: Text("Màn hình Tài sản")),   
     const Center(child: Text("Màn hình Sự kiện")),   
-    const OwnerFundContent(),
+    const Center(child: Text("Màn hình Quỹ lớp")),   
   ];
 
   String _getSubtitleForIndex(int index) {

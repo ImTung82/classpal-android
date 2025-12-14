@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../view_models/fund_view_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/campaign_card.dart';
+import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class OwnerFundContent extends ConsumerWidget {
   const OwnerFundContent({super.key});
@@ -31,9 +32,9 @@ class OwnerFundContent extends ConsumerWidget {
             error: (e, s) => const SizedBox(),
             data: (summary) => Column(
               children: [
-                _buildSmallStatCard("Tổng thu", "${summary.totalIncome} đ", LucideIcons.trendingUp, const Color(0xFFDCFCE7), Colors.green),
+                _buildSmallStatCard("Tổng thu", CurrencyUtils.format(summary.totalIncome), LucideIcons.trendingUp, const Color(0xFFDCFCE7), Colors.green),
                 const SizedBox(height: 12),
-                _buildSmallStatCard("Tổng chi", "${summary.totalExpense} đ", LucideIcons.trendingDown, const Color(0xFFFEE2E2), Colors.red),
+                _buildSmallStatCard("Tổng chi", CurrencyUtils.format(summary.totalExpense), LucideIcons.trendingDown, const Color(0xFFFEE2E2), Colors.red),
                 const SizedBox(height: 12),
                 
                 // 2. Card Tồn quỹ (Màu Tím)
@@ -57,7 +58,8 @@ class OwnerFundContent extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Tồn quỹ", style: GoogleFonts.roboto(color: Colors.white.withOpacity(0.8), fontSize: 14)),
-                          Text("${summary.currentBalance} đ", style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                          // Format tiền ở đây
+                          Text(CurrencyUtils.format(summary.currentBalance), style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
                         ],
                       )
                     ],

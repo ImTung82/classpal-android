@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/fund_models.dart';
+import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class TransactionItem extends StatelessWidget {
   final FundTransaction transaction;
@@ -37,7 +38,8 @@ class TransactionItem extends StatelessWidget {
             ),
           ),
           Text(
-            "-${transaction.amount} đ",
+            // Logic thêm dấu - hoặc + và format tiền
+            "${transaction.isExpense ? '-' : '+'}${CurrencyUtils.format(transaction.amount)}",
             style: GoogleFonts.roboto(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ],

@@ -6,6 +6,7 @@ import '../view_models/fund_view_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/personal_status_card.dart';
 import '../widgets/unpaid_list_item.dart';
+import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class StudentFundContent extends ConsumerWidget {
   const StudentFundContent({super.key});
@@ -42,13 +43,14 @@ class StudentFundContent extends ConsumerWidget {
                 children: [
                   Text("Tồn quỹ hiện tại", style: GoogleFonts.roboto(color: Colors.white.withOpacity(0.8), fontSize: 14)),
                   const SizedBox(height: 4),
-                  Text("${summary.currentBalance} đ", style: GoogleFonts.roboto(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  // Format tiền ở đây
+                  Text(CurrencyUtils.format(summary.currentBalance), style: GoogleFonts.roboto(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      _buildDetailBox("Tổng thu", "${summary.totalIncome} đ"),
+                      _buildDetailBox("Tổng thu", CurrencyUtils.format(summary.totalIncome)),
                       const SizedBox(width: 12),
-                      _buildDetailBox("Tổng chi", "${summary.totalExpense} đ"),
+                      _buildDetailBox("Tổng chi", CurrencyUtils.format(summary.totalExpense)),
                     ],
                   )
                 ],

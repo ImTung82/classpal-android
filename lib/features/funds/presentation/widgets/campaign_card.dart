@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/fund_models.dart';
+import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class CampaignCard extends StatelessWidget {
   final FundCampaign campaign;
@@ -34,7 +35,8 @@ class CampaignCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text("${campaign.amountPerPerson} đ/người • Hạn: ${campaign.deadline}", style: GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12)),
+          // Format tiền ở đây
+          Text("${CurrencyUtils.format(campaign.amountPerPerson)}/người • Hạn: ${campaign.deadline}", style: GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12)),
           
           const SizedBox(height: 16),
           ClipRRect(
@@ -53,7 +55,6 @@ class CampaignCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-          // Giả lập Tab Đã nộp / Chưa nộp
           Row(
             children: [
               Expanded(

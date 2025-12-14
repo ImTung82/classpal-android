@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/fund_models.dart';
+import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class PersonalStatusCard extends StatelessWidget {
   final FundCampaign campaign;
@@ -28,7 +29,8 @@ class PersonalStatusCard extends StatelessWidget {
           ),
           Text("Hạn nộp: ${campaign.deadline}", style: GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12)),
           const SizedBox(height: 12),
-          Text("${campaign.amountPerPerson} đ", style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black)),
+          // Format tiền ở đây
+          Text(CurrencyUtils.format(campaign.amountPerPerson), style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black)),
         ],
       ),
     );

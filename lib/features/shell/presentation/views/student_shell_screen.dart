@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_menu_drawer.dart';
 import '../../../dashboard/presentation/views/student_dashboard_content.dart'; 
 import '../../../teams/presentation/views/student_team_content.dart';
 import '../../../duties/presentation/views/student_duty_content.dart';
+import '../../../funds/presentation/views/student_fund_content.dart';
 
 class StudentShellScreen extends ConsumerStatefulWidget {
   const StudentShellScreen({super.key});
@@ -29,7 +30,7 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
     const StudentDutyContent(),
     const Center(child: Text("Tài sản lớp")),   
     const Center(child: Text("Sự kiện")),   
-    const Center(child: Text("Đóng quỹ")),   
+    const StudentFundContent(),   
   ];
 
   String _getSubtitleForIndex(int index) {

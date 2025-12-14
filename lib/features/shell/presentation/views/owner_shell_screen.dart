@@ -10,7 +10,7 @@ import '../../../dashboard/presentation/views/owner_dashboard_content.dart';
 import '../../../teams/presentation/views/owner_team_content.dart'; 
 import '../../../duties/presentation/views/owner_duty_content.dart';
 import '../../../funds/presentation/views/owner_fund_content.dart';
-import '../../../assets/presentation/views/owner_assets_content.dart';
+import '../../../assets/presentation/views/owner_asset_content.dart';
 class OwnerShellScreen extends ConsumerStatefulWidget {
   const OwnerShellScreen({super.key});
 

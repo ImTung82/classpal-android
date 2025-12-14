@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../features/auth/presentation/views/classroom_page_screen.dart'; // Để điều hướng khi đổi lớp/logout
+import '../../features/auth/presentation/views/login_register_screen.dart'; // Để điều hướng khi logout
+import '../../features/auth/presentation/views/classroom_page_screen.dart'; // Để điều hướng khi đổi lớp
 
 class AppMenuDrawer extends StatelessWidget {
   final bool isOwner; // Biến quyết định giao diện Lớp trưởng hay Thành viên
@@ -182,7 +183,7 @@ class AppMenuDrawer extends StatelessWidget {
                   onTap: () {
                      // Logic Logout sau này
                      Navigator.of(context).pushAndRemoveUntil(
-                       MaterialPageRoute(builder: (_) => const ClassroomPageScreen()), // Tạm thời về chọn lớp
+                       MaterialPageRoute(builder: (_) => const LoginRegisterScreen()), // Điều hướng về login/register
                        (route) => false
                      );
                   },

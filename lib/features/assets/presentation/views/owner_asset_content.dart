@@ -9,6 +9,7 @@ import '../widgets/asset_history_item.dart';
 import '../widgets/small_stat_card.dart';
 import '../widgets/add_asset.dart';
 import '../widgets/edit_asset.dart';
+import '../widgets/delete_asset.dart';
 
 class OwnerAssetContent extends ConsumerWidget {
   const OwnerAssetContent({super.key});
@@ -122,7 +123,16 @@ class OwnerAssetContent extends ConsumerWidget {
                           category: asset.category,
                         );
                       },
-                      onDelete: () {},
+                      onDelete: () {
+                        showDeleteAssetOverlay(
+                          context: context,
+                          assetName: 'Remote Điều hòa',
+                          onConfirm: () {
+                            // gọi ViewModel / API xóa
+                            print('Đã xóa');
+                          },
+                        );
+                      },
                     );
                   }).toList(),
                 ),

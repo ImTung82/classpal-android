@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-// [SỬA LẠI ĐÚNG ĐƯỜNG DẪN]
-import '../../data/models/dashboard_models.dart'; 
+import '../../data/models/dashboard_models.dart';
 
 class DutyListItem extends StatelessWidget {
   final DutyData data;
-
   const DutyListItem({super.key, required this.data});
 
   @override
@@ -17,31 +14,18 @@ class DutyListItem extends StatelessWidget {
     IconData statusIcon;
     Color iconColor;
 
-    // Logic hiển thị màu sắc theo trạng thái
     if (data.status == 'In Progress') {
-      statusColor = const Color(0xFFFFE4C8); // Cam nhạt
-      statusText = "Đang thực hiện";
-      statusIcon = LucideIcons.alertCircle;
-      iconColor = Colors.orange;
+      statusColor = const Color(0xFFFFE4C8); statusText = "Đang thực hiện"; statusIcon = LucideIcons.alertCircle; iconColor = Colors.orange;
     } else if (data.status == 'Upcoming') {
-      statusColor = Colors.grey[200]!;
-      statusText = "Sắp tới";
-      statusIcon = LucideIcons.clock;
-      iconColor = Colors.grey;
+      statusColor = Colors.grey[200]!; statusText = "Sắp tới"; statusIcon = LucideIcons.clock; iconColor = Colors.grey;
     } else {
-      statusColor = const Color(0xFFDCFCE7); // Xanh nhạt
-      statusText = "Hoàn thành";
-      statusIcon = LucideIcons.checkCircle;
-      iconColor = Colors.green;
+      statusColor = const Color(0xFFDCFCE7); statusText = "Hoàn thành"; statusIcon = LucideIcons.checkCircle; iconColor = Colors.green;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB), // Xám rất nhạt
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           Icon(statusIcon, color: iconColor, size: 20),
@@ -58,14 +42,7 @@ class DutyListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(20)),
-            child: Text(
-              statusText,
-              style: GoogleFonts.roboto(
-                fontSize: 11, 
-                fontWeight: FontWeight.bold,
-                color: data.status == 'Done' ? Colors.green[800] : (data.status == 'In Progress' ? Colors.orange[800] : Colors.grey[700])
-              ),
-            ),
+            child: Text(statusText, style: GoogleFonts.roboto(fontSize: 11, fontWeight: FontWeight.bold, color: data.status == 'Done' ? Colors.green[800] : (data.status == 'In Progress' ? Colors.orange[800] : Colors.grey[700]))),
           )
         ],
       ),

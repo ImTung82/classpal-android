@@ -6,12 +6,12 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
 });
 
 abstract class DashboardRepository {
-  // Cho Lớp trưởng
+  // Owner Methods
   Future<List<StatData>> fetchStats();
   Future<List<DutyData>> fetchDuties();
   Future<List<EventData>> fetchEvents();
   
-  // Cho Sinh viên
+  // Student Methods
   Future<StudentTaskData> fetchStudentTask();
   Future<List<GroupMemberData>> fetchGroupMembers();
 }
@@ -57,10 +57,10 @@ class MockDashboardRepository implements DashboardRepository {
   Future<List<GroupMemberData>> fetchGroupMembers() async {
     await Future.delayed(const Duration(milliseconds: 600));
     return [
-      GroupMemberData("Đặng Văn G", "0xFF7C3AED"), // Tím
-      GroupMemberData("Mai Thị H", "0xFF2563EB"), // Xanh dương
-      GroupMemberData("Lê Văn I", "0xFFDB2777"), // Hồng
-      GroupMemberData("Phạm Văn K", "0xFF059669"), // Xanh lá
+      GroupMemberData("Đặng Văn G", "0xFF7C3AED"), 
+      GroupMemberData("Mai Thị H", "0xFF2563EB"), 
+      GroupMemberData("Lê Văn I", "0xFFDB2777"), 
+      GroupMemberData("Phạm Văn K", "0xFF059669"), 
     ];
   }
 }

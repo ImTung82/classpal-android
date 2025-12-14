@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Import 2 dashboard
-import '../../../dashboard/presentation/views/owner_dashboard_screen.dart'; // Màn hình Lớp trưởng
-import '../../../dashboard/presentation/views/student_dashboard_screen.dart'; // Màn hình Sinh viên
+// [IMPORT SHELL]
+import '../../../shell/presentation/views/owner_shell_screen.dart';
+import '../../../shell/presentation/views/student_shell_screen.dart';
 
 class ClassroomPageScreen extends StatelessWidget {
   const ClassroomPageScreen({super.key});
@@ -17,75 +17,21 @@ class ClassroomPageScreen extends StatelessWidget {
         elevation: 0,
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6A5AE0), Color(0xFF8F7CFF)],
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.group, color: Colors.white, size: 20),
-            ),
+            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF6A5AE0), Color(0xFF8F7CFF)]), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.group, color: Colors.white, size: 20)),
             const SizedBox(width: 12),
-            Text(
-              'Lớp học của bạn',
-              style: GoogleFonts.roboto(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
+            Text('Lớp học của bạn', style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black)),
           ],
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Chọn lớp hoặc tạo mới để bắt đầu',
-            style: GoogleFonts.roboto(fontSize: 14, color: Colors.grey[600]),
-          ),
+          Text('Chọn lớp hoặc tạo mới để bắt đầu', style: GoogleFonts.roboto(fontSize: 14, color: Colors.grey[600])),
           const SizedBox(height: 16),
-
-          // --- DANH SÁCH LỚP HỌC ---
-          
-          // Case 1: Lớp trưởng (Owner) -> Vào DashboardScreen
-          _classCard(
-            context: context,
-            color: Colors.deepPurple,
-            title: 'Lớp CNTT K20',
-            role: 'Lớp trưởng', 
-            code: 'KTF742',
-          ),
-
-          // Case 2: Thành viên (Member) -> Vào StudentDashboardScreen
-          _classCard(
-            context: context,
-            color: Colors.orange,
-            title: 'Lớp Toán K20',
-            role: 'Thành viên', 
-            code: 'AHUJ88',
-          ),
-          
-          _classCard(
-            context: context,
-            color: Colors.pink,
-            title: 'Lớp Vật lý K21',
-            role: 'Thành viên',
-            code: 'HIDQW',
-          ),
-          
-          const SizedBox(height: 14),
-          const Divider(),
-          const SizedBox(height: 14),
-          
-          Center(
-            child: Text('Hoặc', style: GoogleFonts.roboto(color: Colors.grey)),
-          ),
+          _classCard(context: context, color: Colors.deepPurple, title: 'Lớp CNTT K20', role: 'Lớp trưởng', code: 'KTF742'),
+          _classCard(context: context, color: Colors.orange, title: 'Lớp Toán K20', role: 'Thành viên', code: 'AHUJ88'),
+          _classCard(context: context, color: Colors.pink, title: 'Lớp Vật lý K21', role: 'Thành viên', code: 'HIDQW'),
           const SizedBox(height: 16),
-
-          // Các nút này tạm thời chỉ để hiển thị
           _createClassButton(),
           const SizedBox(height: 12),
           _joinClassButton(),
@@ -94,92 +40,25 @@ class ClassroomPageScreen extends StatelessWidget {
     );
   }
 
-  /// Card lớp học (Đã xử lý logic điều hướng theo Role)
-  Widget _classCard({
-    required BuildContext context,
-    required Color color,
-    required String title,
-    required String role,
-    required String code,
-  }) {
+  Widget _classCard({required BuildContext context, required Color color, required String title, required String role, required String code}) {
     return GestureDetector(
       onTap: () {
-        // --- LOGIC QUAN TRỌNG Ở ĐÂY ---
         if (role == 'Lớp trưởng') {
-          // Điều hướng sang Dashboard của Lớp trưởng
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerShellScreen()));
         } else {
-          // Điều hướng sang Dashboard của Sinh viên
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const StudentDashboardScreen()),
-          );
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentShellScreen()));
         }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.school, color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    code,
-                    style: GoogleFonts.roboto(
-                      fontSize: 10,
-                      color: Colors.grey[500],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
+            Column(children: [Container(width: 44, height: 44, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.school, color: Colors.white)), const SizedBox(height: 4), Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(6)), child: Text(code, style: GoogleFonts.roboto(fontSize: 10, color: Colors.grey[500])))]),
             const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    role,
-                    style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: GoogleFonts.roboto(fontWeight: FontWeight.w600)), const SizedBox(height: 4), Text(role, style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey))])),
             const Icon(Icons.arrow_forward, color: Colors.grey),
           ],
         ),
@@ -187,92 +66,6 @@ class ClassroomPageScreen extends StatelessWidget {
     );
   }
 
-  Widget _createClassButton() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6A5AE0), Color(0xFF8F7CFF)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-                const SizedBox(width: 12, height: 6),
-                Text(
-                  'Tạo lớp học mới',
-                  style: GoogleFonts.roboto(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Bạn sẽ trở thành lớp trưởng và quản lý lớp học',
-                  style: GoogleFonts.roboto(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward, color: Colors.white),
-        ],
-      ),
-    );
-  }
-
-  Widget _joinClassButton() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 107, 142, 187).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.login, color: Colors.blue),
-                ),
-                const SizedBox(width: 12, height: 6),
-                Text(
-                  'Tham gia lớp học',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Nhập mã lớp học và tham gia với tư cách là thành viên',
-                  style: GoogleFonts.roboto(fontSize: 12, color: Colors.black),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward, color: Colors.grey),
-        ],
-      ),
-    );
-  }
+  Widget _createClassButton() { return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF6A5AE0), Color(0xFF8F7CFF)]), borderRadius: BorderRadius.circular(18)), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.add, color: Colors.white)), const SizedBox(width: 12, height: 6), Text('Tạo lớp học mới', style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w600)), const SizedBox(height: 6), Text('Bạn sẽ trở thành lớp trưởng và quản lý lớp học', style: GoogleFonts.roboto(fontSize: 12, color: Colors.white70))])), const Icon(Icons.arrow_forward, color: Colors.white)])); }
+  Widget _joinClassButton() { return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.grey.shade200)), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color.fromARGB(255, 107, 142, 187).withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.login, color: Colors.blue)), const SizedBox(width: 12, height: 6), Text('Tham gia lớp học', style: GoogleFonts.roboto(fontWeight: FontWeight.w900)), const SizedBox(height: 6), Text('Nhập mã lớp học và tham gia với tư cách là thành viên', style: GoogleFonts.roboto(fontSize: 12, color: Colors.black))])), const Icon(Icons.arrow_forward, color: Colors.grey)])); }
 }

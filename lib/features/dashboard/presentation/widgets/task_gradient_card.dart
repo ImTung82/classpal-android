@@ -5,7 +5,6 @@ import '../../data/models/dashboard_models.dart';
 
 class TaskGradientCard extends StatelessWidget {
   final StudentTaskData data;
-
   const TaskGradientCard({super.key, required this.data});
 
   @override
@@ -15,14 +14,8 @@ class TaskGradientCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF9333EA)], // Blue -> Purple
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF9333EA).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5)),
-        ],
+        gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF9333EA)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        boxShadow: [BoxShadow(color: const Color(0xFF9333EA).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,18 +36,11 @@ class TaskGradientCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(data.dateRange, style: GoogleFonts.roboto(color: Colors.white.withOpacity(0.9), fontSize: 14)),
           const SizedBox(height: 20),
-          
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF3B82F6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF3B82F6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), padding: const EdgeInsets.symmetric(vertical: 12)),
               child: Text("Đánh dấu hoàn thành", style: GoogleFonts.roboto(fontWeight: FontWeight.bold)),
             ),
           )

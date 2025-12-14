@@ -1,3 +1,4 @@
+// Model thống kê (Owner)
 class StatData {
   final String title;
   final String value;
@@ -8,15 +9,17 @@ class StatData {
   StatData(this.title, this.value, this.subValue, this.iconCode, this.color);
 }
 
+// Model nhiệm vụ chung (Owner xem list)
 class DutyData {
   final String groupName;
   final String taskName;
-  final String status;
+  final String status; // 'In Progress', 'Upcoming', 'Done'
   final String time;
 
   DutyData(this.groupName, this.taskName, this.status, this.time);
 }
 
+// Model sự kiện
 class EventData {
   final String title;
   final String date;
@@ -26,19 +29,19 @@ class EventData {
   EventData(this.title, this.date, this.current, this.total);
 }
 
-// --- MODELS CHO SINH VIÊN ---
-
+// Model nhiệm vụ cá nhân (Student)
 class StudentTaskData {
-  final String title;       // VD: "Trực nhật - Tổ 3"
-  final String dateRange;   // VD: "06/12 - 13/12/2024"
+  final String title;       
+  final String dateRange;   
   final bool isCompleted;
 
   StudentTaskData(this.title, this.dateRange, {this.isCompleted = false});
 }
 
+// Model thành viên tổ (Dùng hiển thị avatar nhỏ)
 class GroupMemberData {
   final String name;
-  final String avatarColor; // Mã màu Hex (VD: "0xFF7C3AED")
+  final String avatarColor; 
 
   GroupMemberData(this.name, this.avatarColor);
 }

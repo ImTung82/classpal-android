@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // Import
 import 'features/auth/presentation/views/login_register_screen.dart';
-
 class ClassPalApp extends StatelessWidget {
   const ClassPalApp({super.key});
 

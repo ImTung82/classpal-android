@@ -15,13 +15,15 @@ class MockJoinClassRepository implements JoinClassRepository {
     // Giả lập delay mạng
     await Future.delayed(const Duration(milliseconds: 1500));
 
+    final cleanCode = code.trim();
+
     // Validate giả lập
     if (code.trim().isEmpty) {
       throw Exception("Mã lớp không được để trống");
     }
 
     // Giả sử mã lớp phải đủ 6 ký tự
-    if (code.length < 6) {
+    if (code.length != 6) {
       throw Exception("Mã lớp không hợp lệ (phải có ít nhất 6 ký tự)");
     }
 

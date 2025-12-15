@@ -163,13 +163,19 @@ class _JoinClassScreenState extends ConsumerState<JoinClassScreen> {
                           TextFormField(
                             controller: _codeController,
                             enabled: !isLoading,
+                            maxLength: 6,
+                            textCapitalization: TextCapitalization.characters,
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Vui lòng nhập mã lớp';
                               }
+                              if (value.trim().length != 6) {
+                                return 'Mã lớp phải đủ 6 ký tự';
+                              }
                               return null;
                             },
                             decoration: InputDecoration(
+                              counterText: "",
                               hintText: 'VD: ABC123',
                               hintStyle: const TextStyle(
                                 color: Color(0xFFA6ADBA),

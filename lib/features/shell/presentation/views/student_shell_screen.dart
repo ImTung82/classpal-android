@@ -10,7 +10,7 @@ import '../../../dashboard/presentation/views/student_dashboard_content.dart';
 import '../../../teams/presentation/views/student_team_content.dart';
 import '../../../duties/presentation/views/student_duty_content.dart';
 import '../../../funds/presentation/views/student_fund_content.dart';
-
+import '../../../assets/presentation/views/student_asset_content.dart';
 class StudentShellScreen extends ConsumerStatefulWidget {
   const StudentShellScreen({super.key});
 
@@ -28,7 +28,7 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
     const StudentDashboardContent(),
     const StudentTeamContent(),
     const StudentDutyContent(),
-    const Center(child: Text("Tài sản lớp")),   
+    const StudentAssetContent(),   
     const Center(child: Text("Sự kiện")),   
     const StudentFundContent(),   
   ];

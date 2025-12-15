@@ -6,6 +6,7 @@ import '../../../shell/presentation/views/owner_shell_screen.dart';
 import '../../../shell/presentation/views/student_shell_screen.dart';
 
 import 'create_class_screen.dart';
+import 'join_class_screen.dart';
 
 class ClassroomPageScreen extends StatelessWidget {
   const ClassroomPageScreen({super.key});
@@ -73,7 +74,7 @@ class ClassroomPageScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _createClassButton(context),
           const SizedBox(height: 12),
-          _joinClassButton(),
+          _joinClassButton(context),
         ],
       ),
     );
@@ -225,48 +226,60 @@ class ClassroomPageScreen extends StatelessWidget {
     );
   }
 
-  Widget _joinClassButton() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(
-                      255,
-                      107,
-                      142,
-                      187,
-                    ).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+  Widget _joinClassButton(BuildContext context) {
+    // Thêm tham số context
+    return GestureDetector(
+      onTap: () {
+        // [THÊM] Điều hướng sang màn hình Tham gia lớp học
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const JoinClassScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(
+                        255,
+                        107,
+                        142,
+                        187,
+                      ).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.login, color: Colors.blue),
                   ),
-                  child: const Icon(Icons.login, color: Colors.blue),
-                ),
-                const SizedBox(width: 12, height: 6),
-                Text(
-                  'Tham gia lớp học',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Nhập mã lớp học và tham gia với tư cách là thành viên',
-                  style: GoogleFonts.roboto(fontSize: 12, color: Colors.black),
-                ),
-              ],
+                  const SizedBox(width: 12, height: 6),
+                  Text(
+                    'Tham gia lớp học',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nhập mã lớp học và tham gia với tư cách là thành viên',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward, color: Colors.grey),
-        ],
+            const Icon(Icons.arrow_forward, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }

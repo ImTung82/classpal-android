@@ -1,3 +1,5 @@
+// File: lib/features/classes/presentation/views/join_class_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../view_models/join_class_view_model.dart';
@@ -35,7 +37,7 @@ class _JoinClassScreenState extends ConsumerState<JoinClassScreen> {
                   backgroundColor: Colors.green,
                 ),
               );
-              Navigator.pop(context); // Quay về màn hình trước
+              Navigator.pop(context); 
             },
             onError: (message) {
               if (!mounted) return;
@@ -63,8 +65,8 @@ class _JoinClassScreenState extends ConsumerState<JoinClassScreen> {
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.centerLeft, // <--- Bắt đầu từ trái
+              end: Alignment.centerRight, // <--- Kết thúc bên phải
               colors: [Color(0xFF407CFF), Color(0xFFAE47FF)],
             ),
           ),
@@ -261,12 +263,13 @@ class _JoinClassScreenState extends ConsumerState<JoinClassScreen> {
 
                             const SizedBox(height: 40),
 
-                            // BUTTON
                             Container(
                               width: double.infinity,
                               height: 52,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
+                                  begin: Alignment.centerLeft, // <--- Trái
+                                  end: Alignment.centerRight, // <--- Phải
                                   colors: [
                                     Color(0xFF407CFF),
                                     Color(0xFFAE47FF),

@@ -168,6 +168,8 @@ class _CreateClassScreenState extends ConsumerState<CreateClassScreen> {
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty)
                                   return 'Tên lớp học không được để trống';
+                                if (value.trim().length < 6)
+                                  return 'Tên lớp phải có ít nhất 6 ký tự';
                                 return null;
                               },
                               decoration: InputDecoration(

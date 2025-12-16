@@ -10,6 +10,7 @@ import '../widgets/small_stat_card.dart';
 import '../widgets/add_asset.dart';
 import '../widgets/edit_asset.dart';
 import '../widgets/delete_asset.dart';
+import '../widgets/asset_history.dart';
 
 class OwnerAssetContent extends ConsumerWidget {
   const OwnerAssetContent({super.key});
@@ -115,7 +116,14 @@ class OwnerAssetContent extends ConsumerWidget {
                   children: assets.map((asset) {
                     return AssetCard(
                       asset: asset,
-                      onViewHistory: () {},
+                      onViewHistory: () {
+                        showAssetHistoryOverlay(
+                          context: context,
+                          assetName: 'Remote Điều hòa',
+                          borrowerName: 'Nguyễn Văn A',
+                          time: '09:00, 06/12/2024',
+                        );
+                      },
                       onEdit: () {
                         showEditAssetOverlay(
                           context,

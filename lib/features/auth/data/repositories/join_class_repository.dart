@@ -24,7 +24,7 @@ class MockJoinClassRepository implements JoinClassRepository {
 
     // Giả sử mã lớp phải đủ 6 ký tự
     if (code.length != 6) {
-      throw Exception("Mã lớp không hợp lệ (phải có ít nhất 6 ký tự)");
+      throw Exception("Mã lớp không hợp lệ (phải có 6 ký tự)");
     }
 
     print("MOCK: Join Class Success -> Code: $code");

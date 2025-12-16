@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
 void showAssetHistoryOverlay({
   required BuildContext context,
   required String assetName,
@@ -23,9 +22,6 @@ void showAssetHistoryOverlay({
     },
   );
 }
-
-
-
 
 class AssetHistoryOverlay extends StatelessWidget {
   final String assetName;
@@ -140,10 +136,7 @@ class AssetHistoryOverlay extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Đóng',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: const Text('Đóng', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],

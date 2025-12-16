@@ -24,6 +24,14 @@ class AssetRepository {
         user: 'Nguyễn Văn A',
         time: '09:00, 06/12/2024',
       ),
+      AssetModel(
+        name: 'Chìa khóa tủ',
+        assetCode: '#003',
+        category: 'Văn phòng phẩm',
+        status: 'available',
+        user: 'Nguyễn Văn D',
+        time: '09:00, 06/12/2024',
+      ),
     ];
   }
 

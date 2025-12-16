@@ -6,14 +6,18 @@ void showDeleteAssetOverlay({
   required String assetName,
   required VoidCallback onConfirm,
 }) {
-  showModalBottomSheet(
+  showGeneralDialog(
     context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (_) => DeleteAssetOverlay(
-      assetName: assetName,
-      onConfirm: onConfirm,
-    ),
+    barrierLabel: 'DeleteAsset',
+    barrierDismissible: true,
+    barrierColor: Colors.black54,
+    transitionDuration: Duration.zero,
+    pageBuilder: (_, __, ___) {
+      return DeleteAssetOverlay(
+        assetName: assetName,
+        onConfirm: onConfirm,
+      );
+    },
   );
 }
 

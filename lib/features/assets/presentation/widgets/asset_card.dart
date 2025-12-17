@@ -96,17 +96,23 @@ class AssetCard extends StatelessWidget {
                     Icon(LucideIcons.user,
                         size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(
-                      asset.user,
-                      style: GoogleFonts.roboto(fontSize: 12),
+                    Flexible(
+                      child: Text(
+                        asset.user,
+                        style: GoogleFonts.roboto(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Icon(LucideIcons.clock,
                         size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(
-                      asset.time,
-                      style: GoogleFonts.roboto(fontSize: 12),
+                    Flexible(
+                      child: Text(
+                        asset.time,
+                        style: GoogleFonts.roboto(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

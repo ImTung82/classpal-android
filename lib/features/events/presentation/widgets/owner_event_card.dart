@@ -30,18 +30,15 @@ class OwnerEventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. HEADER ROW: [Title] ... [Tags] [Icons]
-          // Tất cả nằm trên 1 hàng ngang
+          // 1. HEADER ROW: [Title] [Tags] [Icons]
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.center, // Căn giữa theo chiều dọc
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // A. Title (Chiếm phần lớn diện tích bên trái)
               Expanded(
                 child: Text(
                   event.title,
-                  maxLines: 1, // Bắt buộc 1 dòng
-                  overflow: TextOverflow.ellipsis, // Cắt bớt nếu dài
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.roboto(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -49,11 +46,7 @@ class OwnerEventCard extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 8),
-
-              // B. Stacked Tags (Tag chữ dọc)
-              // Sử dụng Row min để các tag nằm cạnh nhau
               if (event.isMandatory || event.isOpen)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -76,10 +69,7 @@ class OwnerEventCard extends StatelessWidget {
                       ),
                   ],
                 ),
-
               const SizedBox(width: 12),
-
-              // C. Action Icons (Luôn nằm góc phải)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -90,7 +80,6 @@ class OwnerEventCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
 
           // 2. Description
@@ -106,17 +95,27 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 3. Date & Time Rows
+          // 3. Date & Time Row (Thẳng 1 hàng)
           Row(
             children: [
-              Flexible(child: _buildInfoRow(LucideIcons.calendar, event.date)),
-              const SizedBox(width: 24),
-              Flexible(child: _buildInfoRow(LucideIcons.clock, event.time)),
+              // Ngày
+              Expanded(child: _buildInfoRow(LucideIcons.calendar, event.date)),
+              const SizedBox(width: 16),
+              // Giờ
+              Expanded(child: _buildInfoRow(LucideIcons.clock, event.time)),
             ],
           ),
+
+          // [MỚI] 4. Location Row (Thêm địa điểm vào đây)
+          const SizedBox(height: 12), // Khoảng cách với dòng trên
+          _buildInfoRow(
+            LucideIcons.mapPin,
+            event.location,
+          ), // Dùng icon mapPin cho địa điểm
+
           const SizedBox(height: 16),
 
-          // 4. Progress Bar
+          // 5. Progress Bar & Ratio
           Row(
             children: [
               Expanded(
@@ -145,7 +144,7 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 5. Statistic Cards
+          // 6. Statistic Cards
           Row(
             children: [
               Expanded(
@@ -173,7 +172,7 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 6. Action Buttons
+          // 7. Action Buttons
           _buildFullWidthButton(
             text: 'Xem chi tiết',
             icon: LucideIcons.users,
@@ -201,7 +200,6 @@ class OwnerEventCard extends StatelessWidget {
 
   // --- WIDGET HELPERS ---
 
-  // [MỚI] Widget xếp chồng chữ dọc
   Widget _buildStackedStatusChip(
     String line1,
     String line2,
@@ -212,17 +210,17 @@ class OwnerEventCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(8), // Bo góc mềm mại
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Chỉ chiếm chiều cao vừa đủ nội dung
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             line1,
             style: GoogleFonts.roboto(
-              fontSize: 9, // Font nhỏ
-              height: 1.0, // Dòng khít nhau
+              fontSize: 9,
+              height: 1.0,
               color: textColor,
               fontWeight: FontWeight.bold,
             ),
@@ -230,8 +228,8 @@ class OwnerEventCard extends StatelessWidget {
           Text(
             line2,
             style: GoogleFonts.roboto(
-              fontSize: 9, // Font nhỏ
-              height: 1.0, // Dòng khít nhau
+              fontSize: 9,
+              height: 1.0,
               color: textColor,
               fontWeight: FontWeight.bold,
             ),

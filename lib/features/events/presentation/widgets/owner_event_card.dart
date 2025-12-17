@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/event_models.dart';
 import 'edit_event_dialog.dart';
 import 'delete_event_dialog.dart';
+import 'event_details_dialog.dart';
 
 class OwnerEventCard extends StatelessWidget {
   final ClassEvent event;
@@ -231,12 +232,19 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 7. Action Buttons
+          // 7. Action Button
+          // Nút Xem chi tiết
           _buildFullWidthButton(
             text: 'Xem chi tiết',
             icon: LucideIcons.users,
             isOutlined: true,
-            onPressed: () {},
+            onPressed: () {
+              // Gọi Dialog Xem chi tiết
+              showDialog(
+                context: context,
+                builder: (context) => EventDetailsDialog(event: event),
+              );
+            },
           ),
           const SizedBox(height: 12),
           _buildFullWidthButton(

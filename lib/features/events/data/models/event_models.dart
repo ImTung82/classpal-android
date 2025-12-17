@@ -1,7 +1,13 @@
-enum EventStatus {
-  upcoming,
-  registered,
-  participated, // Status của cá nhân
+// File: lib/features/events/data/models/event_models.dart
+
+enum EventStatus { upcoming, registered, participated }
+
+class Student {
+  final String id;
+  final String name;
+  final String? avatarUrl;
+
+  Student({required this.id, required this.name, this.avatarUrl});
 }
 
 class ClassEvent {
@@ -13,11 +19,12 @@ class ClassEvent {
   final String location;
   final bool isMandatory;
   final EventStatus status; // Status cá nhân (cho SV)
-
-  // --- Thêm trường cho Lớp trưởng ---
-  final int registeredCount; // Số lượng đã đăng ký
-  final int totalCount; // Tổng số sinh viên
   final bool isOpen; // Trạng thái mở đăng ký
+
+  // Dùng List chứa dữ liệu thực ---
+  final List<Student> participants; // Danh sách Tham gia
+  final List<Student> nonParticipants; // Danh sách Không tham gia
+  final List<Student> unconfirmed; // Danh sách Chưa xác nhận
 
   ClassEvent({
     required this.id,
@@ -28,13 +35,25 @@ class ClassEvent {
     required this.location,
     this.isMandatory = false,
     this.status = EventStatus.upcoming,
-    this.registeredCount = 0,
-    this.totalCount = 0,
     this.isOpen = true,
+    // Mặc định là danh sách rỗng
+    this.participants = const [],
+    this.nonParticipants = const [],
+    this.unconfirmed = const [],
   });
 
-  // Getter tính toán số lượng chưa đăng ký
-  int get unregisteredCount => totalCount - registeredCount;
-  // Getter tính % hoàn thành
+  // --- Getters: Tự động tính toán số liệu từ danh sách ---
+
+  // 1. Số lượng đã đăng ký = Độ dài danh sách tham gia
+  int get registeredCount => participants.length;
+
+  // 2. Số lượng chưa đăng ký (chưa xác nhận) = Độ dài danh sách chưa xác nhận
+  int get unregisteredCount => unconfirmed.length;
+
+  // 3. Tổng số sinh viên = Tổng 3 danh sách cộng lại
+  int get totalCount =>
+      participants.length + nonParticipants.length + unconfirmed.length;
+
+  // 4. % Hoàn thành (Progress bar)
   double get progress => totalCount == 0 ? 0 : registeredCount / totalCount;
 }

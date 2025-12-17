@@ -1,46 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // [1] Import Riverpod
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../features/auth/presentation/views/login_register_screen.dart'; // Để điều hướng khi logout
-import '../../features/auth/presentation/views/classroom_page_screen.dart'; // Để điều hướng khi đổi lớp
+import '../../features/auth/presentation/views/login_register_screen.dart';
+import '../../features/auth/presentation/views/classroom_page_screen.dart';
+import '../../features/auth/presentation/view_models/auth_view_model.dart'; // [2] Import ViewModel
+import '../../features/auth/data/repositories/auth_repository.dart'; // [3] Import Repo để lấy User info
 
-class AppMenuDrawer extends StatelessWidget {
-  final bool isOwner; // Biến quyết định giao diện Lớp trưởng hay Thành viên
+// [4] Đổi thành ConsumerWidget để lắng nghe dữ liệu
+class AppMenuDrawer extends ConsumerWidget {
+  final bool isOwner;
 
   const AppMenuDrawer({super.key, required this.isOwner});
 
   @override
-  Widget build(BuildContext context) {
-    // Màu sắc badge dựa trên role
+  Widget build(BuildContext context, WidgetRef ref) {
+    // [5] Lấy thông tin User hiện tại từ Supabase
+    final authRepo = ref.watch(authRepositoryProvider);
+    final user = authRepo.currentUser;
+    
+    // Lấy tên từ metadata (lúc đăng ký mình đã lưu vào key 'full_name')
+    final String fullName = user?.userMetadata?['full_name'] ?? "Người dùng";
+    final String email = user?.email ?? "Chưa cập nhật email";
+    final String avatarChar = fullName.isNotEmpty ? fullName[0].toUpperCase() : "U";
+
+    // Màu sắc badge
     final badgeColor = isOwner ? const Color(0xFFFEF3C7) : const Color(0xFFF3E8FF);
     final badgeTextColor = isOwner ? const Color(0xFFD97706) : const Color(0xFF9333EA);
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
     
-    // Dữ liệu giả lập
+    // Dữ liệu giả lập lớp học (Phần này sẽ sửa sau khi có DB Lớp học)
     final className = isOwner ? "Lớp CNTT K20" : "Lớp Toán K20";
     final classCode = isOwner ? "KTF742" : "AHUJ98";
 
     return Drawer(
-      width: MediaQuery.of(context).size.width * 0.85, // Chiếm 85% màn hình
+      width: MediaQuery.of(context).size.width * 0.85,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(0), bottomLeft: Radius.circular(0)),
       ),
       child: Column(
         children: [
-          // 1. Header (Màu tím gradient + User Info)
+          // 1. Header (Màu tím gradient + User Info THẬT)
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF9333EA)], // Blue -> Purple
+                colors: [Color(0xFF3B82F6), Color(0xFF9333EA)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             child: Column(
               children: [
-                // Hàng tiêu đề Menu + Nút đóng
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -53,7 +65,7 @@ class AppMenuDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 
-                // Card User Info (Trong suốt mờ)
+                // Card User Info
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -70,15 +82,18 @@ class AppMenuDrawer extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
-                        child: Text("NV", style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold)),
+                        // [6] Hiển thị ký tự đầu của tên thật
+                        child: Text(avatarChar, style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Nguyễn Văn A", style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text("mail@example.com", style: GoogleFonts.roboto(color: Colors.white70, fontSize: 12)),
+                            // [7] Hiển thị Tên thật
+                            Text(fullName, style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
+                            // [8] Hiển thị Email thật
+                            Text(email, style: GoogleFonts.roboto(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis),
                           ],
                         ),
                       )
@@ -89,18 +104,17 @@ class AppMenuDrawer extends StatelessWidget {
             ),
           ),
 
-          // 2. Nội dung chính (Scrollable)
+          // 2. Nội dung chính
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // --- Section: Lớp học hiện tại ---
                 Text("LỚP HỌC HIỆN TẠI", style: GoogleFonts.roboto(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F9FF).withOpacity(0.5), // Xanh rất nhạt
+                    color: const Color(0xFFF0F9FF).withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.blue.withOpacity(0.1)),
                   ),
@@ -129,7 +143,6 @@ class AppMenuDrawer extends StatelessWidget {
                         child: Text(classCode, style: GoogleFonts.roboto(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                       
-                      // Nút mời thành viên (Chỉ hiện cho Lớp trưởng)
                       if (isOwner) ...[
                         const SizedBox(height: 16),
                         SizedBox(
@@ -152,17 +165,14 @@ class AppMenuDrawer extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // --- Section: Tài khoản ---
                 Text("TÀI KHOẢN", style: GoogleFonts.roboto(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
 
-                // Nút Đổi lớp học
                 _buildMenuItem(
                   icon: LucideIcons.arrowLeftRight,
                   title: "Đổi lớp học",
                   subtitle: "Chuyển sang lớp học khác",
                   onTap: () {
-                     // Quay về màn hình chọn lớp
                      Navigator.of(context).pushAndRemoveUntil(
                        MaterialPageRoute(builder: (_) => const ClassroomPageScreen()),
                        (route) => false
@@ -172,7 +182,7 @@ class AppMenuDrawer extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Nút Đăng xuất
+                // [9] Nút Đăng xuất - Cập nhật Logic
                 _buildMenuItem(
                   icon: LucideIcons.logOut,
                   title: "Đăng xuất",
@@ -180,19 +190,24 @@ class AppMenuDrawer extends StatelessWidget {
                   iconColor: Colors.red,
                   textColor: Colors.red,
                   isDestructive: true,
-                  onTap: () {
-                     // Logic Logout sau này
-                     Navigator.of(context).pushAndRemoveUntil(
-                       MaterialPageRoute(builder: (_) => const LoginRegisterScreen()), // Điều hướng về login/register
-                       (route) => false
-                     );
+                  onTap: () async {
+                     // Gọi hàm signOut từ ViewModel
+                     await ref.read(authViewModelProvider.notifier).signOut();
+                     
+                     // Điều hướng về màn hình Login
+                     if (context.mounted) {
+                       Navigator.of(context).pushAndRemoveUntil(
+                         MaterialPageRoute(builder: (_) => const LoginRegisterScreen()), 
+                         (route) => false
+                       );
+                     }
                   },
                 ),
               ],
             ),
           ),
 
-          // 3. Footer (Version info)
+          // 3. Footer
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -210,7 +225,6 @@ class AppMenuDrawer extends StatelessWidget {
     );
   }
 
-  // Widget con cho các mục menu
   Widget _buildMenuItem({
     required IconData icon,
     required String title,

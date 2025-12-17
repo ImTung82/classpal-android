@@ -1,20 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/auth_repository.dart';
 
-// 1. State (Giữ nguyên)
-class AuthState {
+// --- STATE MODEL ---
+class AppAuthState {
   final bool isLoginMode;
   final bool isPasswordVisible;
   final bool isLoading;
 
-  AuthState({
+  AppAuthState({
     this.isLoginMode = true,
     this.isPasswordVisible = false,
     this.isLoading = false,
   });
 
-  AuthState copyWith({bool? isLoginMode, bool? isPasswordVisible, bool? isLoading}) {
-    return AuthState(
+  AppAuthState copyWith({bool? isLoginMode, bool? isPasswordVisible, bool? isLoading}) {
+    return AppAuthState(
       isLoginMode: isLoginMode ?? this.isLoginMode,
       isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,
       isLoading: isLoading ?? this.isLoading,
@@ -22,13 +23,12 @@ class AuthState {
   }
 }
 
-// 2. ViewModel (Dùng Syntax mới: Notifier)
-class AuthViewModel extends Notifier<AuthState> {
+// --- VIEW MODEL ---
+class AuthViewModel extends Notifier<AppAuthState> {
   
-  // Hàm build() thay thế cho Constructor để khởi tạo State ban đầu
   @override
-  AuthState build() {
-    return AuthState(); 
+  AppAuthState build() {
+    return AppAuthState(); 
   }
 
   void toggleAuthMode() {
@@ -40,35 +40,62 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 
   Future<void> submit({
-    required String email, 
-    required String password, 
+    required String email,
+    required String password,
     String? name,
+    String? phone, // [CẬP NHẬT] Thêm tham số phone
     required Function(String) onSuccess,
     required Function(String) onError,
   }) async {
-    // Lấy Repository thông qua ref (có sẵn trong Notifier)
-    final repository = ref.read(authRepositoryProvider);
+    if (email.isEmpty || password.isEmpty) {
+      onError("Vui lòng nhập đầy đủ email và mật khẩu");
+      return;
+    }
 
     state = state.copyWith(isLoading: true);
+
     try {
+      final authRepository = ref.read(authRepositoryProvider);
+
       if (state.isLoginMode) {
-        await repository.login(email, password);
+        // ĐĂNG NHẬP
+        await authRepository.signIn(email, password);
         onSuccess("Đăng nhập thành công!");
       } else {
-        await repository.register(name ?? "", email, password);
+        // ĐĂNG KÝ
+        // [CẬP NHẬT] Validate thêm tên và sđt
+        if (name == null || name.isEmpty) {
+          throw const AuthException("Vui lòng nhập họ tên");
+        }
+        if (phone == null || phone.isEmpty) {
+           throw const AuthException("Vui lòng nhập số điện thoại");
+        }
+        
+        // Truyền phone xuống repo
+        await authRepository.signUp(email, password, name, phone);
         onSuccess("Đăng ký thành công!");
       }
+    } on AuthException catch (e) {
+      onError(e.message);
     } catch (e) {
-      onError(e.toString().replaceAll("Exception: ", ""));
+      onError("Lỗi không xác định: $e");
     } finally {
-      // Kiểm tra mounted trước khi set state để tránh lỗi async
-      // (Tuy nhiên trong Riverpod Notifier, việc set state an toàn hơn)
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> signOut() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (e) {
+      // Bỏ qua lỗi nếu có
+    } finally {
       state = state.copyWith(isLoading: false);
     }
   }
 }
 
-// 3. Provider (Dùng NotifierProvider thay vì StateNotifierProvider)
-final authViewModelProvider = NotifierProvider<AuthViewModel, AuthState>(() {
+final authViewModelProvider = NotifierProvider<AuthViewModel, AppAuthState>(() {
   return AuthViewModel();
 });

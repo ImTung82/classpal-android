@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart'; // Import Lucide
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../view_models/auth_view_model.dart';
 import '../views/classroom_page_screen.dart';
 
@@ -17,6 +17,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   final List<Color> gradientColors = const [
     Color(0xFF4A84F8),
@@ -28,6 +29,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -79,12 +81,22 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         _buildTabSwitcher(isLogin, authViewModel),
                         const SizedBox(height: 30),
 
+                        // Form đăng ký
                         if (!isLogin) ...[
                           _buildLabel("Họ và tên"),
                           _buildTextField(
                             controller: _nameController,
                             hintText: "Nguyễn Văn A",
-                            icon: LucideIcons.user, // Dùng Lucide Icon
+                            icon: LucideIcons.user,
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          _buildLabel("Số điện thoại"),
+                          _buildTextField(
+                            controller: _phoneController,
+                            hintText: "0912345678",
+                            icon: LucideIcons.phone,
+                            inputType: TextInputType.phone,
                           ),
                           const SizedBox(height: 20),
                         ],
@@ -93,7 +105,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         _buildTextField(
                           controller: _emailController,
                           hintText: "email@example.com",
-                          icon: LucideIcons.mail, // Dùng Lucide Icon
+                          icon: LucideIcons.mail,
                           inputType: TextInputType.emailAddress,
                         ),
 
@@ -103,7 +115,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         _buildTextField(
                           controller: _passwordController,
                           hintText: "••••••••",
-                          icon: LucideIcons.lock, // Dùng Lucide Icon
+                          icon: LucideIcons.lock,
                           isPassword: true,
                           isObscure: isObscure,
                           onVisibilityToggle: () =>
@@ -119,7 +131,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                               child: Text(
                                 "Quên mật khẩu?",
                                 style: GoogleFonts.roboto(
-                                  // Dùng Google Fonts
                                   color: const Color(0xFF4A84F8),
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -132,6 +143,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         const SizedBox(height: 20),
 
                         _buildSubmitButton(isLogin, isLoading, authViewModel),
+                        
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -167,7 +179,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
             LucideIcons.users,
             size: 40,
             color: Color(0xFF4A84F8),
-          ), // Icon Lucide
+          ),
         ),
         const SizedBox(height: 16),
         Text(
@@ -193,7 +205,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
 
   Widget _buildTabSwitcher(bool isLogin, AuthViewModel vm) {
     return Container(
-      height: 50, // Định chiều cao cố định để tính toán cho chuẩn
+      height: 50,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.grey[100],
@@ -201,14 +213,13 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
       ),
       child: Stack(
         children: [
-          // LỚP 1: HỘP MÀU TRẮNG (CÁI SẼ TRƯỢT QUA TRƯỢT LẠI)
           AnimatedAlign(
             alignment: isLogin ? Alignment.centerLeft : Alignment.centerRight,
             duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut, // Đường cong chuyển động mượt mà
+            curve: Curves.easeInOut,
             child: FractionallySizedBox(
-              widthFactor: 0.5, // Chiếm đúng 50% chiều rộng
-              heightFactor: 1.0, // Chiếm 100% chiều cao (trừ padding)
+              widthFactor: 0.5,
+              heightFactor: 1.0,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -224,8 +235,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
               ),
             ),
           ),
-
-          // LỚP 2: TEXT VÀ NÚT BẤM (NẰM ĐÈ LÊN TRÊN ĐỂ BẤM ĐƯỢC)
           Row(
             children: [
               _buildSlidingTabItem(
@@ -245,7 +254,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     );
   }
 
-  // Widget con hỗ trợ cho cách làm mới
   Widget _buildSlidingTabItem({
     required String title,
     required bool isSelected,
@@ -254,61 +262,17 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        behavior: HitTestBehavior.translucent, // Để bấm được vùng trong suốt
+        behavior: HitTestBehavior.translucent,
         child: Container(
           alignment: Alignment.center,
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 200),
             style: GoogleFonts.roboto(
-              // Màu chữ chuyển đổi mượt mà
               color: isSelected ? Colors.black : Colors.grey[600],
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
             child: Text(title),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabItem({
-    required String title,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(
-            milliseconds: 250,
-          ), // Tăng thời gian lên xíu cho mượt
-          curve: Curves.easeInOut, // Thêm curve để chuyển động tự nhiên hơn
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            // [FIX LỖI MÀU ĐEN]: Dùng Colors.white.withOpacity(0) thay vì Colors.transparent
-            color: isActive ? Colors.white : Colors.white.withOpacity(0.0),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [], // Khi không active thì không có shadow
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.roboto(
-              // Animation màu chữ cũng sẽ mượt theo AnimatedContainer
-              color: isActive ? Colors.black : Colors.grey[600],
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
           ),
         ),
       ),
@@ -376,6 +340,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     );
   }
 
+  // NÚT SUBMIT - Logic chính nằm ở đây
   Widget _buildSubmitButton(bool isLogin, bool isLoading, AuthViewModel vm) {
     return Container(
       width: double.infinity,
@@ -396,21 +361,33 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
             ? null
             : () {
                 vm.submit(
-                  email: _emailController.text,
+                  email: _emailController.text.trim(),
                   password: _passwordController.text,
-                  name: isLogin ? null : _nameController.text,
+                  name: isLogin ? null : _nameController.text.trim(),
+                  phone: isLogin ? null : _phoneController.text.trim(),
                   onSuccess: (msg) {
+                    // Luôn hiện thông báo thành công
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(msg),
                         backgroundColor: Colors.green,
                       ),
                     );
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => const ClassroomPageScreen(),
-                      ),
-                    );
+
+                    if (isLogin) {
+                      // CASE 1: ĐĂNG NHẬP -> Vào App
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const ClassroomPageScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    } else {
+                      // CASE 2: ĐĂNG KÝ -> Chuyển tab về Login (Đúng yêu cầu của bạn)
+                      vm.toggleAuthMode();
+                      // (Tùy chọn) Xóa pass để user nhập lại cho an toàn
+                      _passwordController.clear();
+                    }
                   },
                   onError: (err) {
                     ScaffoldMessenger.of(context).showSnackBar(

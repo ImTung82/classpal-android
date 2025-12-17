@@ -4,9 +4,39 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../view_models/owner_event_view_model.dart';
 import '../widgets/owner_event_card.dart';
+import '../widgets/create_event_dialog.dart';
 
 class OwnerEventContent extends ConsumerWidget {
   const OwnerEventContent({super.key});
+
+  // --- HÀM MỞ DIALOG (Đã sửa lỗi cú pháp) ---
+  Future<void> _showCreateEventDialog(BuildContext context) async {
+    // Gọi Dialog và chờ kết quả trả về
+    final result = await showDialog(
+      context: context,
+      barrierDismissible: false, // Bắt buộc bấm Hủy hoặc Tạo để đóng
+      builder: (BuildContext context) {
+        return const CreateEventDialog();
+      },
+    );
+
+    // Kiểm tra kết quả sau khi đóng Dialog
+    if (result == true) {
+      if (!context.mounted) return;
+
+      // Hiện thông báo thành công
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tạo sự kiện thành công!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // TODO: Gọi hàm reload danh sách sự kiện nếu cần
+      // ví dụ: ref.refresh(ownerEventsProvider);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +67,8 @@ class OwnerEventContent extends ConsumerWidget {
             height: 48,
             child: ElevatedButton.icon(
               onPressed: () {
-                // Logic mở dialog tạo sự kiện
+                // [ĐÃ SỬA] Gọi hàm mở dialog tại đây
+                _showCreateEventDialog(context);
               },
               icon: const Icon(LucideIcons.plus, size: 20),
               label: const Text("Tạo sự kiện mới"),
@@ -59,8 +90,14 @@ class OwnerEventContent extends ConsumerWidget {
             error: (err, stack) =>
                 Text('Lỗi: $err', style: GoogleFonts.roboto()),
             data: (events) {
-              if (events.isEmpty)
-                return const Center(child: Text("Chưa có sự kiện nào"));
+              if (events.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: Text("Chưa có sự kiện nào"),
+                  ),
+                );
+              }
               return Column(
                 children: events
                     .map((event) => OwnerEventCard(event: event))

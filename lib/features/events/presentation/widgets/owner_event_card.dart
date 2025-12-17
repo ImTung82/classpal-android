@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/event_models.dart';
 import 'edit_event_dialog.dart';
+import 'delete_event_dialog.dart';
 
 class OwnerEventCard extends StatelessWidget {
   final ClassEvent event;
@@ -109,8 +110,35 @@ class OwnerEventCard extends StatelessWidget {
                   const SizedBox(width: 4),
 
                   // Nút Xóa (Logic xóa sẽ làm sau)
-                  _buildActionButton(LucideIcons.trash2, Colors.red, () {
-                    // TODO: Thêm logic xóa sự kiện
+                  // Nút Xóa
+                  _buildActionButton(LucideIcons.trash2, Colors.red, () async {
+                    // 1. Hiển thị Dialog xác nhận xóa
+                    final confirmDelete = await showDialog<bool>(
+                      context: context,
+                      builder: (context) =>
+                          DeleteEventDialog(eventName: event.title),
+                    );
+
+                    // 2. Nếu người dùng nhấn nút "Xóa sự kiện" (trả về true)
+                    if (confirmDelete == true) {
+                      if (!context.mounted) return;
+
+                      // TODO: Gọi hàm xóa trong ViewModel/Bloc tại đây
+                      // Ví dụ: ref.read(eventViewModelProvider).deleteEvent(event.id);
+
+                      // 3. Hiển thị thông báo thành công
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Xóa sự kiện thành công!'),
+                          backgroundColor: Colors
+                              .green, // Hoặc màu đỏ nếu muốn nhấn mạnh việc xóa
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      // Gọi callback refresh nếu cần update UI
+                      onRefresh?.call();
+                    }
                   }),
                 ],
               ),

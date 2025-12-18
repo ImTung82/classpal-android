@@ -14,8 +14,8 @@ class MockEventRepository implements EventRepository {
   @override
   Future<List<ClassEvent>> fetchEvents() async {
     await Future.delayed(const Duration(milliseconds: 500));
+    // Dữ liệu cho màn hình cá nhân sinh viên (nếu cần)
     return [
-      // Sự kiện 1: Đã đăng ký
       ClassEvent(
         id: '1',
         title: 'Hội thảo Khởi nghiệp 2024',
@@ -25,8 +25,8 @@ class MockEventRepository implements EventRepository {
         location: 'Hội trường A',
         isMandatory: true,
         status: EventStatus.registered,
+        // Với view cá nhân, ta có thể để trống danh sách chi tiết nếu không dùng
       ),
-      // Sự kiện 2: Đã tham gia
       ClassEvent(
         id: '2',
         title: 'Tham quan Doanh nghiệp',
@@ -43,7 +43,16 @@ class MockEventRepository implements EventRepository {
   @override
   Future<List<ClassEvent>> fetchOwnerEvents() async {
     await Future.delayed(const Duration(milliseconds: 800));
+
+    // 1. Tạo dữ liệu giả Sinh viên
+    final svA = Student(id: 'sv001', name: 'Nguyễn Văn A');
+    final svB = Student(id: 'sv002', name: 'Trần Thị B');
+    final svC = Student(id: 'sv003', name: 'Lê Văn C');
+    final svD = Student(id: 'sv004', name: 'Phạm Thị D');
+    final svE = Student(id: 'sv005', name: 'Hoàng Văn E');
+
     return [
+      // Sự kiện 1: 3 tham gia, 0 không tham gia, 2 chưa xác nhận
       ClassEvent(
         id: '1',
         title: 'Hội thảo Khởi nghiệp 2024',
@@ -53,10 +62,14 @@ class MockEventRepository implements EventRepository {
         location: 'Hội trường A',
         isMandatory: true,
         status: EventStatus.upcoming,
-        isOpen: true,          // Đang mở
-        registeredCount: 3,    // 3/5
-        totalCount: 5,
+        isOpen: true,
+        // Gán danh sách sinh viên
+        participants: [svA, svB, svC], // 3 người
+        nonParticipants: [], // 0 người
+        unconfirmed: [svD, svE], // 2 người
       ),
+
+      // Sự kiện 2: 2 tham gia, 2 không tham gia, 1 chưa xác nhận
       ClassEvent(
         id: '2',
         title: 'Tham quan Doanh nghiệp',
@@ -67,8 +80,10 @@ class MockEventRepository implements EventRepository {
         isMandatory: false,
         status: EventStatus.upcoming,
         isOpen: true,
-        registeredCount: 2,    // 2/5
-        totalCount: 5,
+        // Gán danh sách sinh viên
+        participants: [svA, svC], // 2 người
+        nonParticipants: [svB, svE], // 2 người
+        unconfirmed: [svD], // 1 người
       ),
     ];
   }

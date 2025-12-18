@@ -1,14 +1,18 @@
-// File: lib/features/events/presentation/widgets/owner_event_card.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/event_models.dart';
+import 'edit_event_dialog.dart';
+import 'delete_event_dialog.dart';
+import 'event_details_dialog.dart';
 
 class OwnerEventCard extends StatelessWidget {
   final ClassEvent event;
 
-  const OwnerEventCard({super.key, required this.event});
+  // Callback tùy chọn để reload dữ liệu nếu cần (ví dụ: ref.refresh...)
+  final VoidCallback? onRefresh;
+
+  const OwnerEventCard({super.key, required this.event, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +34,11 @@ class OwnerEventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. HEADER ROW: [Title] [Tags] [Icons]
+          // 1. HEADER ROW: [Title] ... [Tags] [Icons]
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // A. Title
               Expanded(
                 child: Text(
                   event.title,
@@ -47,6 +52,8 @@ class OwnerEventCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
+
+              // B. Tags
               if (event.isMandatory || event.isOpen)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -70,12 +77,70 @@ class OwnerEventCard extends StatelessWidget {
                   ],
                 ),
               const SizedBox(width: 12),
+
+              // C. Action Icons
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildActionButton(LucideIcons.pencil, Colors.blue, () {}),
+                  // --- [LOGIC SỬA SỰ KIỆN] ---
+                  _buildActionButton(LucideIcons.pencil, Colors.blue, () async {
+                    // 1. Mở Dialog Chỉnh sửa
+                    final result = await showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => EditEventDialog(event: event),
+                    );
+
+                    // 2. Xử lý kết quả trả về
+                    if (result == true) {
+                      if (!context.mounted) return;
+                      // Hiện thông báo
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Chỉnh sửa sự kiện thành công!'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      // Gọi callback refresh nếu có (để load lại list sự kiện mới)
+                      onRefresh?.call();
+                    }
+                  }),
+
                   const SizedBox(width: 4),
-                  _buildActionButton(LucideIcons.trash2, Colors.red, () {}),
+
+                  // Nút Xóa (Logic xóa sẽ làm sau)
+                  // Nút Xóa
+                  _buildActionButton(LucideIcons.trash2, Colors.red, () async {
+                    // 1. Hiển thị Dialog xác nhận xóa
+                    final confirmDelete = await showDialog<bool>(
+                      context: context,
+                      builder: (context) =>
+                          DeleteEventDialog(eventName: event.title),
+                    );
+
+                    // 2. Nếu người dùng nhấn nút "Xóa sự kiện" (trả về true)
+                    if (confirmDelete == true) {
+                      if (!context.mounted) return;
+
+                      // TODO: Gọi hàm xóa trong ViewModel/Bloc tại đây
+                      // Ví dụ: ref.read(eventViewModelProvider).deleteEvent(event.id);
+
+                      // 3. Hiển thị thông báo thành công
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Xóa sự kiện thành công!'),
+                          backgroundColor: Colors
+                              .green, // Hoặc màu đỏ nếu muốn nhấn mạnh việc xóa
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+
+                      // Gọi callback refresh nếu cần update UI
+                      onRefresh?.call();
+                    }
+                  }),
                 ],
               ),
             ],
@@ -95,23 +160,18 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 3. Date & Time Row (Thẳng 1 hàng)
+          // 3. Date & Time Row (Thẳng hàng ngang)
           Row(
             children: [
-              // Ngày
               Expanded(child: _buildInfoRow(LucideIcons.calendar, event.date)),
               const SizedBox(width: 16),
-              // Giờ
               Expanded(child: _buildInfoRow(LucideIcons.clock, event.time)),
             ],
           ),
 
-          // [MỚI] 4. Location Row (Thêm địa điểm vào đây)
-          const SizedBox(height: 12), // Khoảng cách với dòng trên
-          _buildInfoRow(
-            LucideIcons.mapPin,
-            event.location,
-          ), // Dùng icon mapPin cho địa điểm
+          // 4. Location Row (Địa điểm)
+          const SizedBox(height: 12),
+          _buildInfoRow(LucideIcons.mapPin, event.location),
 
           const SizedBox(height: 16),
 
@@ -172,12 +232,19 @@ class OwnerEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 7. Action Buttons
+          // 7. Action Button
+          // Nút Xem chi tiết
           _buildFullWidthButton(
             text: 'Xem chi tiết',
             icon: LucideIcons.users,
             isOutlined: true,
-            onPressed: () {},
+            onPressed: () {
+              // Gọi Dialog Xem chi tiết
+              showDialog(
+                context: context,
+                builder: (context) => EventDetailsDialog(event: event),
+              );
+            },
           ),
           const SizedBox(height: 12),
           _buildFullWidthButton(

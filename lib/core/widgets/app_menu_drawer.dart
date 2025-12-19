@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // [1] Import Riverpod
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/auth/presentation/views/login_register_screen.dart';
-import '../../features/auth/presentation/views/classroom_page_screen.dart';
+import '../../features/classes/presentation/views/classroom_page_screen.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart'; // [2] Import ViewModel
 import '../../features/auth/data/repositories/auth_repository.dart'; // [3] Import Repo để lấy User info
 

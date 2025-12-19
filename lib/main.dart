@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,8 +21,8 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-  // 3. Kích hoạt Max FPS cho Android
-  if (Platform.isAndroid) {
+  // 3. Kích hoạt Max FPS (Chỉ chạy trên Android Native, bỏ qua Web/iOS)
+  if (!kIsWeb && Platform.isAndroid) {
     try {
       await FlutterDisplayMode.setHighRefreshRate();
     } catch (e) {
@@ -41,7 +42,7 @@ class MyApp extends StatelessWidget {
       title: 'ClassPal',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const LoginRegisterScreen(), 
+      home: const LoginRegisterScreen(),
     );
   }
 }

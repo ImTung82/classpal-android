@@ -4,14 +4,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// [IMPORT AUTH & CLASS]
 import '../../features/auth/presentation/views/login_register_screen.dart';
 import '../../features/classes/presentation/views/classroom_page_screen.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/classes/data/models/class_model.dart';
 
+// [IMPORT PROFILE - MỚI]
+import '../../features/profile/presentation/views/edit_profile_screen.dart';
+import '../../features/profile/presentation/views/change_password_screen.dart';
+
 class AppMenuDrawer extends ConsumerWidget {
-  final ClassModel? classModel; // Có thể null
+  final ClassModel?
+  classModel; // Có thể null (nếu đang ở màn hình danh sách lớp)
 
   const AppMenuDrawer({super.key, this.classModel});
 
@@ -27,11 +33,11 @@ class AppMenuDrawer extends ConsumerWidget {
         ? fullName[0].toUpperCase()
         : "U";
 
-    // 2. Logic hiển thị thông tin lớp
+    // 2. Logic hiển thị thông tin lớp (nếu có)
     final bool isInClass = classModel != null;
     final bool isOwner = isInClass && classModel!.role == 'owner';
 
-    // Màu sắc
+    // Màu sắc Role
     final badgeColor = isOwner
         ? const Color(0xFF6A5AE0)
         : const Color(0xFFFF8A00);
@@ -51,7 +57,7 @@ class AppMenuDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // 1. HEADER USER
+          // 1. HEADER USER (Gradient Tím ClassPal)
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             decoration: const BoxDecoration(
@@ -146,7 +152,7 @@ class AppMenuDrawer extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // [SECTION LỚP HỌC]
+                // [SECTION LỚP HỌC - CHỈ HIỆN KHI ĐANG TRONG LỚP]
                 if (isInClass) ...[
                   Text(
                     "LỚP HỌC HIỆN TẠI",
@@ -170,8 +176,7 @@ class AppMenuDrawer extends ConsumerWidget {
                         // Hàng 1: Tên Lớp + Badge Role
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment
-                              .start, // Căn trên cùng để text dài không bị lệch
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Text(
@@ -210,7 +215,7 @@ class AppMenuDrawer extends ConsumerWidget {
                           ],
                         ),
 
-                        // [MỚI] Hàng 2: Tên Trường (Nếu có)
+                        // Hàng 2: Tên Trường (Nếu có)
                         if (classModel!.schoolName != null &&
                             classModel!.schoolName!.isNotEmpty) ...[
                           const SizedBox(height: 6),
@@ -280,7 +285,9 @@ class AppMenuDrawer extends ConsumerWidget {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () {},
+                              onPressed: () {
+                                // TODO: Logic mời thành viên
+                              },
                               icon: const Icon(LucideIcons.userPlus, size: 16),
                               label: const Text("Mời thành viên mới"),
                               style: ElevatedButton.styleFrom(
@@ -314,6 +321,7 @@ class AppMenuDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
+                // Nút Đổi lớp / Danh sách lớp
                 _buildMenuItem(
                   icon: LucideIcons.arrowLeftRight,
                   title: isInClass ? "Đổi lớp học" : "Danh sách lớp học",
@@ -332,6 +340,43 @@ class AppMenuDrawer extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
+                // [MỚI] Nút Hồ sơ cá nhân
+                _buildMenuItem(
+                  icon: LucideIcons.user,
+                  title: "Hồ sơ cá nhân",
+                  subtitle: "Chỉnh sửa thông tin",
+                  onTap: () {
+                    Navigator.pop(context); // Đóng drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // [MỚI] Nút Đổi mật khẩu
+                _buildMenuItem(
+                  icon: LucideIcons.lock,
+                  title: "Đổi mật khẩu",
+                  subtitle: "Cập nhật mật khẩu mới",
+                  onTap: () {
+                    Navigator.pop(context); // Đóng drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChangePasswordScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // Nút Đăng xuất
                 _buildMenuItem(
                   icon: LucideIcons.logOut,
                   title: "Đăng xuất",
@@ -394,7 +439,6 @@ class AppMenuDrawer extends ConsumerWidget {
     );
   }
 
-  // Helper Widget (Giữ nguyên)
   Widget _buildMenuItem({
     required IconData icon,
     required String title,

@@ -61,13 +61,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final state = ref.read(profileViewModelProvider);
       if (mounted) {
         if (state.hasError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
+          // [SỬA] Màu đỏ cho lỗi
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${state.error}'),
+              backgroundColor: const Color(0xFFEF4444), // Đỏ
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Cập nhật thành công!')));
+          // [SỬA] Màu xanh cho thành công
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cập nhật thành công!'),
+              backgroundColor: Color(0xFF00C853), // Xanh lá
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
           Navigator.pop(context);
         }
       }

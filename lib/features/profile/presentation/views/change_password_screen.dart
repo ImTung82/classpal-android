@@ -27,12 +27,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
       if (mounted) {
         if (state.hasError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
-        } else {
+          // [SỬA] Màu đỏ cho lỗi
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đổi mật khẩu thành công!')),
+            SnackBar(
+              content: Text('Lỗi: ${state.error}'),
+              backgroundColor: const Color(0xFFEF4444), // Đỏ
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          // [SỬA] Màu xanh cho thành công
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đổi mật khẩu thành công!'),
+              backgroundColor: Color(0xFF00C853), // Xanh lá
+              behavior: SnackBarBehavior.floating,
+            ),
           );
           Navigator.pop(context);
         }

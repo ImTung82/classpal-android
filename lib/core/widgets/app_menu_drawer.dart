@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/views/login_register_screen.dart';
 import '../../features/classes/presentation/views/classroom_page_screen.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
-import '../../features/classes/data/models/class_model.dart'; // [IMPORT MODEL]
+import '../../features/classes/data/models/class_model.dart';
 
 class AppMenuDrawer extends ConsumerWidget {
-  final ClassModel? classModel; // [MỚI] Có thể null
+  final ClassModel? classModel; // Có thể null
 
   const AppMenuDrawer({super.key, this.classModel});
 
@@ -26,16 +27,17 @@ class AppMenuDrawer extends ConsumerWidget {
         ? fullName[0].toUpperCase()
         : "U";
 
-    // 2. Logic hiển thị thông tin lớp (nếu có)
+    // 2. Logic hiển thị thông tin lớp
     final bool isInClass = classModel != null;
     final bool isOwner = isInClass && classModel!.role == 'owner';
 
+    // Màu sắc
     final badgeColor = isOwner
-        ? const Color(0xFFFEF3C7)
-        : const Color(0xFFF3E8FF);
-    final badgeTextColor = isOwner
-        ? const Color(0xFFD97706)
-        : const Color(0xFF9333EA);
+        ? const Color(0xFF6A5AE0)
+        : const Color(0xFFFF8A00);
+    final badgeBgColor = isOwner
+        ? const Color(0xFFF3E8FF)
+        : const Color(0xFFFFF4E5);
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
 
     return Drawer(
@@ -49,11 +51,12 @@ class AppMenuDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
+          // 1. HEADER USER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF9333EA)],
+                colors: [Color(0xFF6A5AE0), Color(0xFF8F7CFF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -78,6 +81,8 @@ class AppMenuDrawer extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // Card User Info
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -100,6 +105,7 @@ class AppMenuDrawer extends ConsumerWidget {
                           style: GoogleFonts.roboto(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontSize: 18,
                           ),
                         ),
                       ),
@@ -135,10 +141,12 @@ class AppMenuDrawer extends ConsumerWidget {
             ),
           ),
 
+          // 2. NỘI DUNG CHÍNH
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                // [SECTION LỚP HỌC]
                 if (isInClass) ...[
                   Text(
                     "LỚP HỌC HIỆN TẠI",
@@ -152,40 +160,48 @@ class AppMenuDrawer extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0F9FF).withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.withOpacity(0.1)),
+                      color: const Color(0xFFF7F8FC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Hàng 1: Tên Lớp + Badge Role
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment
+                              .start, // Căn trên cùng để text dài không bị lệch
                           children: [
                             Expanded(
                               child: Text(
                                 classModel!.name,
                                 style: GoogleFonts.roboto(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 16,
+                                  color: Colors.black87,
                                 ),
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                                horizontal: 10,
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: badgeColor,
-                                borderRadius: BorderRadius.circular(8),
+                                color: badgeBgColor,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: badgeColor.withOpacity(0.2),
+                                ),
                               ),
                               child: Text(
                                 roleText,
                                 style: GoogleFonts.roboto(
-                                  color: badgeTextColor,
+                                  color: badgeColor,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -193,29 +209,72 @@ class AppMenuDrawer extends ConsumerWidget {
                             ),
                           ],
                         ),
+
+                        // [MỚI] Hàng 2: Tên Trường (Nếu có)
+                        if (classModel!.schoolName != null &&
+                            classModel!.schoolName!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.school,
+                                size: 14,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  classModel!.schoolName!,
+                                  style: GoogleFonts.roboto(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
                         const SizedBox(height: 12),
+
+                        // Hàng 3: Mã lớp
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
-                            vertical: 6,
+                            vertical: 8,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.blue.withOpacity(0.2),
+                              color: const Color(0xFF6A5AE0).withOpacity(0.2),
                             ),
                           ),
-                          child: SelectableText(
-                            classModel!.code,
-                            style: GoogleFonts.roboto(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Mã lớp: ",
+                                style: GoogleFonts.roboto(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                              SelectableText(
+                                classModel!.code,
+                                style: GoogleFonts.roboto(
+                                  color: const Color(0xFF6A5AE0),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
+                        // Hàng 4: Nút mời (Nếu là Owner)
                         if (isOwner) ...[
                           const SizedBox(height: 16),
                           SizedBox(
@@ -225,10 +284,14 @@ class AppMenuDrawer extends ConsumerWidget {
                               icon: const Icon(LucideIcons.userPlus, size: 16),
                               label: const Text("Mời thành viên mới"),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6366F1),
+                                backgroundColor: const Color(0xFF6A5AE0),
                                 foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
                             ),
@@ -240,6 +303,7 @@ class AppMenuDrawer extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
+                // [SECTION TÀI KHOẢN]
                 Text(
                   "TÀI KHOẢN",
                   style: GoogleFonts.roboto(
@@ -252,13 +316,11 @@ class AppMenuDrawer extends ConsumerWidget {
 
                 _buildMenuItem(
                   icon: LucideIcons.arrowLeftRight,
-                  // Logic đổi text menu
                   title: isInClass ? "Đổi lớp học" : "Danh sách lớp học",
                   subtitle: isInClass
                       ? "Chuyển sang lớp học khác"
                       : "Về màn hình chính",
                   onTap: () {
-                    // Nếu đang ở trong lớp thì quay về màn hình danh sách
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (_) => const ClassroomPageScreen(),
@@ -293,18 +355,31 @@ class AppMenuDrawer extends ConsumerWidget {
             ),
           ),
 
+          // 3. FOOTER
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 const Divider(),
                 const SizedBox(height: 12),
-                Text(
-                  "ClassPal",
-                  style: GoogleFonts.roboto(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      LucideIcons.graduationCap,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      "ClassPal",
+                      style: GoogleFonts.roboto(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -319,6 +394,7 @@ class AppMenuDrawer extends ConsumerWidget {
     );
   }
 
+  // Helper Widget (Giữ nguyên)
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
@@ -334,8 +410,16 @@ class AppMenuDrawer extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -345,7 +429,7 @@ class AppMenuDrawer extends ConsumerWidget {
                 color: isDestructive
                     ? Colors.red.withOpacity(0.1)
                     : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: iconColor, size: 20),
             ),
@@ -357,18 +441,23 @@ class AppMenuDrawer extends ConsumerWidget {
                   Text(
                     title,
                     style: GoogleFonts.roboto(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: textColor,
                       fontSize: 14,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.roboto(color: Colors.grey, fontSize: 11),
+                    style: GoogleFonts.roboto(
+                      color: Colors.grey[500],
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
             ),
+            Icon(Icons.chevron_right, size: 18, color: Colors.grey[300]),
           ],
         ),
       ),

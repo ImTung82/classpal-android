@@ -5,7 +5,8 @@ import '../../features/classes/data/models/class_model.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final ClassModel classModel;
-  final String subtitle; // (Biến này có thể dùng làm tên màn hình con nếu cần, hiện tại mình ưu tiên hiển thị Tên Trường)
+  final String
+  subtitle; // (Biến này có thể dùng làm tên màn hình con nếu cần, hiện tại mình ưu tiên hiển thị Tên Trường)
   final VoidCallback onMenuPressed;
   final bool showBackArrow;
 
@@ -22,17 +23,23 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     // Logic: Màu sắc Role
     final isOwner = classModel.role == 'owner';
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
-    
+
     // Màu Badge (Lớp trưởng: Tím / Thành viên: Cam)
-    final badgeColor = isOwner ? const Color(0xFF6A5AE0) : const Color(0xFFFF8A00);
-    final badgeBgColor = isOwner ? const Color(0xFFF3E8FF) : const Color(0xFFFFF4E5);
+    final badgeColor = isOwner
+        ? const Color(0xFF6A5AE0)
+        : const Color(0xFFFF8A00);
+    final badgeBgColor = isOwner
+        ? const Color(0xFFF3E8FF)
+        : const Color(0xFFFFF4E5);
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 5, // Căn chỉnh lại padding top chút cho cân
+        top:
+            MediaQuery.of(context).padding.top +
+            5, // Căn chỉnh lại padding top chút cho cân
         left: 16,
         right: 16,
-        bottom: 12
+        bottom: 12,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -48,10 +55,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 icon: const Icon(LucideIcons.arrowLeft, color: Colors.black87),
                 onPressed: () => Navigator.pop(context),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(), // Thu gọn vùng bấm để không chiếm chỗ
+                constraints:
+                    const BoxConstraints(), // Thu gọn vùng bấm để không chiếm chỗ
               ),
             ),
-            
+
           // 2. THÔNG TIN LỚP HỌC (Tên Lớp + Tên Trường)
           Expanded(
             child: Column(
@@ -62,35 +70,39 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   classModel.name,
                   style: GoogleFonts.roboto(
                     fontWeight: FontWeight.w800, // Đậm hơn chút cho nổi bật
-                    fontSize: 18, 
-                    color: Colors.black87
+                    fontSize: 18,
+                    color: Colors.black87,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 // Hiển thị Tên trường (Nếu có), nếu không thì hiển thị subtitle (Tên màn hình)
                 Text(
-                  (classModel.schoolName != null && classModel.schoolName!.isNotEmpty)
+                  (classModel.schoolName != null &&
+                          classModel.schoolName!.isNotEmpty)
                       ? classModel.schoolName!
-                      : subtitle, 
+                      : subtitle,
                   style: GoogleFonts.roboto(
-                    color: Colors.grey[500], 
+                    color: Colors.grey[500],
                     fontSize: 13,
-                    fontWeight: FontWeight.w500
+                    fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          
+
           // 3. ACTIONS (Badge Role + Thông báo + Menu)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Badge Role
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: badgeBgColor,
                   borderRadius: BorderRadius.circular(20),
@@ -99,9 +111,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 child: Text(
                   roleText,
                   style: GoogleFonts.roboto(
-                    color: badgeColor, 
-                    fontSize: 11, 
-                    fontWeight: FontWeight.bold
+                    color: badgeColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -110,7 +122,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
               // Nút Thông báo (Mới thêm)
               IconButton(
-                icon: const Icon(LucideIcons.bell, size: 22, color: Colors.black54),
+                icon: const Icon(
+                  LucideIcons.bell,
+                  size: 22,
+                  color: Colors.black54,
+                ),
                 onPressed: () {
                   // TODO: Mở màn hình thông báo
                 },
@@ -122,7 +138,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
               // Nút Menu
               IconButton(
-                icon: const Icon(LucideIcons.menu, size: 24, color: Colors.black87),
+                icon: const Icon(
+                  LucideIcons.menu,
+                  size: 24,
+                  color: Colors.black87,
+                ),
                 onPressed: onMenuPressed,
                 constraints: const BoxConstraints(),
                 padding: const EdgeInsets.all(8),

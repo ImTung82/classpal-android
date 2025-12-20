@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart'; // [IMPORT ICON]
 
-// [IMPORT]
-import '../view_models/class_view_model.dart';
+// [IMPORT CORE WIDGETS]
+import '../../../../core/widgets/app_menu_drawer.dart';
+
+// [IMPORT MODELS & VIEW MODELS]
 import '../../data/models/class_model.dart';
+import '../view_models/class_view_model.dart';
+
+// [IMPORT SCREENS]
 import 'create_class_screen.dart';
 import 'join_class_screen.dart';
 import '../../../shell/presentation/views/owner_shell_screen.dart';
@@ -20,9 +26,16 @@ class ClassroomPageScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
+      
+      // [THAY ĐỔI 1] Dùng endDrawer để menu trượt từ PHẢI sang (vì nút bấm nằm bên phải)
+      endDrawer: const AppMenuDrawer(classModel: null), 
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false, // Tắt nút mặc định bên trái
+        
+        // Title: Giữ nguyên giao diện đẹp của bạn
         title: Row(
           children: [
             Container(
@@ -40,11 +53,17 @@ class ClassroomPageScreen extends ConsumerWidget {
             ),
           ],
         ),
+        
+        // [THAY ĐỔI 2] Nút Menu nằm ở bên phải (Actions)
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.grey),
-            onPressed: () => ref.refresh(classListProvider),
-          )
+          Builder(
+            builder: (context) => IconButton(
+              // Dùng icon Menu thay vì Refresh
+              icon: const Icon(LucideIcons.menu, color: Colors.black87), 
+              onPressed: () => Scaffold.of(context).openEndDrawer(), // Mở endDrawer
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       
@@ -54,54 +73,71 @@ class ClassroomPageScreen extends ConsumerWidget {
         data: (classes) {
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(classListProvider.future),
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              children: [
-                Text(
-                  'Danh sách lớp bạn đang tham gia',
-                  style: GoogleFonts.roboto(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 16),
-
-                // -- DANH SÁCH LỚP HỌC --
-                if (classes.isEmpty)
-                  _buildEmptyState()
-                else
-                  ...classes.map((item) => _classCard(context: context, item: item)),
-
-                const SizedBox(height: 10),
-
-                // -- [MỚI] SEPARATOR (PHẦN BẠN CẦN) --
-                _buildSeparator(),
-
-                const SizedBox(height: 10),
+              itemCount: 1 + classes.length + 1 + 2 + 1,
+              itemBuilder: (context, index) {
                 
-                // -- CÁC NÚT CHỨC NĂNG --
-                _actionButton(
-                  context,
-                  title: 'Tạo lớp học mới',
-                  subtitle: 'Bạn sẽ trở thành lớp trưởng',
-                  icon: Icons.add,
-                  gradient: const [Color(0xFF6A5AE0), Color(0xFF8F7CFF)],
-                  textColor: Colors.white,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateClassScreen())),
-                ),
-                
-                const SizedBox(height: 12),
-                
-                _actionButton(
-                  context,
-                  title: 'Tham gia lớp học',
-                  subtitle: 'Nhập mã lớp để tham gia',
-                  icon: Icons.login,
-                  color: Colors.white,
-                  textColor: Colors.black,
-                  isBorder: true,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JoinClassScreen())),
-                ),
-                
-                const SizedBox(height: 40),
-              ],
+                // A. Header Text
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      classes.isEmpty 
+                        ? 'Bạn chưa tham gia lớp nào' 
+                        : 'Danh sách lớp bạn đang tham gia',
+                      style: GoogleFonts.roboto(fontSize: 14, color: Colors.grey[600]),
+                      textAlign: classes.isEmpty ? TextAlign.center : TextAlign.start,
+                    ),
+                  );
+                }
+
+                // B. Danh sách lớp học
+                final classIndex = index - 1;
+                if (classIndex < classes.length) {
+                  return _classCard(context: context, item: classes[classIndex]);
+                }
+
+                // C. Separator "HOẶC"
+                if (classIndex == classes.length) {
+                  if (classes.isEmpty) return _buildEmptyState();
+                  return _buildSeparator();
+                }
+
+                // D. Nút Tạo lớp
+                if (classIndex == classes.length + 1) {
+                  return Column(
+                    children: [
+                      _actionButton(
+                        context,
+                        title: 'Tạo lớp học mới',
+                        subtitle: 'Bạn sẽ trở thành lớp trưởng',
+                        icon: Icons.add,
+                        gradient: const [Color(0xFF6A5AE0), Color(0xFF8F7CFF)],
+                        textColor: Colors.white,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateClassScreen())),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                }
+
+                // E. Nút Tham gia lớp
+                if (classIndex == classes.length + 2) {
+                  return _actionButton(
+                    context,
+                    title: 'Tham gia lớp học',
+                    subtitle: 'Nhập mã lớp để tham gia',
+                    icon: Icons.login,
+                    color: Colors.white,
+                    textColor: Colors.black,
+                    isBorder: true,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JoinClassScreen())),
+                  );
+                }
+
+                return const SizedBox(height: 40);
+              },
             ),
           );
         },
@@ -109,7 +145,8 @@ class ClassroomPageScreen extends ConsumerWidget {
     );
   }
 
-  // Widget hiển thị "--- HOẶC ---"
+  // --- CÁC WIDGET CON (GIỮ NGUYÊN) ---
+
   Widget _buildSeparator() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -136,15 +173,9 @@ class ClassroomPageScreen extends ConsumerWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 30),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       alignment: Alignment.center,
-      child: Column(
-        children: [
-          Icon(Icons.school_outlined, size: 50, color: Colors.grey[300]),
-          const SizedBox(height: 8),
-          Text("Chưa có lớp nào", style: TextStyle(color: Colors.grey[500])),
-        ],
-      ),
+      child: Icon(Icons.school_outlined, size: 60, color: Colors.grey[200]),
     );
   }
 
@@ -156,9 +187,9 @@ class ClassroomPageScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         if (isOwner) {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerShellScreen()));
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => OwnerShellScreen(classModel: item)));
         } else {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentShellScreen()));
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentShellScreen(classModel: item)));
         }
       },
       child: Container(

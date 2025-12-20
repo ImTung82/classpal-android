@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
-// [IMPORT MỚI] Import Widget Menu
 import '../../../../core/widgets/app_menu_drawer.dart';
+import '../../../classes/data/models/class_model.dart'; // [IMPORT MODEL]
 
 import '../../../dashboard/presentation/views/owner_dashboard_content.dart';
 import '../../../teams/presentation/views/owner_team_content.dart';
@@ -14,7 +14,9 @@ import '../../../assets/presentation/views/owner_asset_content.dart';
 import '../../../events/presentation/views/owner_event_content.dart';
 
 class OwnerShellScreen extends ConsumerStatefulWidget {
-  const OwnerShellScreen({super.key});
+  final ClassModel classModel; // [MỚI]
+
+  const OwnerShellScreen({super.key, required this.classModel});
 
   @override
   ConsumerState<OwnerShellScreen> createState() => _OwnerShellScreenState();
@@ -22,8 +24,6 @@ class OwnerShellScreen extends ConsumerStatefulWidget {
 
 class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   int _currentIndex = 0;
-
-  // [THÊM] Key để điều khiển Scaffold (Mở Drawer)
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _pages = [
@@ -36,8 +36,6 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   ];
 
   String _getSubtitleForIndex(int index) {
-    // ... (Giữ nguyên logic cũ) ...
-    // Viết lại ngắn gọn cho bạn copy nếu cần:
     switch (index) {
       case 0:
         return "Lớp trưởng";
@@ -59,19 +57,16 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey, // [THÊM] Gắn Key vào Scaffold
+      key: _scaffoldKey,
       backgroundColor: Colors.white,
 
-      // [THÊM] Khai báo endDrawer (Drawer mở từ bên phải)
-      endDrawer: const AppMenuDrawer(isOwner: true),
+      // [TRUYỀN CLASS MODEL VÀO DRAWER]
+      endDrawer: AppMenuDrawer(classModel: widget.classModel),
 
       appBar: AppHeader(
-        title: "Lớp CNTT K20",
+        classModel: widget.classModel, // [TRUYỀN DATA THẬT VÀO HEADER]
         subtitle: _getSubtitleForIndex(_currentIndex),
-        onMenuPressed: () {
-          // [SỬA] Gọi hàm mở Drawer thông qua Key
-          _scaffoldKey.currentState?.openEndDrawer();
-        },
+        onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
       ),
 
       body: IndexedStack(index: _currentIndex, children: _pages),

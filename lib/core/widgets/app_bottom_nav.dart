@@ -7,9 +7,9 @@ class AppBottomNav extends StatelessWidget {
   final Function(int) onTap;
 
   const AppBottomNav({
-    super.key, 
-    required this.currentIndex, 
-    required this.onTap
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
   });
 
   @override
@@ -30,9 +30,9 @@ class AppBottomNav extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), 
-            blurRadius: 10, 
-            offset: const Offset(0, -4)
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -41,7 +41,7 @@ class AppBottomNav extends StatelessWidget {
         children: List.generate(items.length, (index) {
           final isSelected = currentIndex == index;
           final color = isSelected ? const Color(0xFF4A84F8) : Colors.grey[400];
-          
+
           return GestureDetector(
             onTap: () => onTap(index),
             behavior: HitTestBehavior.opaque,
@@ -53,9 +53,11 @@ class AppBottomNav extends StatelessWidget {
                 Text(
                   items[index]['label'] as String,
                   style: GoogleFonts.roboto(
-                    fontSize: 10, 
-                    color: color, 
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+                    fontSize: 10,
+                    color: color,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ],

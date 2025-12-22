@@ -60,6 +60,9 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
         classModel: widget.classModel, // [TRUYỀN DATA THẬT]
         subtitle: _getSubtitleForIndex(_currentIndex),
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+        onNotificationPressed: () {
+          // Chuyển đến
+        }
       ),
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: AppBottomNav(

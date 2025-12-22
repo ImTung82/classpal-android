@@ -9,6 +9,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   subtitle; // (Biến này có thể dùng làm tên màn hình con nếu cần, hiện tại mình ưu tiên hiển thị Tên Trường)
   final VoidCallback onMenuPressed;
   final bool showBackArrow;
+  final VoidCallback onNotificationPressed;
 
   const AppHeader({
     super.key,
@@ -16,6 +17,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.subtitle,
     required this.onMenuPressed,
     this.showBackArrow = false,
+    required this.onNotificationPressed,
   });
 
   @override
@@ -127,9 +129,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   size: 22,
                   color: Colors.black54,
                 ),
-                onPressed: () {
-                  // TODO: Mở màn hình thông báo
-                },
+                onPressed: onNotificationPressed,
                 constraints: const BoxConstraints(), // Thu gọn
                 padding: const EdgeInsets.all(8),
               ),

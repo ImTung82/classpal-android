@@ -12,6 +12,7 @@ import '../../../duties/presentation/views/student_duty_content.dart';
 import '../../../funds/presentation/views/student_fund_content.dart';
 import '../../../assets/presentation/views/student_asset_content.dart';
 import '../../../events/presentation/views/student_event_content.dart';
+import '../../../notification/presentation/views/student_notification_content.dart';
 
 class StudentShellScreen extends ConsumerStatefulWidget {
   final ClassModel classModel; // [MỚI]
@@ -33,6 +34,7 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
     const StudentAssetContent(),
     const StudentEventContent(),
     const StudentFundContent(),
+    const StudentNotificationContent(),
   ];
 
   String _getSubtitleForIndex(int index) {
@@ -61,7 +63,9 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
         subtitle: _getSubtitleForIndex(_currentIndex),
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
         onNotificationPressed: () {
-          // Chuyển đến
+          setState(() {
+            _currentIndex = 6; // Chuyển đến tab Thông báo
+          });
         }
       ),
       body: IndexedStack(index: _currentIndex, children: _pages),

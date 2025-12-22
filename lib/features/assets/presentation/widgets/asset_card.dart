@@ -90,7 +90,7 @@ class AssetCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                /// USER + TIME
+
                 Row(
                   children: [
                     Icon(LucideIcons.user,
@@ -103,7 +103,13 @@ class AssetCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+                
+                Row( 
+                  children: [
                     Icon(LucideIcons.clock,
                         size: 14, color: Colors.grey[600]),
                     const SizedBox(width: 4),

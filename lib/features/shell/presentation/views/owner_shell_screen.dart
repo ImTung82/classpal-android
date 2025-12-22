@@ -12,7 +12,7 @@ import '../../../duties/presentation/views/owner_duty_content.dart';
 import '../../../funds/presentation/views/owner_fund_content.dart';
 import '../../../assets/presentation/views/owner_asset_content.dart';
 import '../../../events/presentation/views/owner_event_content.dart';
-
+import '../../../notification/presentation/views/owner_notification_content.dart';
 class OwnerShellScreen extends ConsumerStatefulWidget {
   final ClassModel classModel; // [MỚI]
 
@@ -33,6 +33,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
     const OwnerAssetContent(),
     const OwnerEventContent(),
     const OwnerFundContent(),
+    const OwnerNotificationContent(),
   ];
 
   String _getSubtitleForIndex(int index) {
@@ -49,6 +50,8 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
         return "Sự kiện lớp";
       case 5:
         return "Thu chi Quỹ lớp";
+      case 6:
+        return "Thông báo lớp";
       default:
         return "Lớp trưởng";
     }
@@ -67,6 +70,11 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
         classModel: widget.classModel, // [TRUYỀN DATA THẬT VÀO HEADER]
         subtitle: _getSubtitleForIndex(_currentIndex),
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+        onNotificationPressed: () {
+          setState(() {
+            _currentIndex = 6; // Chuyển đến tab Thông báo
+          });
+        },
       ),
 
       body: IndexedStack(index: _currentIndex, children: _pages),

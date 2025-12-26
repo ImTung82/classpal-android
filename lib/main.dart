@@ -7,7 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'core/constants/app_theme.dart';
-import 'features/auth/presentation/views/login_register_screen.dart';
+import 'features/splash/presentation/views/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +42,9 @@ class MyApp extends StatelessWidget {
       title: 'ClassPal',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const LoginRegisterScreen(),
+      // Home là SplashScreen
+      // SplashScreen sẽ tự kiểm tra login và điều hướng tiếp
+      home: const SplashScreen(),
     );
   }
 }

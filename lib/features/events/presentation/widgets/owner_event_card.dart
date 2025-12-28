@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/event_models.dart';
 import 'edit_event_dialog.dart';
 import 'delete_event_dialog.dart';
 import 'event_details_dialog.dart';
+import '../view_models/owner_event_view_model.dart';
 
-class OwnerEventCard extends StatelessWidget {
+class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;
+  final String classId; // Thêm classId
 
-  // Callback tùy chọn để reload dữ liệu nếu cần (ví dụ: ref.refresh...)
-  final VoidCallback? onRefresh;
+  const OwnerEventCard({super.key, required this.event, required this.classId});
 
-  const OwnerEventCard({super.key, required this.event, this.onRefresh});
+  void _showSnackbar(BuildContext context, String msg, Color color) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -34,11 +45,9 @@ class OwnerEventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. HEADER ROW: [Title] ... [Tags] [Icons]
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // A. Title
               Expanded(
                 child: Text(
                   event.title,
@@ -54,91 +63,92 @@ class OwnerEventCard extends StatelessWidget {
               const SizedBox(width: 8),
 
               // B. Tags
-              if (event.isMandatory || event.isOpen)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (event.isMandatory) ...[
-                      _buildStackedStatusChip(
-                        'Bắt',
-                        'buộc',
-                        const Color(0xFFFFE2E2),
-                        const Color(0xFFC10007),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    if (event.isOpen)
-                      _buildStackedStatusChip(
-                        'Đang',
-                        'mở',
-                        const Color(0xFFDCFCE7),
-                        const Color(0xFF008235),
-                      ),
-                  ],
+              // Luôn hiển thị trạng thái bắt buộc nếu có
+              if (event.isMandatory) ...[
+                _buildStackedStatusChip(
+                  'Bắt',
+                  'buộc',
+                  const Color(0xFFFFE2E2),
+                  const Color(0xFFC10007),
                 ),
+                const SizedBox(width: 6),
+              ],
+
+              // --- LOGIC HIỂN THỊ TAG TRẠNG THÁI (ĐANG MỞ / ĐÃ ĐÓNG) ---
+              if (event.isOpen)
+                _buildStackedStatusChip(
+                  'Đang',
+                  'mở',
+                  const Color(0xFFDCFCE7),
+                  const Color(0xFF008235),
+                )
+              else
+                _buildStackedStatusChip(
+                  'Đã',
+                  'đóng',
+                  const Color(0xFFF3F4F6), // Màu nền xám nhạt
+                  const Color(0xFF6B7280), // Màu chữ xám đậm
+                ),
+
               const SizedBox(width: 12),
 
               // C. Action Icons
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // --- [LOGIC SỬA SỰ KIỆN] ---
+                  // Nút Sửa
                   _buildActionButton(LucideIcons.pencil, Colors.blue, () async {
-                    // 1. Mở Dialog Chỉnh sửa
-                    final result = await showDialog(
+                    final result = await showDialog<ClassEvent>(
                       context: context,
                       barrierDismissible: false,
                       builder: (context) => EditEventDialog(event: event),
                     );
 
-                    // 2. Xử lý kết quả trả về
-                    if (result == true) {
-                      if (!context.mounted) return;
-                      // Hiện thông báo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chỉnh sửa sự kiện thành công!'),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-
-                      // Gọi callback refresh nếu có (để load lại list sự kiện mới)
-                      onRefresh?.call();
+                    if (result != null && context.mounted) {
+                      ref
+                          .read(eventControllerProvider.notifier)
+                          .updateEvent(
+                            classId: classId,
+                            event: result,
+                            onSuccess: () => _showSnackbar(
+                              context,
+                              'Cập nhật sự kiện thành công!',
+                              Colors.green,
+                            ),
+                            onError: (e) =>
+                                _showSnackbar(context, 'Lỗi: $e', Colors.red),
+                          );
                     }
                   }),
 
                   const SizedBox(width: 4),
 
-                  // Nút Xóa (Logic xóa sẽ làm sau)
                   // Nút Xóa
                   _buildActionButton(LucideIcons.trash2, Colors.red, () async {
-                    // 1. Hiển thị Dialog xác nhận xóa
                     final confirmDelete = await showDialog<bool>(
                       context: context,
                       builder: (context) =>
                           DeleteEventDialog(eventName: event.title),
                     );
 
-                    // 2. Nếu người dùng nhấn nút "Xóa sự kiện" (trả về true)
-                    if (confirmDelete == true) {
-                      if (!context.mounted) return;
-
-                      // TODO: Gọi hàm xóa trong ViewModel/Bloc tại đây
-                      // Ví dụ: ref.read(eventViewModelProvider).deleteEvent(event.id);
-
-                      // 3. Hiển thị thông báo thành công
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Xóa sự kiện thành công!'),
-                          backgroundColor: Colors
-                              .green, // Hoặc màu đỏ nếu muốn nhấn mạnh việc xóa
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-
-                      // Gọi callback refresh nếu cần update UI
-                      onRefresh?.call();
+                    if (confirmDelete == true && context.mounted) {
+                      ref
+                          .read(eventControllerProvider.notifier)
+                          .deleteEvent(
+                            classId: classId,
+                            eventId: event.id,
+                            onSuccess: () {
+                              _showSnackbar(
+                                context,
+                                'Xóa sự kiện thành công!',
+                                Colors.green,
+                              );
+                              // Không cần invalidate ở đây nữa, Controller đã làm rồi
+                            },
+                            onError: (e) {
+                              _showSnackbar(context, 'Lỗi: $e', Colors.red);
+                            },
+                          );
                     }
                   }),
                 ],
@@ -324,17 +334,19 @@ class OwnerEventCard extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
         const SizedBox(width: 8),
-        Flexible(
+        Expanded(
+          // Thay Flexible bằng Expanded để chiếm hết không gian
           child: Text(
             text,
-            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.roboto(
               fontSize: 14,
               color: const Color(0xFF4B5563),
             ),
+            // Bỏ overflow để text wrap xuống dòng nếu dài
           ),
         ),
       ],

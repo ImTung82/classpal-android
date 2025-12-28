@@ -18,12 +18,13 @@ class _EditEventDialogState extends State<EditEventDialog> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _dateController;
-  late TextEditingController _timeController;
+  late TextEditingController _timeStartController; // ✅ Đổi tên
+  late TextEditingController _timeEndController; // ✅ THÊM MỚI
   late TextEditingController _locationController;
 
   // State variables
-  late bool _isMandatory;
-  late bool _isOpen; // True: Đang mở, False: Đã đóng
+  late bool _isMandatory; // Sự kiện bắt buộc
+  late bool _isOpen; // Trạng thái Đóng/Mở
 
   @override
   void initState() {
@@ -32,11 +33,16 @@ class _EditEventDialogState extends State<EditEventDialog> {
     _nameController = TextEditingController(text: widget.event.title);
     _descController = TextEditingController(text: widget.event.description);
     _dateController = TextEditingController(text: widget.event.date);
-    _timeController = TextEditingController(text: widget.event.time);
+    // Parse time string
+    final timeParts = widget.event.time.split(' - ');
+    _timeStartController = TextEditingController(text: timeParts[0]);
+    _timeEndController = TextEditingController(
+      text: timeParts.length > 1 ? timeParts[1] : '',
+    );
     _locationController = TextEditingController(text: widget.event.location);
 
-    _isMandatory = widget.event.isMandatory;
-    _isOpen = widget.event.isOpen;
+    _isMandatory = widget.event.isMandatory; // ✅ Từ is_mandatory
+    _isOpen = widget.event.isOpen; // ✅ Tính từ end_time
   }
 
   @override
@@ -44,7 +50,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
     _nameController.dispose();
     _descController.dispose();
     _dateController.dispose();
-    _timeController.dispose();
+    _timeStartController.dispose();
+    _timeEndController.dispose(); // ✅ THÊM
     _locationController.dispose();
     super.dispose();
   }
@@ -64,7 +71,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
     }
   }
 
-  Future<void> _pickTime() async {
+  // ✅ THÊM LOGIC CHỌN GIỜ BẮT ĐẦU
+  Future<void> _pickStartTime() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -73,7 +81,22 @@ class _EditEventDialogState extends State<EditEventDialog> {
       setState(() {
         final hour = picked.hour.toString().padLeft(2, '0');
         final minute = picked.minute.toString().padLeft(2, '0');
-        _timeController.text = "$hour:$minute";
+        _timeStartController.text = "$hour:$minute";
+      });
+    }
+  }
+
+  // ✅ THÊM LOGIC CHỌN GIỜ KẾT THÚC
+  Future<void> _pickEndTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        final hour = picked.hour.toString().padLeft(2, '0');
+        final minute = picked.minute.toString().padLeft(2, '0');
+        _timeEndController.text = "$hour:$minute";
       });
     }
   }
@@ -81,8 +104,25 @@ class _EditEventDialogState extends State<EditEventDialog> {
   // --- LOGIC LƯU THAY ĐỔI ---
   void _onSave() {
     if (_formKey.currentState!.validate()) {
-      // Đóng dialog và trả về true để báo thành công
-      Navigator.of(context).pop(true);
+      // ✅ Tạo chuỗi time kết hợp start - end
+      String timeString = _timeStartController.text;
+      if (_timeEndController.text.isNotEmpty) {
+        timeString += " - ${_timeEndController.text}";
+      }
+
+      // Tạo object ClassEvent với dữ liệu đã sửa
+      final updatedEvent = widget.event.copyWith(
+        title: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        date: _dateController.text,
+        time: timeString, // ✅ Sử dụng chuỗi kết hợp
+        location: _locationController.text.trim(),
+        isMandatory: _isMandatory,
+        isOpen: _isOpen,
+      );
+
+      // Trả về object thay vì true
+      Navigator.of(context).pop(updatedEvent);
     }
   }
 
@@ -140,7 +180,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 3. Ngày - Giờ
+                  // 3. Ngày - Giờ bắt đầu - Giờ kết thúc
                   Row(
                     children: [
                       Expanded(
@@ -159,25 +199,48 @@ class _EditEventDialogState extends State<EditEventDialog> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Giờ'),
+                            _buildLabel('Giờ bắt đầu'),
                             const SizedBox(height: 8),
                             _buildTextField(
-                              controller: _timeController,
+                              controller: _timeStartController,
                               readOnly: true,
-                              onTap: _pickTime,
+                              onTap: _pickStartTime,
                               icon: Icons.access_time,
                               validator: (v) => v!.isEmpty ? 'Chọn giờ' : null,
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Giờ kết thúc'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _timeEndController,
+                              readOnly: true,
+                              onTap: _pickEndTime,
+                              icon: Icons.access_time,
+                              hintText: 'Tùy chọn',
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
+
                   const SizedBox(height: 16),
 
                   // 4. Địa điểm
@@ -219,7 +282,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
                         ),
                         const SizedBox(width: 10),
                         const Text(
-                          'Sự kiện bắt buộc',
+                          'Sự kiện bắt buộc', // ✅ ĐÚNG LABEL
                           style: TextStyle(
                             fontSize: 16,
                             color: Color(0xFF354152),
@@ -230,8 +293,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 6. Trạng thái (Đang mở / Đã đóng)
-                  _buildLabel('Trạng thái'),
+                  // 6. Trạng thái Đóng/Mở (Radio buttons)
+                  _buildLabel('Trạng thái sự kiện'), // ✅ LABEL MỚI
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
@@ -240,13 +303,13 @@ class _EditEventDialogState extends State<EditEventDialog> {
                     ),
                     child: Row(
                       children: [
-                        _buildRadioOption("Đang mở", true),
+                        _buildRadioOption("Đang mở", true), // ✅ ĐÚNG LABEL
                         Container(
                           width: 1,
                           height: 40,
                           color: const Color(0xFFD0D5DB),
-                        ), // Line ngăn cách
-                        _buildRadioOption("Đã đóng", false),
+                        ),
+                        _buildRadioOption("Đã đóng", false), // ✅ ĐÚNG LABEL
                       ],
                     ),
                   ),

@@ -1,15 +1,118 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/team_models.dart';
+import '../../data/models/team_model.dart';
 import '../../data/repositories/team_repository.dart';
 
-// Provider lấy danh sách Tổ
-final teamGroupsProvider = FutureProvider<List<TeamGroup>>((ref) async {
-  final repo = ref.watch(teamRepositoryProvider);
-  return repo.fetchGroups();
+final teamGroupsProvider = FutureProvider.family<List<TeamGroup>, String>((ref, classId) async {
+  return ref.watch(teamRepositoryProvider).fetchGroups(classId);
 });
 
-// Provider lấy danh sách Chưa phân tổ
-final unassignedMembersProvider = FutureProvider<List<TeamMember>>((ref) async {
-  final repo = ref.watch(teamRepositoryProvider);
-  return repo.fetchUnassignedMembers();
+final unassignedMembersProvider = FutureProvider.family<List<TeamMember>, String>((ref, classId) async {
+  return ref.watch(teamRepositoryProvider).fetchUnassignedMembers(classId);
 });
+
+final teamControllerProvider = AsyncNotifierProvider<TeamController, void>(() {
+  return TeamController();
+});
+
+class TeamController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> createTeam({
+    required String classId, 
+    required String name, 
+    // Đã xóa color
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(teamRepositoryProvider).createTeam(classId, name);
+      ref.invalidate(teamGroupsProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  Future<void> updateTeam({
+    required String classId,
+    required String teamId,
+    required String name,
+    // Đã xóa color
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(teamRepositoryProvider).updateTeam(teamId, name);
+      ref.invalidate(teamGroupsProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  Future<void> deleteTeam({
+    required String classId,
+    required String teamId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(teamRepositoryProvider).deleteTeam(teamId);
+      ref.invalidate(teamGroupsProvider(classId));
+      ref.invalidate(unassignedMembersProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  Future<void> assignMember({
+    required String classId,
+    required String memberId,
+    required String teamId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(teamRepositoryProvider).assignMemberToTeam(memberId, teamId);
+      ref.invalidate(teamGroupsProvider(classId));
+      ref.invalidate(unassignedMembersProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  Future<void> removeMember({
+    required String classId,
+    required String memberId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(teamRepositoryProvider).removeMemberFromTeam(memberId);
+      ref.invalidate(teamGroupsProvider(classId));
+      ref.invalidate(unassignedMembersProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../data/models/team_models.dart';
+import '../../data/models/team_model.dart';
 
 class TeamMemberItem extends StatelessWidget {
   final TeamMember member;

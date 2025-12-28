@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../../../core/widgets/app_menu_drawer.dart';
-import '../../../classes/data/models/class_model.dart'; // [IMPORT MODEL]
+import '../../../classes/data/models/class_model.dart'; 
 
 import '../../../dashboard/presentation/views/student_dashboard_content.dart';
 import '../../../teams/presentation/views/student_team_content.dart';
@@ -15,7 +15,7 @@ import '../../../events/presentation/views/student_event_content.dart';
 import '../../../notification/presentation/views/student_notification_content.dart';
 
 class StudentShellScreen extends ConsumerStatefulWidget {
-  final ClassModel classModel; // [MỚI]
+  final ClassModel classModel;
 
   const StudentShellScreen({super.key, required this.classModel});
 
@@ -27,25 +27,30 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Widget> _pages = [
-    const StudentDashboardContent(),
-    const StudentTeamContent(),
-    const StudentDutyContent(),
-    const StudentAssetContent(),
-    const StudentEventContent(),
-    const StudentFundContent(),
-    const StudentNotificationContent(),
-  ];
+  // Khai báo biến trễ
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo page và truyền classId
+    _pages = [
+      const StudentDashboardContent(),
+      StudentTeamContent(classId: widget.classModel.id), // [ĐÃ SỬA] Truyền classId
+      const StudentDutyContent(),
+      const StudentAssetContent(),
+      const StudentEventContent(),
+      const StudentFundContent(),
+      const StudentNotificationContent(),
+    ];
+  }
 
   String _getSubtitleForIndex(int index) {
     switch (index) {
-      case 0:
-        return "Thành viên";
-      case 1:
-        return "Đội nhóm";
+      case 0: return "Thành viên";
+      case 1: return "Đội nhóm";
       // ... thêm các case khác nếu cần
-      default:
-        return "Thành viên";
+      default: return "Thành viên";
     }
   }
 
@@ -55,16 +60,15 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
       key: _scaffoldKey,
       backgroundColor: Colors.white,
 
-      // [TRUYỀN CLASS MODEL VÀO DRAWER]
       endDrawer: AppMenuDrawer(classModel: widget.classModel),
 
       appBar: AppHeader(
-        classModel: widget.classModel, // [TRUYỀN DATA THẬT]
+        classModel: widget.classModel,
         subtitle: _getSubtitleForIndex(_currentIndex),
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
         onNotificationPressed: () {
           setState(() {
-            _currentIndex = 6; // Chuyển đến tab Thông báo
+            _currentIndex = 6; 
           });
         }
       ),

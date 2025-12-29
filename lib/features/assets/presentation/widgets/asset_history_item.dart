@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../data/models/asset_history_model.dart';
+import 'package:intl/intl.dart';
+import '../../data/models/asset_loan_model.dart';
 
 class HistoryItem extends StatelessWidget {
-  final AssetHistoryModel history;
+  final AssetLoanModel history;
 
   const HistoryItem({super.key, required this.history});
 
   @override
   Widget build(BuildContext context) {
-    final color = history.isReturn ? Colors.green : Colors.orange;
+    final color = history.isReturned ? Colors.green : Colors.orange;
+    final formatter = DateFormat('HH:mm dd/MM/yyyy');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
@@ -22,9 +23,9 @@ class HistoryItem extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            history.isReturn
-                ? LucideIcons.checkCircle
-                : LucideIcons.alertCircle,
+            history.isReturned
+                ? Icons.check_circle
+                : Icons.access_time,
             color: color,
           ),
           const SizedBox(width: 8),
@@ -32,11 +33,18 @@ class HistoryItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(history.text,
-                    style: GoogleFonts.roboto(fontSize: 13)),
-                Text(history.time,
-                    style: GoogleFonts.roboto(
-                        fontSize: 11, color: Colors.grey)),
+                Text(
+                  '${history.borrowerName ?? 'Ai đó'} mượn '
+                  '${history.quantity} cái',
+                  style: GoogleFonts.roboto(fontSize: 13),
+                ),
+                Text(
+                  formatter.format(history.borrowedAt),
+                  style: GoogleFonts.roboto(
+                    fontSize: 11,
+                    color: Colors.grey,
+                  ),
+                ),
               ],
             ),
           ),
@@ -45,3 +53,4 @@ class HistoryItem extends StatelessWidget {
     );
   }
 }
+

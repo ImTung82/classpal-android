@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../view_models/asset_providers.dart';
+import '../view_models/asset_view_model.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/asset_section.dart';
 import '../../data/models/asset_status_model.dart';

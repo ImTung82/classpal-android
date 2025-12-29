@@ -73,29 +73,33 @@ class ClassEvent {
       }
     }
 
+    // Parse start_time
     final startTime = DateTime.parse(json['start_time']).toLocal();
     final dateStr =
         "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}";
 
     String timeStr =
         "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+    
+    // Parse end_time nếu có
+    DateTime? endTime;
     if (json['end_time'] != null) {
-      final endTime = DateTime.parse(json['end_time']).toLocal();
+      endTime = DateTime.parse(json['end_time']).toLocal();
       timeStr +=
           " - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
     }
 
-    // --- LOGIC XÁC ĐỊNH IS_OPEN DỰA TRÊN END_TIME ---
+    // --- LOGIC QUAN TRỌNG: XÁC ĐỊNH IS_OPEN ---
+    // Mặc định là mở. Nếu có end_time và thời điểm hiện tại đã vượt quá end_time -> Đóng.
+    // Hoặc nếu bạn quy ước "có end_time tức là đã đóng thủ công" thì dùng logic dưới đây.
     bool calculatedIsOpen = true;
-
-    if (json['end_time'] != null) {
-      try {
-        final endTime = DateTime.parse(json['end_time']).toLocal();
-        // Sửa lại: Nếu có end_time thì luôn coi là đã đóng
-        calculatedIsOpen = false;
-      } catch (e) {
-        calculatedIsOpen = true;
-      }
+    if (endTime != null) {
+        // Logic 1: Đóng nếu quá hạn
+        if (DateTime.now().isAfter(endTime)) {
+            calculatedIsOpen = false;
+        }
+        // Logic 2 (theo yêu cầu của bạn): Nếu có end_time thì coi như đã đóng (để lưu dấu mốc đóng)
+        // calculatedIsOpen = false; 
     }
 
     return ClassEvent(
@@ -114,8 +118,9 @@ class ClassEvent {
     );
   }
 
-  // Convert sang JSON - KHÔNG GỬI is_open vì DB không có cột này
+  // Convert sang JSON
   Map<String, dynamic> toJson(String classId) {
+    // Parse ngày tháng từ chuỗi hiển thị về DateTime để lưu DB
     final dateParts = date.split('/');
     final day = int.parse(dateParts[0]);
     final month = int.parse(dateParts[1]);
@@ -135,10 +140,11 @@ class ClassEvent {
       'start_time': startTime.toIso8601String(),
       'location': location,
       'is_mandatory': isMandatory,
-      // KHÔNG gửi 'is_open' - DB không có cột này
+      // Lưu ý: Không gửi is_open, logic đóng mở xử lý ở Repository
     };
 
-    // Chỉ thêm end_time nếu có trong time string (VD: "14:00 - 16:00")
+    // Chỉ gửi end_time nếu chuỗi thời gian có phần kết thúc (cho trường hợp update thông tin cơ bản)
+    // Còn việc Đóng/Mở sự kiện sẽ được xử lý riêng.
     if (timeParts.length > 1) {
       final endTimeParts = timeParts[1].split(':');
       final endHour = int.parse(endTimeParts[0]);
@@ -150,7 +156,7 @@ class ClassEvent {
     return result;
   }
 
-  // CopyWith method
+  // CopyWith
   ClassEvent copyWith({
     String? id,
     String? title,

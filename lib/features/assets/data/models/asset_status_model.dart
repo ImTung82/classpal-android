@@ -9,12 +9,14 @@ class AssetStatusModel {
   /// Nếu đang có ai mượn (ít nhất 1 loan chưa trả), show người mượn + thời gian mượn gần nhất (tuỳ query)
   final String? borrowerName;
   final DateTime? borrowedAt;
+  final String? borrowerId;
 
   const AssetStatusModel({
     required this.asset,
     required this.availableQuantity,
     required this.borrowerName,
     required this.borrowedAt,
+    required this.borrowerId,
   });
 
   bool get isBorrowed => availableQuantity <= 0;

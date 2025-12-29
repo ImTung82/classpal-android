@@ -3,7 +3,8 @@ class AssetLoanModel {
   final String classId;
   final String assetId;
   final String borrowerId;
-  final String? borrowerName; // 👈 THÊM
+  final String? borrowerName; 
+  final String? assetName;
   final int quantity;
   final DateTime borrowedAt;
   final DateTime? returnedAt;
@@ -16,6 +17,7 @@ class AssetLoanModel {
     required this.assetId,
     required this.borrowerId,
     required this.borrowerName,
+    required this.assetName,
     required this.quantity,
     required this.borrowedAt,
     required this.returnedAt,
@@ -31,6 +33,7 @@ class AssetLoanModel {
       classId: json['class_id'],
       assetId: json['asset_id'],
       borrowerId: json['borrower_id'],
+      assetName: (json['assets'] as Map?)?['name'] as String?,
       borrowerName:
           (json['profiles'] as Map?)?['full_name'] as String?,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,

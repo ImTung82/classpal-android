@@ -10,7 +10,7 @@ void showEditAssetOverlay(
   required String assetId,
   required String name,
   required int totalQuantity,
-  required String conditionStatus,
+
   String? note,
 }) {
   showDialog(
@@ -21,7 +21,6 @@ void showEditAssetOverlay(
       assetId: assetId,
       initialName: name,
       initialQuantity: totalQuantity,
-      initialCondition: conditionStatus,
       initialNote: note,
     ),
   );
@@ -32,7 +31,6 @@ class EditAssetOverlay extends ConsumerStatefulWidget {
   final String assetId;
   final String initialName;
   final int initialQuantity;
-  final String initialCondition;
   final String? initialNote;
 
   const EditAssetOverlay({
@@ -41,7 +39,6 @@ class EditAssetOverlay extends ConsumerStatefulWidget {
     required this.assetId,
     required this.initialName,
     required this.initialQuantity,
-    required this.initialCondition,
     this.initialNote,
   });
 
@@ -56,7 +53,7 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
   late final TextEditingController _quantityController;
   late final TextEditingController _noteController;
 
-  late String _conditionStatus;
+
   bool _isSubmitting = false;
 
   @override
@@ -68,7 +65,7 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
         TextEditingController(text: widget.initialQuantity.toString());
     _noteController =
         TextEditingController(text: widget.initialNote ?? '');
-    _conditionStatus = widget.initialCondition;
+
   }
 
   InputDecoration _inputDecoration({String? hint}) {
@@ -133,7 +130,6 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
             assetId: widget.assetId,
             name: _nameController.text.trim(),
             totalQuantity: int.parse(_quantityController.text),
-            conditionStatus: _conditionStatus,
             note: _noteController.text.trim().isEmpty
                 ? null
                 : _noteController.text.trim(),
@@ -204,22 +200,6 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
                   controller: _quantityController,
                   keyboardType: TextInputType.number,
                   validator: _validateQuantity,
-                  decoration: _inputDecoration(),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text('Tình trạng'),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: _conditionStatus,
-                  validator: (v) =>
-                      v == null ? 'Vui lòng chọn tình trạng' : null,
-                  items: const [
-                    DropdownMenuItem(value: 'good', child: Text('Tốt')),
-                    DropdownMenuItem(value: 'bad', child: Text('Hư hỏng')),
-                  ],
-                  onChanged: (v) => setState(() => _conditionStatus = v!),
                   decoration: _inputDecoration(),
                 ),
 

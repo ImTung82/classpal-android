@@ -48,7 +48,7 @@ class StudentAssetContent extends ConsumerWidget {
                     Expanded(
                       child: StatCard(
                         title: 'Có sẵn',
-                        value: '${summary['available']} tài sản',
+                        value: '${summary['available']}',
                         type: StatType.available,
                       ),
                     ),
@@ -56,17 +56,15 @@ class StudentAssetContent extends ConsumerWidget {
                     Expanded(
                       child: StatCard(
                         title: 'Đang mượn',
-                        value: '${summary['borrowed']} tài sản',
+                        value: '${summary['borrowed']}',
                         type: StatType.borrowed,
                       ),
                     ),
                   ],
                 ),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: CircularProgressIndicator(),
-                  ),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => Text('Lỗi thống kê: $e'),
               ),
@@ -75,11 +73,13 @@ class StudentAssetContent extends ConsumerWidget {
 
               /// ===== ASSETS =====
               assetsAsync.when(
-                data: (assets) {
+                data: (List<AssetStatusModel> assets) {
+                  /// ✅ CÓ SẴN = còn quantity
                   final availableAssets = assets
-                      .where((a) => !a.isBorrowed)
+                      .where((a) => a.availableQuantity > 0)
                       .toList();
 
+                  /// ✅ ĐANG HẾT = available = 0
                   final borrowedAssets = assets
                       .where((a) => a.isBorrowed)
                       .toList();
@@ -96,6 +96,7 @@ class StudentAssetContent extends ConsumerWidget {
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: AssetSection.available(
+                          classId: classId,
                           title: 'Tài sản có sẵn',
                           assets: availableAssets,
                         ),
@@ -113,6 +114,7 @@ class StudentAssetContent extends ConsumerWidget {
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: AssetSection.borrowed(
+                          classId: classId,
                           title: 'Tài sản đang được mượn',
                           assets: borrowedAssets,
                         ),
@@ -120,11 +122,9 @@ class StudentAssetContent extends ConsumerWidget {
                     ],
                   );
                 },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: CircularProgressIndicator(),
-                  ),
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
                 error: (e, _) => Text('Lỗi tải tài sản: $e'),
               ),

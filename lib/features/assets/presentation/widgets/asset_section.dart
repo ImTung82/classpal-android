@@ -4,27 +4,41 @@ import 'available_asset_item.dart';
 import 'borrowed_asset_item.dart';
 
 class AssetSection extends StatelessWidget {
+  final String classId;
   final String title;
   final List<AssetStatusModel> assets;
   final bool isBorrowed;
 
   const AssetSection._({
+    required this.classId,
     required this.title,
     required this.assets,
     required this.isBorrowed,
   });
 
   factory AssetSection.available({
+    required String classId,
     required String title,
     required List<AssetStatusModel> assets,
   }) =>
-      AssetSection._(title: title, assets: assets, isBorrowed: false);
+      AssetSection._(
+        classId: classId,
+        title: title,
+        assets: assets,
+        isBorrowed: false,
+      );
 
   factory AssetSection.borrowed({
+    required String classId,
     required String title,
     required List<AssetStatusModel> assets,
   }) =>
-      AssetSection._(title: title, assets: assets, isBorrowed: true);
+      AssetSection._(
+        classId: classId,
+        title: title,
+        assets: assets,
+        isBorrowed: true,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +61,8 @@ class AssetSection extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: isBorrowed
-                    ? BorrowedAssetItem(data: item)
-                    : AvailableAssetItem(data: item),
+                    ? BorrowedAssetItem(classId: classId, data: item)
+                    : AvailableAssetItem(classId: classId, data: item),
               );
             }).toList(),
           ),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../view_models/asset_providers.dart';
+import '../view_models/asset_view_model.dart';
 import '../widgets/asset_card.dart';
 import '../widgets/asset_history_item.dart';
 import '../widgets/small_stat_card.dart';
@@ -13,13 +13,13 @@ import '../widgets/delete_asset.dart';
 import '../widgets/asset_history.dart';
 
 class OwnerAssetContent extends ConsumerWidget {
-  const OwnerAssetContent({super.key});
+  final String classId;
+  const OwnerAssetContent({super.key, required this.classId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(assetSummaryProvider);
-    final assets = ref.watch(assetListProvider);
-    final history = ref.watch(assetHistoryProvider);
+    final summaryAsync = ref.watch(assetSummaryProvider(classId));
+    final assetsAsync = ref.watch(assetListWithStatusProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -45,7 +45,7 @@ class OwnerAssetContent extends ConsumerWidget {
             height: 44,
             child: ElevatedButton.icon(
               onPressed: () {
-                showAddAssetOverlay(context);
+                showAddAssetOverlay(context, classId: classId);
               },
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text("Thêm tài sản"),
@@ -59,29 +59,41 @@ class OwnerAssetContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SmallStatCard(
-            title: "Tổng tài sản",
-            value: summary['total'].toString(),
-            icon: LucideIcons.box,
-            bgIcon: const Color(0xFFDBEAFE),
-            iconColor: Colors.blue,
+          summaryAsync.when(
+            data: (summary) => Column(
+              children: [
+                SmallStatCard(
+                  title: "Tổng tài sản",
+                  value: summary['total'].toString(),
+                  icon: LucideIcons.box,
+                  bgIcon: const Color(0xFFDBEAFE),
+                  iconColor: Colors.blue,
+                ),
+                const SizedBox(height: 12),
+                SmallStatCard(
+                  title: "Có sẵn",
+                  value: summary['available'].toString(),
+                  icon: LucideIcons.checkCircle,
+                  bgIcon: const Color(0xFFDCFCE7),
+                  iconColor: Colors.green,
+                ),
+                const SizedBox(height: 12),
+                SmallStatCard(
+                  title: "Đang mượn",
+                  value: summary['borrowed'].toString(),
+                  icon: LucideIcons.user,
+                  bgIcon: const Color(0xFFFFEDD5),
+                  iconColor: Colors.orange,
+                ),
+              ],
+            ),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Text('Lỗi summary: $e'),
           ),
-          const SizedBox(height: 12),
-          SmallStatCard(
-            title: "Có sẵn",
-            value: summary['available'].toString(),
-            icon: LucideIcons.checkCircle,
-            bgIcon: const Color(0xFFDCFCE7),
-            iconColor: Colors.green,
-          ),
-          const SizedBox(height: 12),
-          SmallStatCard(
-            title: "Đang mượn",
-            value: summary['borrowed'].toString(),
-            icon: LucideIcons.user,
-            bgIcon: const Color(0xFFFFEDD5),
-            iconColor: Colors.orange,
-          ),
+
           const SizedBox(height: 24),
 
           Container(
@@ -94,62 +106,78 @@ class OwnerAssetContent extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// ===== TIÊU ĐỀ (NẰM TRONG KHỐI) =====
-                Row(
-                  children: [
-                    Icon(LucideIcons.box, size: 18, color: Colors.grey[700]),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Danh sách tài sản",
-                      style: GoogleFonts.roboto(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-
+                // title giữ nguyên ...
                 const SizedBox(height: 16),
 
-                /// ===== DANH SÁCH TÀI SẢN =====
-                Column(
-                  children: assets.map((asset) {
-                    return AssetCard(
-                      asset: asset,
-                      onViewHistory: () {
-                        showAssetHistoryOverlay(
-                          context: context,
-                          assetName: 'Remote Điều hòa',
-                          borrowerName: 'Nguyễn Văn A',
-                          time: '09:00, 06/12/2024',
-                        );
-                      },
-                      onEdit: () {
-                        showEditAssetOverlay(
-                          context,
-                          name: asset.name,
-                          category: asset.category,
-                        );
-                      },
-                      onDelete: () {
-                        showDeleteAssetOverlay(
-                          context: context,
-                          assetName: 'Remote Điều hòa',
-                          onConfirm: () {
-                            // gọi ViewModel / API xóa
-                            print('Đã xóa');
-                          },
-                        );
-                      },
-                    );
-                  }).toList(),
+                assetsAsync.when(
+                  data: (assets) => Column(
+                    children: assets.map((item) {
+                      return AssetCard(
+                        data: item,
+                        onViewHistory: () {
+                          showAssetHistoryOverlay(
+                            context: context,
+                            classId: classId,
+                            assetId: item.asset.id,
+                            assetName: item.asset.name,
+                          );
+                        },
+                        onEdit: () {
+                          showEditAssetOverlay(
+                            context,
+                            classId: classId,
+                            assetId: item.asset.id,
+                            name: item.asset.name,
+                            totalQuantity: item.asset.totalQuantity,
+                            conditionStatus: item.asset.conditionStatus,
+                            note: item.asset.note,
+                          );
+                        },
+
+                        onDelete: () {
+                          final isFullyAvailable =
+                              item.availableQuantity ==
+                              item.asset.totalQuantity;
+
+                          if (!isFullyAvailable) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Không thể xóa tài sản đang được mượn',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          showDeleteAssetOverlay(
+                            context: context,
+                            assetName: item.asset.name,
+                            onConfirm: () async {
+                              await ref
+                                  .read(assetRepositoryProvider)
+                                  .deleteAsset(assetId: item.asset.id);
+
+                              ref.invalidate(
+                                assetListWithStatusProvider(classId),
+                              );
+                              ref.invalidate(assetSummaryProvider(classId));
+                            },
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Lỗi tải assets: $e'),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 24),
 
+          /// ===== LỊCH SỬ GẦN ĐÂY =====
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -160,13 +188,13 @@ class OwnerAssetContent extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// ===== TIÊU ĐỀ =====
+                /// TITLE
                 Row(
                   children: [
                     Icon(LucideIcons.clock, size: 18, color: Colors.grey[700]),
                     const SizedBox(width: 8),
                     Text(
-                      "Lịch sử gần đây",
+                      'Lịch sử gần đây',
                       style: GoogleFonts.roboto(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -177,11 +205,41 @@ class OwnerAssetContent extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                /// ===== DANH SÁCH LỊCH SỬ =====
-                Column(
-                  children: history.map((item) {
-                    return HistoryItem(history: item);
-                  }).toList(),
+                /// CONTENT
+                Consumer(
+                  builder: (context, ref, _) {
+                    final historyAsync = ref.watch(
+                      assetHistoryProvider(classId),
+                    );
+
+                    return historyAsync.when(
+                      data: (list) {
+                        if (list.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: Text(
+                                'Chưa có lịch sử mượn/trả',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          );
+                        }
+
+                        // chỉ lấy 5 item gần nhất
+                        final recent = list.take(5).toList();
+
+                        return Column(
+                          children: recent.map((item) {
+                            return HistoryItem(history: item);
+                          }).toList(),
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Text('Lỗi lịch sử: $e'),
+                    );
+                  },
                 ),
               ],
             ),

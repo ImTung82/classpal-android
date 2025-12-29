@@ -7,9 +7,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 abstract class AuthRepository {
   Future<AuthResponse> signIn(String email, String password);
-  // [CẬP NHẬT] Thêm tham số phone
-  Future<AuthResponse> signUp(String email, String password, String name, String phone);
+  Future<AuthResponse> signUp(
+    String email,
+    String password,
+    String name,
+    String phone,
+  );
   Future<void> signOut();
+  Future<void> resetPassword(String email);
+  Future<void> updatePassword(String newPassword);
   User? get currentUser;
 }
 
@@ -25,20 +31,34 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthResponse> signUp(String email, String password, String name, String phone) async {
-    // [CẬP NHẬT] Lưu cả name và phone vào metadata
+  Future<AuthResponse> signUp(
+    String email,
+    String password,
+    String name,
+    String phone,
+  ) async {
     return await _auth.signUp(
       email: email,
       password: password,
-      data: {
-        'full_name': name,
-        'phone': phone, // Lưu số điện thoại vào đây
-      }, 
+      data: {'full_name': name, 'phone': phone},
     );
   }
 
   @override
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    await _auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'io.classpal.app://reset-callback',
+    );
+  }
+
+  @override
+  Future<void> updatePassword(String newPassword) async {
+    await _auth.updateUser(UserAttributes(password: newPassword));
   }
 }

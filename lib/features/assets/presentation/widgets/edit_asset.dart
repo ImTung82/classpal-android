@@ -1,74 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../view_models/asset_view_model.dart';
 
 void showEditAssetOverlay(
   BuildContext context, {
-  required String classId,
-  required String assetId,
   required String name,
-  required int totalQuantity,
-  required String conditionStatus,
-  String? note,
+  required String category,
 }) {
   showDialog(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: true,
     builder: (_) => EditAssetOverlay(
-      classId: classId,
-      assetId: assetId,
       initialName: name,
-      initialQuantity: totalQuantity,
-      initialCondition: conditionStatus,
-      initialNote: note,
+      initialCategory: category,
     ),
   );
 }
 
-class EditAssetOverlay extends ConsumerStatefulWidget {
-  final String classId;
-  final String assetId;
+class EditAssetOverlay extends StatefulWidget {
   final String initialName;
-  final int initialQuantity;
-  final String initialCondition;
-  final String? initialNote;
+  final String initialCategory;
 
   const EditAssetOverlay({
     super.key,
-    required this.classId,
-    required this.assetId,
     required this.initialName,
-    required this.initialQuantity,
-    required this.initialCondition,
-    this.initialNote,
+    required this.initialCategory,
   });
 
   @override
-  ConsumerState<EditAssetOverlay> createState() => _EditAssetOverlayState();
+  State<EditAssetOverlay> createState() => _EditAssetOverlayState();
 }
 
-class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
-  final _formKey = GlobalKey<FormState>();
-
-  late final TextEditingController _nameController;
-  late final TextEditingController _quantityController;
-  late final TextEditingController _noteController;
-
-  late String _conditionStatus;
-  bool _isSubmitting = false;
+class _EditAssetOverlayState extends State<EditAssetOverlay> {
+  late TextEditingController _nameController;
+  late String _selectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.initialName);
-    _quantityController =
-        TextEditingController(text: widget.initialQuantity.toString());
-    _noteController =
-        TextEditingController(text: widget.initialNote ?? '');
-    _conditionStatus = widget.initialCondition;
+    _nameController = TextEditingController(text: widget.initialName);
+    _selectedCategory = widget.initialCategory;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   InputDecoration _inputDecoration({String? hint}) {
@@ -76,88 +53,24 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: const BorderSide(
+          color: Color(0xFFE5E7EB),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF155DFC), width: 1.2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 1.2),
+        borderSide: const BorderSide(
+          color: Color(0xFF155DFC),
+          width: 1.2,
+        ),
       ),
     );
-  }
-
-  /// ===== VALIDATORS =====
-  String? _validateName(String? v) {
-    if (v == null || v.trim().isEmpty) {
-      return 'Vui lòng nhập tên tài sản';
-    }
-    if (v.trim().length < 3) {
-      return 'Tên tài sản tối thiểu 3 ký tự';
-    }
-    return null;
-  }
-
-  String? _validateQuantity(String? v) {
-    final q = int.tryParse(v ?? '');
-    if (q == null || q <= 0) {
-      return 'Số lượng phải lớn hơn 0';
-    }
-    return null;
-  }
-
-  String? _validateNote(String? v) {
-    if (v != null && v.length > 200) {
-      return 'Ghi chú tối đa 200 ký tự';
-    }
-    return null;
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSubmitting = true);
-
-    try {
-      await ref.read(assetRepositoryProvider).updateAsset(
-            assetId: widget.assetId,
-            name: _nameController.text.trim(),
-            totalQuantity: int.parse(_quantityController.text),
-            conditionStatus: _conditionStatus,
-            note: _noteController.text.trim().isEmpty
-                ? null
-                : _noteController.text.trim(),
-          );
-
-      ref.invalidate(assetListWithStatusProvider(widget.classId));
-      ref.invalidate(assetSummaryProvider(widget.classId));
-
-      Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi cập nhật tài sản: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _quantityController.dispose();
-    _noteController.dispose();
-    super.dispose();
   }
 
   @override
@@ -172,142 +85,111 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Chỉnh sửa tài sản',
-                  style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// ===== TITLE =====
+              Text(
+                'Chỉnh sửa tài sản',
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// ===== NAME =====
+              const Text('Tên tài sản'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nameController,
+                decoration:
+                    _inputDecoration(hint: 'VD: Remote Điều hòa'),
+              ),
+
+              const SizedBox(height: 16),
+
+              /// ===== CATEGORY =====
+              const Text('Danh mục'),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Điện tử',
+                    child: Text('Điện tử'),
                   ),
-                ),
+                  DropdownMenuItem(
+                    value: 'Văn phòng phẩm',
+                    child: Text('Văn phòng phẩm'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value!;
+                  });
+                },
+                decoration: _inputDecoration(),
+              ),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-                const Text('Tên tài sản'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _nameController,
-                  validator: _validateName,
-                  decoration: _inputDecoration(),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text('Số lượng'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _quantityController,
-                  keyboardType: TextInputType.number,
-                  validator: _validateQuantity,
-                  decoration: _inputDecoration(),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text('Tình trạng'),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: _conditionStatus,
-                  validator: (v) =>
-                      v == null ? 'Vui lòng chọn tình trạng' : null,
-                  items: const [
-                    DropdownMenuItem(value: 'good', child: Text('Tốt')),
-                    DropdownMenuItem(value: 'bad', child: Text('Hư hỏng')),
-                  ],
-                  onChanged: (v) => setState(() => _conditionStatus = v!),
-                  decoration: _inputDecoration(),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text('Ghi chú'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _noteController,
-                  maxLines: 2,
-                  validator: _validateNote,
-                  decoration: _inputDecoration(),
-                ),
-
-                const SizedBox(height: 24),
-
-                /// ===== ACTIONS (GIỮ STYLE CŨ) =====
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 45,
-                        child: TextButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            backgroundColor:
-                                const Color(0xFFF5F5F5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+              /// ===== ACTIONS =====
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 45,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          backgroundColor:
+                              const Color(0xFFF5F5F5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Hủy',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
+                        ),
+                        child: const Text(
+                          'Hủy',
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 45,
-                        child: ElevatedButton(
-                          onPressed:
-                              _isSubmitting ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF155DFC),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(12),
-                            ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color(0xFF155DFC),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child:
-                                      CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Lưu thay đổi',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight:
-                                        FontWeight.w400,
-                                  ),
-                                ),
+                        ),
+                        child: const Text(
+                          'Lưu thay đổi',
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
+

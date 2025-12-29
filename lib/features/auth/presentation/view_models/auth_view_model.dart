@@ -1,58 +1,34 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/auth_repository.dart';
 
+// --- STATE MODEL ---
 class AppAuthState {
   final bool isLoginMode;
   final bool isPasswordVisible;
   final bool isLoading;
-  final bool isRecoveryMode;
 
   AppAuthState({
     this.isLoginMode = true,
     this.isPasswordVisible = false,
     this.isLoading = false,
-    this.isRecoveryMode = false,
   });
 
-  AppAuthState copyWith({
-    bool? isLoginMode,
-    bool? isPasswordVisible,
-    bool? isLoading,
-    bool? isRecoveryMode,
-  }) {
+  AppAuthState copyWith({bool? isLoginMode, bool? isPasswordVisible, bool? isLoading}) {
     return AppAuthState(
       isLoginMode: isLoginMode ?? this.isLoginMode,
       isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,
       isLoading: isLoading ?? this.isLoading,
-      isRecoveryMode: isRecoveryMode ?? this.isRecoveryMode,
     );
   }
 }
 
+// --- VIEW MODEL ---
 class AuthViewModel extends Notifier<AppAuthState> {
-  StreamSubscription<AuthState>? _authSubscription;
-
+  
   @override
   AppAuthState build() {
-    _listenToAuthEvents();
-
-    ref.onDispose(() {
-      _authSubscription?.cancel();
-    });
-
-    return AppAuthState();
-  }
-
-  void _listenToAuthEvents() {
-    final supabase = Supabase.instance.client;
-    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      if (event == AuthChangeEvent.passwordRecovery) {
-        state = state.copyWith(isRecoveryMode: true);
-      }
-    });
+    return AppAuthState(); 
   }
 
   void toggleAuthMode() {
@@ -67,7 +43,7 @@ class AuthViewModel extends Notifier<AppAuthState> {
     required String email,
     required String password,
     String? name,
-    String? phone,
+    String? phone, // [CẬP NHẬT] Thêm tham số phone
     required Function(String) onSuccess,
     required Function(String) onError,
   }) async {
@@ -82,16 +58,20 @@ class AuthViewModel extends Notifier<AppAuthState> {
       final authRepository = ref.read(authRepositoryProvider);
 
       if (state.isLoginMode) {
+        // ĐĂNG NHẬP
         await authRepository.signIn(email, password);
         onSuccess("Đăng nhập thành công!");
       } else {
+        // ĐĂNG KÝ
+        // [CẬP NHẬT] Validate thêm tên và sđt
         if (name == null || name.isEmpty) {
           throw const AuthException("Vui lòng nhập họ tên");
         }
         if (phone == null || phone.isEmpty) {
-          throw const AuthException("Vui lòng nhập số điện thoại");
+           throw const AuthException("Vui lòng nhập số điện thoại");
         }
-
+        
+        // Truyền phone xuống repo
         await authRepository.signUp(email, password, name, phone);
         onSuccess("Đăng ký thành công!");
       }
@@ -109,44 +89,9 @@ class AuthViewModel extends Notifier<AppAuthState> {
     try {
       await ref.read(authRepositoryProvider).signOut();
     } catch (e) {
-      // Ignore error
+      // Bỏ qua lỗi nếu có
     } finally {
       state = state.copyWith(isLoading: false);
-    }
-  }
-
-  Future<void> sendPasswordReset({
-    required String email,
-    required Function(String) onSuccess,
-    required Function(String) onError,
-  }) async {
-    if (email.isEmpty) {
-      onError("Vui lòng nhập email");
-      return;
-    }
-    try {
-      await ref.read(authRepositoryProvider).resetPassword(email);
-      onSuccess(
-        "Đã gửi email! Vui lòng kiểm tra hộp thư và bấm vào liên kết để đổi mật khẩu.",
-      );
-    } catch (e) {
-      onError("Lỗi: ${e.toString()}");
-    }
-  }
-
-  Future<void> submitNewPassword({
-    required String newPassword,
-    required Function() onSuccess,
-    required Function(String) onError,
-  }) async {
-    state = state.copyWith(isLoading: true);
-    try {
-      await ref.read(authRepositoryProvider).updatePassword(newPassword);
-      state = state.copyWith(isRecoveryMode: false, isLoading: false);
-      onSuccess();
-    } catch (e) {
-      state = state.copyWith(isLoading: false);
-      onError("Không thể đổi mật khẩu: ${e.toString()}");
     }
   }
 }

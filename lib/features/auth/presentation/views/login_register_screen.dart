@@ -4,7 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/auth_view_model.dart';
 import '../../../classes/presentation/views/classroom_page_screen.dart';
-import 'forgot_password_screen.dart';
 
 class LoginRegisterScreen extends ConsumerStatefulWidget {
   const LoginRegisterScreen({super.key});
@@ -19,7 +18,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _forgotEmailController = TextEditingController();
 
   final List<Color> gradientColors = const [
     Color(0xFF4A84F8),
@@ -32,279 +30,14 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     _passwordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
-    _forgotEmailController.dispose();
     super.dispose();
-  }
-
-  void _showForgotPasswordDialog(AuthViewModel vm) {
-    // Tự động điền email nếu ở ngoài đã nhập
-    if (_emailController.text.isNotEmpty) {
-      _forgotEmailController.text = _emailController.text;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible:
-          false, // [CẬP NHẬT] Không cho đóng khi bấm ra ngoài để tránh lỗi logic khi đang loading
-      builder: (ctx) {
-        // Biến cục bộ lưu trạng thái lỗi
-        String? errorText;
-        // [CẬP NHẬT] Biến cục bộ lưu trạng thái loading của riêng Dialog
-        bool isDialogLoading = false;
-
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              backgroundColor: Colors.white,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 1. Icon trang trí
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4A84F8).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.lock,
-                          color: Color(0xFF4A84F8),
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // 2. Tiêu đề
-                      Text(
-                        "Lấy lại mật khẩu",
-                        style: GoogleFonts.roboto(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // 3. Nội dung hướng dẫn
-                      Text(
-                        "Nhập email đã đăng ký của bạn, hệ thống sẽ gửi liên kết để đặt lại mật khẩu mới.",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 4. Ô nhập liệu Email
-                      TextField(
-                        controller: _forgotEmailController,
-                        keyboardType: TextInputType.emailAddress,
-                        // Nếu đang loading thì disable input luôn
-                        enabled: !isDialogLoading,
-                        style: GoogleFonts.roboto(fontSize: 15),
-                        decoration: InputDecoration(
-                          hintText: "email@example.com",
-                          hintStyle: TextStyle(color: Colors.grey.shade400),
-                          errorText: errorText,
-                          errorMaxLines: 2,
-                          prefixIcon: Icon(
-                            LucideIcons.mail,
-                            size: 20,
-                            color: Colors.grey.shade500,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF4A84F8),
-                              width: 1.5,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.red,
-                              width: 1.0,
-                            ),
-                          ),
-                          focusedErrorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.red,
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          if (errorText != null) {
-                            setStateDialog(() {
-                              errorText = null;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 32),
-
-                      // 5. Buttons (Hủy / Gửi)
-                      Row(
-                        children: [
-                          // Nút Hủy
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: OutlinedButton(
-                                // Nếu đang loading thì không cho bấm Hủy (hoặc bạn có thể cho phép tùy ý)
-                                onPressed: isDialogLoading
-                                    ? null
-                                    : () => Navigator.of(ctx).pop(),
-                                style: OutlinedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                  foregroundColor: Colors.black87,
-                                ),
-                                child: Text(
-                                  "Hủy",
-                                  style: GoogleFonts.roboto(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Nút Gửi
-                          Expanded(
-                            child: SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                // Disable nút khi đang loading
-                                onPressed: isDialogLoading
-                                    ? null
-                                    : () {
-                                        FocusScope.of(context).unfocus();
-                                        final email = _forgotEmailController
-                                            .text
-                                            .trim();
-
-                                        if (email.isEmpty) {
-                                          setStateDialog(() {
-                                            errorText = "Vui lòng nhập email";
-                                          });
-                                          return;
-                                        }
-
-                                        // [CẬP NHẬT] Bắt đầu loading
-                                        setStateDialog(() {
-                                          isDialogLoading = true;
-                                          errorText = null;
-                                        });
-
-                                        vm.sendPasswordReset(
-                                          email: email,
-                                          onSuccess: (msg) {
-                                            // Đóng dialog khi thành công
-                                            Navigator.of(ctx).pop();
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(msg),
-                                                backgroundColor: Colors.green,
-                                              ),
-                                            );
-                                          },
-                                          onError: (err) {
-                                            // [CẬP NHẬT] Tắt loading và hiện lỗi
-                                            setStateDialog(() {
-                                              isDialogLoading = false;
-                                              errorText = err;
-                                            });
-                                          },
-                                        );
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4A84F8),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  // Khi bị disable (đang loading), giữ nguyên độ mờ vừa phải
-                                  disabledBackgroundColor: const Color(
-                                    0xFF4A84F8,
-                                  ).withOpacity(0.6),
-                                  disabledForegroundColor: Colors.white,
-                                ),
-                                // [CẬP NHẬT] Hiển thị Loading Indicator hoặc Text
-                                child: isDialogLoading
-                                    ? const SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                    : Text(
-                                        "Gửi yêu cầu",
-                                        style: GoogleFonts.roboto(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ).then((_) {
-      _forgotEmailController.clear();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(authViewModelProvider, (previous, next) {
-      if (next.isRecoveryMode && (previous?.isRecoveryMode == false)) {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
-      }
-    });
-
+    // Lắng nghe state
     final authState = ref.watch(authViewModelProvider);
+    // Lấy notifier để gọi hàm
     final authViewModel = ref.read(authViewModelProvider.notifier);
 
     final isLogin = authState.isLoginMode;
@@ -348,6 +81,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         _buildTabSwitcher(isLogin, authViewModel),
                         const SizedBox(height: 30),
 
+                        // Form đăng ký
                         if (!isLogin) ...[
                           _buildLabel("Họ và tên"),
                           _buildTextField(
@@ -356,7 +90,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                             icon: LucideIcons.user,
                           ),
                           const SizedBox(height: 20),
-
+                          
                           _buildLabel("Số điện thoại"),
                           _buildTextField(
                             controller: _phoneController,
@@ -393,8 +127,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () =>
-                                  _showForgotPasswordDialog(authViewModel),
+                              onPressed: () {},
                               child: Text(
                                 "Quên mật khẩu?",
                                 style: GoogleFonts.roboto(
@@ -410,7 +143,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         const SizedBox(height: 20),
 
                         _buildSubmitButton(isLogin, isLoading, authViewModel),
-
+                        
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -423,6 +156,8 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
       ),
     );
   }
+
+  // --- Helper Widgets ---
 
   Widget _buildHeader() {
     return Column(
@@ -605,6 +340,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     );
   }
 
+  // NÚT SUBMIT - Logic chính nằm ở đây
   Widget _buildSubmitButton(bool isLogin, bool isLoading, AuthViewModel vm) {
     return Container(
       width: double.infinity,
@@ -630,6 +366,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                   name: isLogin ? null : _nameController.text.trim(),
                   phone: isLogin ? null : _phoneController.text.trim(),
                   onSuccess: (msg) {
+                    // Luôn hiện thông báo thành công
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(msg),
@@ -638,6 +375,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                     );
 
                     if (isLogin) {
+                      // CASE 1: ĐĂNG NHẬP -> Vào App
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
                           builder: (_) => const ClassroomPageScreen(),
@@ -645,7 +383,9 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         (route) => false,
                       );
                     } else {
+                      // CASE 2: ĐĂNG KÝ -> Chuyển tab về Login (Đúng yêu cầu của bạn)
                       vm.toggleAuthMode();
+                      // (Tùy chọn) Xóa pass để user nhập lại cho an toàn
                       _passwordController.clear();
                     }
                   },

@@ -278,6 +278,32 @@ class AppMenuDrawer extends ConsumerWidget {
                             ],
                           ),
                         ),
+
+                        // Hàng 4: Nút mời (Nếu là Owner)
+                        if (isOwner) ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // TODO: Logic mời thành viên
+                              },
+                              icon: const Icon(LucideIcons.userPlus, size: 16),
+                              label: const Text("Mời thành viên mới"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6A5AE0),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

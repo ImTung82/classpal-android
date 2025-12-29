@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import '../view_models/asset_view_model.dart';
-import 'asset_history_item.dart';
 
 void showAssetHistoryOverlay({
   required BuildContext context,
-  required String classId,
-  required String assetId,
   required String assetName,
+  required String borrowerName,
+  required String time,
 }) {
   showGeneralDialog(
     context: context,
@@ -19,34 +15,28 @@ void showAssetHistoryOverlay({
     transitionDuration: Duration.zero,
     pageBuilder: (_, __, ___) {
       return AssetHistoryOverlay(
-        classId: classId,
-        assetId: assetId,
         assetName: assetName,
+        borrowerName: borrowerName,
+        time: time,
       );
     },
   );
 }
 
-class AssetHistoryOverlay extends ConsumerWidget {
-  final String classId;
-  final String assetId;
+class AssetHistoryOverlay extends StatelessWidget {
   final String assetName;
+  final String borrowerName;
+  final String time;
 
   const AssetHistoryOverlay({
     super.key,
-    required this.classId,
-    required this.assetId,
     required this.assetName,
+    required this.borrowerName,
+    required this.time,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(
-      assetHistoryByAssetProvider(
-        (classId: classId, assetId: assetId),
-      ),
-    );
-
+  Widget build(BuildContext context) {
     return Center(
       child: Material(
         color: Colors.transparent,
@@ -61,6 +51,7 @@ class AssetHistoryOverlay extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              /// ===== TITLE =====
               Text(
                 'Lịch sử: $assetName',
                 style: GoogleFonts.roboto(
@@ -71,35 +62,68 @@ class AssetHistoryOverlay extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
-              historyAsync.when(
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(child: Text('Chưa có lịch sử')),
-                    );
-                  }
-
-                  return SizedBox(
-                    height: 300,
-                    child: ListView.separated(
-                      itemCount: list.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 10),
-                      itemBuilder: (_, i) {
-                        return HistoryItem(history: list[i]);
-                      },
+              /// ===== HISTORY ITEM =====
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// icon !
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFF97316),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '!',
+                          style: TextStyle(
+                            color: Color(0xFFF97316),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Text('Lỗi tải lịch sử: $e'),
+
+                    const SizedBox(width: 12),
+
+                    /// content
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$borrowerName mượn',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          time,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
+              /// ===== CLOSE BUTTON =====
               SizedBox(
                 width: double.infinity,
                 height: 45,
@@ -112,7 +136,7 @@ class AssetHistoryOverlay extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Đóng'),
+                  child: const Text('Đóng', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],

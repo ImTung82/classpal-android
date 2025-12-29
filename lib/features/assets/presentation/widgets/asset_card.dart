@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-import '../../data/models/asset_status_model.dart';
+import '../../data/models/asset_model.dart';
 
 class AssetCard extends StatelessWidget {
-  final AssetStatusModel data;
+  final AssetModel asset;
   final VoidCallback? onViewHistory;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   const AssetCard({
     super.key,
-    required this.data,
+    required this.asset,
     this.onViewHistory,
     this.onEdit,
     this.onDelete,
@@ -20,10 +19,8 @@ class AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = data.asset;
-
-    final color = data.isBorrowed ? Colors.orange : Colors.green;
-    final bg = data.isBorrowed
+    final color = asset.isBorrowed ? Colors.orange : Colors.green;
+    final bg = asset.isBorrowed
         ? const Color(0xFFFFF7ED)
         : const Color(0xFFF0FDF4);
 
@@ -38,10 +35,12 @@ class AssetCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// ===== NỘI DUNG CHÍNH =====
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                /// ICON + TÊN + TRẠNG THÁI
                 Row(
                   children: [
                     Container(
@@ -68,62 +67,68 @@ class AssetCard extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // Thay assetCode + category bằng conditionStatus + totalQuantity
+                /// MÃ + DANH MỤC
                 Row(
                   children: [
                     Text(
-                      'SL: ${asset.totalQuantity}',
-                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey[700]),
+                      asset.assetCode,
+                      style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Tình trạng: ${asset.conditionStatus}',
-                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey[700]),
+                      asset.category,
+                      style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 8),
 
-                // Nếu có active loan: show borrower
-                if (data.borrowerName != null) ...[
-                  Row(
-                    children: [
-                      Icon(LucideIcons.user, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          data.borrowerName!,
-                          style: GoogleFonts.roboto(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
 
-                if (data.borrowedAt != null) ...[
-                  Row(
-                    children: [
-                      Icon(LucideIcons.clock, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          data.borrowedAt!.toLocal().toString(),
-                          style: GoogleFonts.roboto(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                Row(
+                  children: [
+                    Icon(LucideIcons.user,
+                        size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        asset.user,
+                        style: GoogleFonts.roboto(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+                
+                Row( 
+                  children: [
+                    Icon(LucideIcons.clock,
+                        size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        asset.time,
+                        style: GoogleFonts.roboto(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
 
           const SizedBox(width: 12),
 
+          /// ===== CỘT HÀNH ĐỘNG =====
           Column(
             children: [
               _actionIcon(
@@ -150,6 +155,7 @@ class AssetCard extends StatelessWidget {
     );
   }
 
+  /// ===== BADGE TRẠNG THÁI =====
   Widget _statusBadge(Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -158,7 +164,7 @@ class AssetCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        data.statusText,
+        asset.isBorrowed ? 'Đang mượn' : 'Có sẵn',
         style: GoogleFonts.roboto(
           fontSize: 12,
           color: color,
@@ -168,6 +174,7 @@ class AssetCard extends StatelessWidget {
     );
   }
 
+  /// ===== ICON HÀNH ĐỘNG =====
   Widget _actionIcon({
     required IconData icon,
     required Color color,

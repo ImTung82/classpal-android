@@ -4,12 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 void showDeleteAssetOverlay({
   required BuildContext context,
   required String assetName,
-  required Future<void> Function() onConfirm, // 🔥 CHANGED
+  required VoidCallback onConfirm,
 }) {
   showGeneralDialog(
     context: context,
     barrierLabel: 'DeleteAsset',
-    barrierDismissible: false,
+    barrierDismissible: true,
     barrierColor: Colors.black54,
     transitionDuration: Duration.zero,
     pageBuilder: (_, __, ___) {
@@ -21,44 +21,15 @@ void showDeleteAssetOverlay({
   );
 }
 
-class DeleteAssetOverlay extends StatefulWidget {
+class DeleteAssetOverlay extends StatelessWidget {
   final String assetName;
-  final Future<void> Function() onConfirm;
+  final VoidCallback onConfirm;
 
   const DeleteAssetOverlay({
     super.key,
     required this.assetName,
     required this.onConfirm,
   });
-
-  @override
-  State<DeleteAssetOverlay> createState() => _DeleteAssetOverlayState();
-}
-
-class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
-  bool _isDeleting = false;
-
-  Future<void> _handleDelete() async {
-    if (_isDeleting) return;
-
-    setState(() => _isDeleting = true);
-
-    try {
-      await widget.onConfirm();
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isDeleting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +47,7 @@ class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              /// ===== TITLE =====
               Text(
                 'Xóa tài sản',
                 style: GoogleFonts.roboto(
@@ -86,6 +58,7 @@ class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
 
               const SizedBox(height: 16),
 
+              /// ===== CONTENT =====
               RichText(
                 text: TextSpan(
                   style: const TextStyle(
@@ -94,13 +67,18 @@ class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
                     height: 1.4,
                   ),
                   children: [
-                    const TextSpan(text: 'Bạn có chắc chắn muốn xóa tài sản '),
+                    const TextSpan(
+                      text: 'Bạn có chắc chắn muốn xóa tài sản ',
+                    ),
                     TextSpan(
-                      text: widget.assetName,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      text: assetName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const TextSpan(
-                      text: '? Hành động này không thể hoàn tác.',
+                      text:
+                          '? Hành động này không thể hoàn tác.',
                     ),
                   ],
                 ),
@@ -108,17 +86,18 @@ class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
 
               const SizedBox(height: 24),
 
+              /// ===== ACTIONS =====
               Row(
                 children: [
                   Expanded(
                     child: SizedBox(
                       height: 45,
                       child: TextButton(
-                        onPressed:
-                            _isDeleting ? null : () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.black,
-                          backgroundColor: const Color(0xFFF5F5F5),
+                          backgroundColor:
+                              const Color(0xFFF5F5F5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -135,27 +114,22 @@ class _DeleteAssetOverlayState extends State<DeleteAssetOverlay> {
                     child: SizedBox(
                       height: 45,
                       child: ElevatedButton(
-                        onPressed: _isDeleting ? null : _handleDelete,
+                        onPressed: () {
+                          onConfirm();
+                          Navigator.pop(context);
+                        },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEF4444),
+                          backgroundColor:
+                              const Color(0xFFEF4444), // đỏ
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isDeleting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Xóa tài sản',
-                                style: TextStyle(fontSize: 16),
-                              ),
+                        child: const Text(
+                          'Xóa tài sản',
+                          style: TextStyle(fontSize: 16),
+                        ),
                       ),
                     ),
                   ),

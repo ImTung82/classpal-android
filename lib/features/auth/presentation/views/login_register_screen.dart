@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/auth_view_model.dart';
 import '../../../classes/presentation/views/classroom_page_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginRegisterScreen extends ConsumerStatefulWidget {
   const LoginRegisterScreen({super.key});
@@ -18,6 +19,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _forgotEmailController = TextEditingController();
 
   final List<Color> gradientColors = const [
     Color(0xFF4A84F8),
@@ -30,14 +32,90 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     _passwordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _forgotEmailController.dispose();
     super.dispose();
+  }
+
+  void _showForgotPasswordDialog(AuthViewModel vm) {
+    if (_emailController.text.isNotEmpty) {
+      _forgotEmailController.text = _emailController.text;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          "Lấy lại mật khẩu",
+          style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Nhập email của bạn, hệ thống sẽ gửi liên kết đặt lại mật khẩu.",
+              style: GoogleFonts.roboto(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _forgotEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: "email@example.com",
+                prefixIcon: const Icon(LucideIcons.mail, size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text("Hủy", style: GoogleFonts.roboto(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A84F8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              vm.sendPasswordReset(
+                email: _forgotEmailController.text.trim(),
+                onSuccess: (msg) {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(msg), backgroundColor: Colors.green),
+                  );
+                },
+                onError: (err) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(err), backgroundColor: Colors.red),
+                  );
+                },
+              );
+            },
+            child: Text("Gửi", style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Lắng nghe state
+    // [LOGIC ĐIỀU HƯỚNG MỚI]
+    ref.listen(authViewModelProvider, (previous, next) {
+      if (next.isRecoveryMode && (previous?.isRecoveryMode == false)) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()), // [ĐÃ SỬA CLASS]
+        );
+      }
+    });
+
     final authState = ref.watch(authViewModelProvider);
-    // Lấy notifier để gọi hàm
     final authViewModel = ref.read(authViewModelProvider.notifier);
 
     final isLogin = authState.isLoginMode;
@@ -81,7 +159,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         _buildTabSwitcher(isLogin, authViewModel),
                         const SizedBox(height: 30),
 
-                        // Form đăng ký
                         if (!isLogin) ...[
                           _buildLabel("Họ và tên"),
                           _buildTextField(
@@ -127,7 +204,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () => _showForgotPasswordDialog(authViewModel),
                               child: Text(
                                 "Quên mật khẩu?",
                                 style: GoogleFonts.roboto(
@@ -156,8 +233,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
       ),
     );
   }
-
-  // --- Helper Widgets ---
 
   Widget _buildHeader() {
     return Column(
@@ -340,7 +415,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
     );
   }
 
-  // NÚT SUBMIT - Logic chính nằm ở đây
   Widget _buildSubmitButton(bool isLogin, bool isLoading, AuthViewModel vm) {
     return Container(
       width: double.infinity,
@@ -366,7 +440,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                   name: isLogin ? null : _nameController.text.trim(),
                   phone: isLogin ? null : _phoneController.text.trim(),
                   onSuccess: (msg) {
-                    // Luôn hiện thông báo thành công
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(msg),
@@ -375,7 +448,6 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                     );
 
                     if (isLogin) {
-                      // CASE 1: ĐĂNG NHẬP -> Vào App
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
                           builder: (_) => const ClassroomPageScreen(),
@@ -383,9 +455,7 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                         (route) => false,
                       );
                     } else {
-                      // CASE 2: ĐĂNG KÝ -> Chuyển tab về Login (Đúng yêu cầu của bạn)
                       vm.toggleAuthMode();
-                      // (Tùy chọn) Xóa pass để user nhập lại cho an toàn
                       _passwordController.clear();
                     }
                   },

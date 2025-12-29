@@ -69,12 +69,14 @@ class AssetRepository {
 
         final borrowerName = (l['profiles'] as Map?)?['full_name'] as String?;
 
-        // lấy người mượn gần nhất
+        final borrowerId = l['borrower_id'] as String?;
+
         if (borrowedAt != null &&
             (acc.latestBorrowedAt == null ||
                 borrowedAt.isAfter(acc.latestBorrowedAt!))) {
           acc.latestBorrowedAt = borrowedAt;
           acc.latestBorrowerName = borrowerName;
+          acc.latestBorrowerId = borrowerId; // ✅
         }
       }
     }
@@ -91,6 +93,7 @@ class AssetRepository {
         availableQuantity: available,
         borrowerName: acc.latestBorrowerName,
         borrowedAt: acc.latestBorrowedAt,
+        borrowerId: acc.latestBorrowerId,
       );
     }).toList();
   }
@@ -118,14 +121,12 @@ class AssetRepository {
     required String classId,
     required String name,
     int totalQuantity = 1,
-    String conditionStatus = 'good',
     String? note,
   }) async {
     await _db.from('assets').insert({
       'class_id': classId,
       'name': name,
       'total_quantity': totalQuantity,
-      'condition_status': conditionStatus,
       'note': note,
     });
   }
@@ -134,16 +135,12 @@ class AssetRepository {
     required String assetId,
     String? name,
     int? totalQuantity,
-    String? conditionStatus,
     String? note,
   }) async {
     final payload = <String, dynamic>{};
 
     if (name != null) payload['name'] = name;
     if (totalQuantity != null) payload['total_quantity'] = totalQuantity;
-    if (conditionStatus != null) {
-      payload['condition_status'] = conditionStatus;
-    }
     if (note != null) payload['note'] = note;
 
     if (payload.isEmpty) return;
@@ -171,6 +168,9 @@ class AssetRepository {
         created_at,
         profiles:borrower_id (
           full_name
+        ),
+        assets:asset_id (
+          name
         )
       ''');
 
@@ -189,6 +189,48 @@ class AssetRepository {
         )
         .toList();
   }
+
+  Future<void> borrowAsset({
+    required String classId,
+    required String assetId,
+    required String borrowerId,
+    required int quantity,
+    String? note,
+  }) async {
+    await _db.from('asset_loans').insert({
+      'class_id': classId,
+      'asset_id': assetId,
+      'borrower_id': borrowerId,
+      'quantity': quantity,
+      'note': note,
+    });
+  }
+
+  Future<void> returnAsset({required String loanId}) async {
+    await _db
+        .from('asset_loans')
+        .update({'returned_at': DateTime.now().toIso8601String()})
+        .eq('id', loanId);
+  }
+
+  /// Lấy loan đang active (chưa trả) mới nhất của 1 user cho 1 asset
+  Future<String?> fetchMyLatestActiveLoanId({
+    required String assetId,
+    required String borrowerId,
+  }) async {
+    final rows = await _db
+        .from('asset_loans')
+        .select('id, borrowed_at, returned_at')
+        .eq('asset_id', assetId)
+        .eq('borrower_id', borrowerId)
+        .order('borrowed_at', ascending: false)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+
+    // rows[0] là Map
+    return rows[0]['id'] as String?;
+  }
 }
 
 class _AssetAccumulator {
@@ -196,6 +238,6 @@ class _AssetAccumulator {
   int borrowedQuantity = 0;
   DateTime? latestBorrowedAt;
   String? latestBorrowerName;
-
+  String? latestBorrowerId;
   _AssetAccumulator(this.asset);
 }

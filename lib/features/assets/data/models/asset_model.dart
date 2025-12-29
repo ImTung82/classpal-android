@@ -3,7 +3,6 @@ class AssetModel {
   final String classId; // uuid
   final String name; // text NOT NULL
   final int totalQuantity; // integer DEFAULT 1
-  final String conditionStatus; // text DEFAULT 'good'
   final String? note; // text nullable
   final DateTime createdAt; // timestamptz DEFAULT now()
 
@@ -12,7 +11,6 @@ class AssetModel {
     required this.classId,
     required this.name,
     required this.totalQuantity,
-    required this.conditionStatus,
     required this.note,
     required this.createdAt,
   });
@@ -23,7 +21,6 @@ class AssetModel {
       classId: json['class_id'] as String,
       name: json['name'] as String,
       totalQuantity: (json['total_quantity'] as num?)?.toInt() ?? 1,
-      conditionStatus: (json['condition_status'] as String?) ?? 'good',
       note: json['note'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -36,7 +33,6 @@ class AssetModel {
       'class_id': classId,
       'name': name,
       'total_quantity': totalQuantity,
-      'condition_status': conditionStatus,
       'note': note,
       'created_at': createdAt.toIso8601String(),
     };
@@ -47,7 +43,6 @@ class AssetModel {
     String? classId,
     String? name,
     int? totalQuantity,
-    String? conditionStatus,
     String? note,
     DateTime? createdAt,
   }) {
@@ -56,7 +51,6 @@ class AssetModel {
       classId: classId ?? this.classId,
       name: name ?? this.name,
       totalQuantity: totalQuantity ?? this.totalQuantity,
-      conditionStatus: conditionStatus ?? this.conditionStatus,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
     );

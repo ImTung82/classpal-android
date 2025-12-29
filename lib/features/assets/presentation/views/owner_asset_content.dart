@@ -106,7 +106,19 @@ class OwnerAssetContent extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // title giữ nguyên ...
+                Row(
+                  children: [
+                    Icon(LucideIcons.box, size: 18, color: Colors.grey[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Danh sách tài sản',
+                      style: GoogleFonts.roboto(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
 
                 assetsAsync.when(
@@ -129,7 +141,6 @@ class OwnerAssetContent extends ConsumerWidget {
                             assetId: item.asset.id,
                             name: item.asset.name,
                             totalQuantity: item.asset.totalQuantity,
-                            conditionStatus: item.asset.conditionStatus,
                             note: item.asset.note,
                           );
                         },
@@ -231,9 +242,12 @@ class OwnerAssetContent extends ConsumerWidget {
 
                         return Column(
                           children: recent.map((item) {
-                            return HistoryItem(history: item);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: HistoryItem(history: item),
+                            );
                           }).toList(),
-                        );
+                        );   
                       },
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),

@@ -80,27 +80,22 @@ class ClassEvent {
 
     String timeStr =
         "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
-    
-    // Parse end_time nếu có
-    DateTime? endTime;
+
+    // Parse end_time nếu có (đây là giờ kết thúc dự kiến, không phải closed timestamp)
     if (json['end_time'] != null) {
-      endTime = DateTime.parse(json['end_time']).toLocal();
-      timeStr +=
-          " - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
+      try {
+        final endTime = DateTime.parse(json['end_time']).toLocal();
+        timeStr +=
+            " - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
+      } catch (e) {
+        print('⚠️ Lỗi parse end_time: $e');
+      }
     }
 
-    // --- LOGIC QUAN TRỌNG: XÁC ĐỊNH IS_OPEN ---
-    // Mặc định là mở. Nếu có end_time và thời điểm hiện tại đã vượt quá end_time -> Đóng.
-    // Hoặc nếu bạn quy ước "có end_time tức là đã đóng thủ công" thì dùng logic dưới đây.
-    bool calculatedIsOpen = true;
-    if (endTime != null) {
-        // Logic 1: Đóng nếu quá hạn
-        if (DateTime.now().isAfter(endTime)) {
-            calculatedIsOpen = false;
-        }
-        // Logic 2 (theo yêu cầu của bạn): Nếu có end_time thì coi như đã đóng (để lưu dấu mốc đóng)
-        // calculatedIsOpen = false; 
-    }
+    // --- LOGIC ĐÚNG: isOpen chỉ phụ thuộc vào end_time có null hay không ---
+    // end_time == null => Sự kiện đang mở
+    // end_time != null => Sự kiện đã đóng (đã có người bấm "Đã đóng" và lưu)
+    bool calculatedIsOpen = json['end_time'] == null;
 
     return ClassEvent(
       id: json['id'] ?? '',
@@ -109,7 +104,7 @@ class ClassEvent {
       date: dateStr,
       time: timeStr,
       location: json['location'] ?? '',
-      isMandatory: json['is_mandatory'] ?? false,
+      isMandatory: json['is_mandatory'] ?? false, // Boolean từ DB
       status: EventStatus.upcoming,
       isOpen: calculatedIsOpen,
       participants: participants,
@@ -134,19 +129,23 @@ class ClassEvent {
     final startTime = DateTime(year, month, day, startHour, startMinute);
 
     final result = {
-      'class_id': classId,
       'title': title,
       'description': description,
       'start_time': startTime.toIso8601String(),
       'location': location,
-      'is_mandatory': isMandatory,
-      // Lưu ý: Không gửi is_open, logic đóng mở xử lý ở Repository
+      'is_mandatory': isMandatory, // Boolean
     };
 
-    // Chỉ gửi end_time nếu chuỗi thời gian có phần kết thúc (cho trường hợp update thông tin cơ bản)
-    // Còn việc Đóng/Mở sự kiện sẽ được xử lý riêng.
+    // Chỉ thêm class_id nếu không rỗng (cho trường hợp tạo mới)
+    if (classId.isNotEmpty) {
+      result['class_id'] = classId;
+    }
+
+    // Nếu có giờ kết thúc dự kiến trong chuỗi time, lưu vào DB
+    // CHÚ Ý: Đây là giờ kết thúc DỰ KIẾN, không phải closed timestamp
+    // Closed timestamp sẽ được xử lý riêng ở Repository
     if (timeParts.length > 1) {
-      final endTimeParts = timeParts[1].split(':');
+      final endTimeParts = timeParts[1].trim().split(':');
       final endHour = int.parse(endTimeParts[0]);
       final endMinute = int.parse(endTimeParts[1]);
       final endTime = DateTime(year, month, day, endHour, endMinute);

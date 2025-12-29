@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../data/models/asset_status_model.dart';
-
+import 'package:intl/intl.dart';
 class AssetCard extends StatelessWidget {
   final AssetStatusModel data;
   final VoidCallback? onViewHistory;
@@ -68,7 +68,7 @@ class AssetCard extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // Thay assetCode + category bằng conditionStatus + totalQuantity
+                
                 Row(
                   children: [
                     Text(
@@ -76,10 +76,6 @@ class AssetCard extends StatelessWidget {
                       style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey[700]),
                     ),
                     const SizedBox(width: 16),
-                    Text(
-                      'Tình trạng: ${asset.conditionStatus}',
-                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey[700]),
-                    ),
                   ],
                 ),
 
@@ -110,9 +106,11 @@ class AssetCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          data.borrowedAt!.toLocal().toString(),
-                          style: GoogleFonts.roboto(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
+                          '${DateFormat('HH:mm, dd/MM/yyyy').format(data.borrowedAt!.toLocal())}',
+                          style: GoogleFonts.roboto(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                     ],

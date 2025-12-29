@@ -28,7 +28,7 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
   final _quantityController = TextEditingController(text: '1');
   final _noteController = TextEditingController();
 
-  String _conditionStatus = 'good';
+
   bool _isSubmitting = false;
 
   InputDecoration _inputDecoration({String? hint}) {
@@ -102,7 +102,6 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
             classId: widget.classId,
             name: _nameController.text.trim(),
             totalQuantity: int.parse(_quantityController.text),
-            conditionStatus: _conditionStatus,
             note: _noteController.text.trim().isEmpty
                 ? null
                 : _noteController.text.trim(),
@@ -176,23 +175,6 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
                   keyboardType: TextInputType.number,
                   validator: _validateQuantity,
                   decoration: _inputDecoration(hint: 'VD: 1'),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// CONDITION
-                const Text('Tình trạng'),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: _conditionStatus,
-                  validator: (v) =>
-                      v == null ? 'Vui lòng chọn tình trạng' : null,
-                  items: const [
-                    DropdownMenuItem(value: 'good', child: Text('Tốt')),
-                    DropdownMenuItem(value: 'bad', child: Text('Hư hỏng')),
-                  ],
-                  onChanged: (v) => setState(() => _conditionStatus = v!),
-                  decoration: _inputDecoration(),
                 ),
 
                 const SizedBox(height: 16),

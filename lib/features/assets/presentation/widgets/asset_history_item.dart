@@ -24,8 +24,8 @@ class HistoryItem extends StatelessWidget {
         children: [
           Icon(
             history.isReturned
-                ? Icons.check_circle
-                : Icons.access_time,
+                ? LucideIcons.checkCircle
+                : LucideIcons.alertCircle,
             color: color,
           ),
           const SizedBox(width: 8),
@@ -35,11 +35,11 @@ class HistoryItem extends StatelessWidget {
               children: [
                 Text(
                   '${history.borrowerName ?? 'Ai đó'} mượn '
-                  '${history.quantity} cái',
+                  '${history.quantity} cái ${history.assetName??'tài sản'}',
                   style: GoogleFonts.roboto(fontSize: 13),
                 ),
                 Text(
-                  formatter.format(history.borrowedAt),
+                  formatter.format(history.borrowedAt.toLocal()),
                   style: GoogleFonts.roboto(
                     fontSize: 11,
                     color: Colors.grey,

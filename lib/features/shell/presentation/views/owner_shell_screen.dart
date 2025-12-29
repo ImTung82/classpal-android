@@ -38,7 +38,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
       const OwnerDashboardContent(),
       OwnerTeamContent(classId: widget.classModel.id), // [ĐÃ SỬA] Truyền classId
       const OwnerDutyContent(),
-      OwnerAssetContent(classId: widget.classModel.id),
+      const OwnerAssetContent(),
       const OwnerEventContent(),
       const OwnerFundContent(),
       const OwnerNotificationContent(),

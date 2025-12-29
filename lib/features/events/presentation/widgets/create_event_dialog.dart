@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/models/event_models.dart';
 
 class CreateEventDialog extends StatefulWidget {
   const CreateEventDialog({super.key});
@@ -63,10 +64,20 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
 
   // --- LOGIC NÚT TẠO SỰ KIỆN ---
   void _onSubmit() {
-    // 1. Chạy Validate
     if (_formKey.currentState!.validate()) {
-      // 2. Nếu hợp lệ -> Đóng Dialog và trả về kết quả 'true'
-      Navigator.of(context).pop(true);
+      // Tạo object ClassEvent
+      final newEvent = ClassEvent(
+        id: '', // Server sẽ tự gen
+        title: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        date: _dateController.text,
+        time: _timeController.text,
+        location: _locationController.text.trim(),
+        isMandatory: _isMandatory,
+      );
+
+      // Trả về object thay vì true
+      Navigator.of(context).pop(newEvent);
     }
   }
 

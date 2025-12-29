@@ -8,7 +8,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -29,36 +30,40 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     if (newPass.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Mật khẩu phải từ 6 ký tự trở lên")));
+        const SnackBar(content: Text("Mật khẩu phải từ 6 ký tự trở lên")),
+      );
       return;
     }
     if (newPass != confirmPass) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Mật khẩu không khớp")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Mật khẩu không khớp")));
       return;
     }
 
     setState(() => _isLoading = true);
 
-    ref.read(authViewModelProvider.notifier).submitNewPassword(
-      newPassword: newPass,
-      onSuccess: () {
-        // Quay về màn hình login gốc
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Đổi mật khẩu thành công! Hãy đăng nhập lại."),
-            backgroundColor: Colors.green,
-          ),
+    ref
+        .read(authViewModelProvider.notifier)
+        .submitNewPassword(
+          newPassword: newPass,
+          onSuccess: () {
+            // Quay về màn hình login gốc
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Đổi mật khẩu thành công! Hãy đăng nhập lại."),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+          onError: (msg) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(msg), backgroundColor: Colors.red),
+            );
+          },
         );
-      },
-      onError: (msg) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
-        );
-      },
-    );
   }
 
   @override
@@ -78,7 +83,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           children: [
             Text(
               "Tạo mật khẩu mới",
-              style: GoogleFonts.roboto(fontSize: 20, fontWeight: FontWeight.bold),
+              style: GoogleFonts.roboto(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -92,7 +100,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               decoration: InputDecoration(
                 labelText: "Mật khẩu mới",
                 prefixIcon: const Icon(LucideIcons.lock),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -101,8 +111,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: "Nhập lại mật khẩu",
-                prefixIcon: const Icon(LucideIcons.key), 
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(LucideIcons.key),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 30),
@@ -113,16 +125,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 onPressed: _isLoading ? null : _onSubmit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A84F8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
                         "Xác nhận thay đổi",
                         style: GoogleFonts.roboto(
-                            color: Colors.white, 
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
               ),

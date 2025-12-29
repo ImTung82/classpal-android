@@ -17,8 +17,8 @@ class AppAuthState {
   });
 
   AppAuthState copyWith({
-    bool? isLoginMode, 
-    bool? isPasswordVisible, 
+    bool? isLoginMode,
+    bool? isPasswordVisible,
     bool? isLoading,
     bool? isRecoveryMode,
   }) {
@@ -37,12 +37,12 @@ class AuthViewModel extends Notifier<AppAuthState> {
   @override
   AppAuthState build() {
     _listenToAuthEvents();
-    
+
     ref.onDispose(() {
       _authSubscription?.cancel();
     });
 
-    return AppAuthState(); 
+    return AppAuthState();
   }
 
   void _listenToAuthEvents() {
@@ -89,9 +89,9 @@ class AuthViewModel extends Notifier<AppAuthState> {
           throw const AuthException("Vui lòng nhập họ tên");
         }
         if (phone == null || phone.isEmpty) {
-           throw const AuthException("Vui lòng nhập số điện thoại");
+          throw const AuthException("Vui lòng nhập số điện thoại");
         }
-        
+
         await authRepository.signUp(email, password, name, phone);
         onSuccess("Đăng ký thành công!");
       }
@@ -126,7 +126,9 @@ class AuthViewModel extends Notifier<AppAuthState> {
     }
     try {
       await ref.read(authRepositoryProvider).resetPassword(email);
-      onSuccess("Đã gửi email! Vui lòng kiểm tra hộp thư và bấm vào liên kết để đổi mật khẩu.");
+      onSuccess(
+        "Đã gửi email! Vui lòng kiểm tra hộp thư và bấm vào liên kết để đổi mật khẩu.",
+      );
     } catch (e) {
       onError("Lỗi: ${e.toString()}");
     }

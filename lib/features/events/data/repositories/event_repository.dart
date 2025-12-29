@@ -122,17 +122,47 @@ class SupabaseEventRepository implements EventRepository {
   @override
   Future<ClassEvent> updateEvent(ClassEvent event) async {
     try {
+      print('🔄 [UPDATE EVENT] Bắt đầu cập nhật sự kiện: ${event.id}');
+      print('📝 [UPDATE EVENT] Dữ liệu gốc:');
+      print('   - Title: ${event.title}');
+      print('   - Date: ${event.date}');
+      print('   - Time: ${event.time}');
+      print('   - Location: ${event.location}');
+      print('   - isMandatory: ${event.isMandatory}');
+      print('   - isOpen: ${event.isOpen}');
+
       final eventData = event.toJson(''); // classId rỗng vì không update nó
+      print('📦 [UPDATE EVENT] Data sau toJson: $eventData');
+
       eventData.remove('class_id'); // Loại bỏ class_id để an toàn
+      print('📦 [UPDATE EVENT] Data sau khi xóa class_id: $eventData');
 
       // --- LOGIC CẬP NHẬT TRẠNG THÁI MỞ/ĐÓNG ---
       if (event.isOpen == false) {
-        // Nếu đóng: Ghi nhận thời gian đóng là hiện tại
-        eventData['end_time'] = DateTime.now().toIso8601String();
+        // User chọn "Đã đóng": Ghi nhận thời gian đóng là HIỆN TẠI
+        final closedTime = DateTime.now().toIso8601String();
+        eventData['end_time'] = closedTime;
+        print(
+          '🔒 [UPDATE EVENT] Đóng sự kiện thủ công - end_time (closed timestamp): $closedTime',
+        );
       } else {
-        // Nếu mở lại: Xóa thời gian kết thúc
-        eventData['end_time'] = null;
+        // User chọn "Đang mở"
+        final timeParts = event.time.split(' - ');
+        if (timeParts.length == 1) {
+          // Không có giờ kết thúc dự kiến => Xóa end_time để mở lại
+          // CHÚ Ý: Phải remove key thay vì set null
+          eventData.remove('end_time');
+          print('🔓 [UPDATE EVENT] Mở lại sự kiện - remove end_time');
+        } else {
+          // Có giờ kết thúc dự kiến => giữ nguyên từ toJson()
+          print(
+            '🔓 [UPDATE EVENT] Mở sự kiện - giữ end_time dự kiến: ${eventData['end_time']}',
+          );
+        }
       }
+
+      print('📤 [UPDATE EVENT] Data cuối cùng gửi lên DB: $eventData');
+      print('🔍 [UPDATE EVENT] Đang gửi request lên Supabase...');
 
       final response = await _supabase
           .from('events')
@@ -148,8 +178,18 @@ class SupabaseEventRepository implements EventRepository {
           ''')
           .single();
 
-      return ClassEvent.fromJson(response);
-    } catch (e) {
+      print('✅ [UPDATE EVENT] Response từ Supabase: $response');
+
+      final updatedEvent = ClassEvent.fromJson(response);
+      print('✅ [UPDATE EVENT] Cập nhật thành công!');
+      print('   - isOpen sau update: ${updatedEvent.isOpen}');
+      print('   - isMandatory sau update: ${updatedEvent.isMandatory}');
+
+      return updatedEvent;
+    } catch (e, stackTrace) {
+      print('❌ [UPDATE EVENT] LỖI khi cập nhật sự kiện:');
+      print('   - Error: $e');
+      print('   - StackTrace: $stackTrace');
       throw Exception('Lỗi khi cập nhật sự kiện: $e');
     }
   }

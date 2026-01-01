@@ -8,6 +8,7 @@ import '../widgets/transaction_item.dart';
 import '../widgets/campaign_card.dart';
 import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 import '../widgets/create_campaign.dart';
+import '../widgets/create_expense.dart';
 
 class OwnerFundContent extends ConsumerWidget {
   final String classId;
@@ -228,15 +229,34 @@ class OwnerFundContent extends ConsumerWidget {
                       ),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () async {
+                        await showCreateExpenseOverlay(
+                          context,
+                          onSubmit:
+                              ({
+                                required String title,
+                                required int amount,
+                                DateTime? spentAt,
+                                String? evidenceUrl,
+                              }) async {
+                                await ref
+                                    .read(fundActionProvider)
+                                    .addExpense(
+                                      classId: classId,
+                                      title: title,
+                                      amount: amount,
+                                      spentAt: spentAt,
+                                      evidenceUrl: evidenceUrl,
+                                    );
+                              },
+                        );
+                      },
                       icon: const Icon(LucideIcons.plus, size: 14),
                       label: const Text("Thêm khoản chi"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFDC2626),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         minimumSize: const Size(0, 42),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],

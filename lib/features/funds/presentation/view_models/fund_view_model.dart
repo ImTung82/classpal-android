@@ -36,9 +36,38 @@ class _FundAction {
     ref.invalidate(fundSummaryProvider(classId));
     ref.invalidate(fundCampaignProvider(classId)); // làm sau
   }
+
+  Future<void> addExpense({
+    required String classId,
+    required String title,
+    required int amount,
+    DateTime? spentAt,
+    String? evidenceUrl,
+  }) async {
+    await ref
+        .read(fundRepositoryProvider)
+        .addExpense(
+          classId: classId,
+          title: title,
+          amount: amount,
+          spentAt: spentAt,
+          evidenceUrl: evidenceUrl,
+        );
+
+    // 🔥 REFRESH UI NGAY
+    ref.invalidate(fundSummaryProvider(classId));
+    ref.invalidate(fundTransactionsProvider(classId));
+  }
 }
-final fundCampaignProvider =
-    FutureProvider.family<FundCampaign?, String>((ref, classId) async {
+
+final fundCampaignProvider = FutureProvider.family<FundCampaign?, String>((
+  ref,
+  classId,
+) async {
   return ref.watch(fundRepositoryProvider).fetchActiveCampaign(classId);
 });
 
+final fundTransactionsProvider =
+    FutureProvider.family<List<FundTransaction>, String>((ref, classId) async {
+      return ref.watch(fundRepositoryProvider).fetchExpenses(classId);
+    });

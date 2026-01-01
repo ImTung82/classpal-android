@@ -16,7 +16,14 @@ abstract class FundRepository {
   });
   Future<FundCampaign?> fetchActiveCampaign(String classId);
   Future<void> closeAllActiveCampaigns(String classId);
-
+  Future<void> addExpense({
+    required String classId,
+    required String title,
+    required int amount,
+    DateTime? spentAt,
+    String? evidenceUrl,
+  });
+  Future<List<FundTransaction>> fetchExpenses(String classId);
 }
 
 class FundRepositoryImpl implements FundRepository {
@@ -50,14 +57,15 @@ class FundRepositoryImpl implements FundRepository {
       balance: totalIncome - totalExpense,
     );
   }
+
   @override
-Future<void> closeAllActiveCampaigns(String classId) async {
-  await supabase
-      .from('fund_campaigns')
-      .update({'is_closed': true})
-      .eq('class_id', classId)
-      .eq('is_closed', false);
-}
+  Future<void> closeAllActiveCampaigns(String classId) async {
+    await supabase
+        .from('fund_campaigns')
+        .update({'is_closed': true})
+        .eq('class_id', classId)
+        .eq('is_closed', false);
+  }
 
   @override
   Future<void> createCampaign({
@@ -77,7 +85,6 @@ Future<void> closeAllActiveCampaigns(String classId) async {
                 "${deadline.month.toString().padLeft(2, '0')}-"
                 "${deadline.day.toString().padLeft(2, '0')}",
     });
-
   }
 
   @override
@@ -128,5 +135,37 @@ Future<void> closeAllActiveCampaigns(String classId) async {
       totalMemberCount: totalMembers.length,
       collectedAmount: collectedAmount,
     );
+  }
+
+  @override
+  Future<void> addExpense({
+    required String classId,
+    required String title,
+    required int amount,
+    DateTime? spentAt,
+    String? evidenceUrl,
+  }) async {
+    await supabase.from('fund_transactions').insert({
+      'class_id': classId,
+      'title': title,
+      'amount': amount,
+      'is_expense': true,
+      'created_at': spentAt?.toIso8601String(),
+      'evidence_url': evidenceUrl,
+    });
+  }
+
+  @override
+  Future<List<FundTransaction>> fetchExpenses(String classId) async {
+    final res = await supabase
+        .from('fund_transactions')
+        .select()
+        .eq('class_id', classId)
+        .eq('is_expense', true)
+        .order('created_at', ascending: false);
+
+    return res.map<FundTransaction>((row) {
+      return FundTransaction.fromMap(row);
+    }).toList();
   }
 }

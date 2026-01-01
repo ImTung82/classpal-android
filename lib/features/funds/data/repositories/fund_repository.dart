@@ -145,12 +145,16 @@ class FundRepositoryImpl implements FundRepository {
     DateTime? spentAt,
     String? evidenceUrl,
   }) async {
+    final DateTime createdAt = spentAt == null
+        ? DateTime.now()
+        : DateTime(spentAt.year, spentAt.month, spentAt.day, 12);
+
     await supabase.from('fund_transactions').insert({
       'class_id': classId,
       'title': title,
       'amount': amount,
       'is_expense': true,
-      'created_at': spentAt?.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
       'evidence_url': evidenceUrl,
     });
   }

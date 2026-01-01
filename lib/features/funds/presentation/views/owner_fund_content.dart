@@ -18,6 +18,7 @@ class OwnerFundContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final campaignAsync = ref.watch(fundCampaignProvider(classId));
+    final transactionsAsync = ref.watch(fundTransactionsProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -230,6 +231,8 @@ class OwnerFundContent extends ConsumerWidget {
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
+                        bool success = false;
+
                         await showCreateExpenseOverlay(
                           context,
                           onSubmit:
@@ -248,9 +251,29 @@ class OwnerFundContent extends ConsumerWidget {
                                       spentAt: spentAt,
                                       evidenceUrl: evidenceUrl,
                                     );
+                                success = true;
                               },
                         );
+
+                        if (success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Đã thêm khoản chi thành công",
+                                style: GoogleFonts.roboto(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              backgroundColor: const Color(
+                                0xFF16A34A,
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
                       },
+
                       icon: const Icon(LucideIcons.plus, size: 14),
                       label: const Text("Thêm khoản chi"),
                       style: ElevatedButton.styleFrom(
@@ -263,20 +286,31 @@ class OwnerFundContent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Nội dung sau này (Transaction list)
-                // transactionsAsync.when(
-                //   loading: () => const SizedBox(),
-                //   error: (e, s) => const SizedBox(),
-                //   data: (list) => Column(children: list.map((t) => TransactionItem(transaction: t)).toList()),
-                // ),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  alignment: Alignment.center,
-                  child: Text(
-                    "Chưa có khoản chi",
-                    style: GoogleFonts.roboto(color: Colors.grey, fontSize: 13),
+                transactionsAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
+                  error: (e, s) => Text("Lỗi: $e"),
+                  data: (transactions) {
+                    if (transactions.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            "Chưa có khoản chi",
+                            style: GoogleFonts.roboto(color: Colors.grey),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: transactions
+                          .map((t) => TransactionItem(transaction: t))
+                          .toList(),
+                    );
+                  },
                 ),
               ],
             ),

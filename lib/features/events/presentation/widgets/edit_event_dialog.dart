@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/event_models.dart';
 
 class EditEventDialog extends StatefulWidget {
@@ -15,181 +16,140 @@ class _EditEventDialogState extends State<EditEventDialog> {
 
   late TextEditingController _nameController;
   late TextEditingController _descController;
-  late TextEditingController _dateController;
-  late TextEditingController _timeStartController;
-  late TextEditingController _timeEndController;
   late TextEditingController _locationController;
 
+  late DateTime _selectedDate;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
+  late DateTime _deadlineDate;
+  late TimeOfDay _deadlineTime;
+
   late bool _isMandatory;
-  late bool _isOpen;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.event.title);
     _descController = TextEditingController(text: widget.event.description);
-    _dateController = TextEditingController(text: widget.event.date);
-
-    // Parse time string safely
-    final timeText = widget.event.time.trim();
-    if (timeText.contains(' - ')) {
-      final timeParts = timeText.split(' - ');
-      _timeStartController = TextEditingController(text: timeParts[0].trim());
-      _timeEndController = TextEditingController(text: timeParts[1].trim());
-    } else {
-      _timeStartController = TextEditingController(text: timeText);
-      _timeEndController = TextEditingController();
-    }
-
     _locationController = TextEditingController(text: widget.event.location);
     _isMandatory = widget.event.isMandatory;
-    _isOpen = widget.event.isOpen;
+
+    _selectedDate = widget.event.startTime;
+    _startTime = TimeOfDay.fromDateTime(widget.event.startTime);
+
+    if (widget.event.endTime != null) {
+      _endTime = TimeOfDay.fromDateTime(widget.event.endTime!);
+    } else {
+      _endTime = TimeOfDay(
+        hour: (_startTime.hour + 2) % 24,
+        minute: _startTime.minute,
+      );
+    }
+
+    _deadlineDate = widget.event.registrationDeadline;
+    _deadlineTime = TimeOfDay.fromDateTime(widget.event.registrationDeadline);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    _dateController.dispose();
-    _timeStartController.dispose();
-    _timeEndController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    DateTime initialDate = DateTime.now();
-    try {
-      if (_dateController.text.isNotEmpty) {
-        final parts = _dateController.text.split('/');
-        if (parts.length == 3) {
-          initialDate = DateTime(
-            int.parse(parts[2]),
-            int.parse(parts[1]),
-            int.parse(parts[0]),
-          );
-        }
-      }
-    } catch (e) {
-      initialDate = DateTime.now();
-    }
-
-    final DateTime? picked = await showDatePicker(
+  Future<void> _pickDate(BuildContext context, bool isEventDate) async {
+    final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
+      initialDate: isEventDate ? _selectedDate : _deadlineDate,
+      firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: const Color(0xFF155DFC),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF155DFC)),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
-        _dateController.text =
-            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+        if (isEventDate) {
+          _selectedDate = picked;
+        } else {
+          _deadlineDate = picked;
+        }
       });
     }
   }
 
-  Future<void> _pickStartTime() async {
-    TimeOfDay initialTime = TimeOfDay.now();
-    try {
-      if (_timeStartController.text.isNotEmpty) {
-        final parts = _timeStartController.text.split(':');
-        if (parts.length == 2) {
-          initialTime = TimeOfDay(
-            hour: int.parse(parts[0]),
-            minute: int.parse(parts[1]),
-          );
-        }
-      }
-    } catch (e) {
-      initialTime = TimeOfDay.now();
-    }
-
-    final TimeOfDay? picked = await showTimePicker(
+  Future<void> _pickTime(
+    BuildContext context,
+    Function(TimeOfDay) onPicked,
+  ) async {
+    final picked = await showTimePicker(
       context: context,
-      initialTime: initialTime,
+      initialTime: TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(primary: Color(0xFF155DFC)),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
-      setState(() {
-        final hour = picked.hour.toString().padLeft(2, '0');
-        final minute = picked.minute.toString().padLeft(2, '0');
-        _timeStartController.text = "$hour:$minute";
-      });
-    }
-  }
-
-  Future<void> _pickEndTime() async {
-    TimeOfDay initialTime = TimeOfDay.now();
-    try {
-      if (_timeEndController.text.isNotEmpty) {
-        final parts = _timeEndController.text.split(':');
-        if (parts.length == 2) {
-          initialTime = TimeOfDay(
-            hour: int.parse(parts[0]),
-            minute: int.parse(parts[1]),
-          );
-        }
-      }
-    } catch (e) {
-      initialTime = TimeOfDay.now();
-    }
-
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-    if (picked != null) {
-      setState(() {
-        final hour = picked.hour.toString().padLeft(2, '0');
-        final minute = picked.minute.toString().padLeft(2, '0');
-        _timeEndController.text = "$hour:$minute";
-      });
+      setState(() => onPicked(picked));
     }
   }
 
   void _onSave() {
     if (_formKey.currentState!.validate()) {
-      if (_timeEndController.text.isNotEmpty) {
-        try {
-          final startParts = _timeStartController.text.split(':');
-          final endParts = _timeEndController.text.split(':');
-          final startMinutes =
-              int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-          final endMinutes =
-              int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+      final startDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _startTime.hour,
+        _startTime.minute,
+      );
 
-          if (endMinutes <= startMinutes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Giờ kết thúc phải sau giờ bắt đầu'),
-                backgroundColor: Colors.red,
-              ),
-            );
-            return;
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Định dạng giờ không hợp lệ'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
+      final endDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _endTime.hour,
+        _endTime.minute,
+      );
 
-      String timeString = _timeStartController.text.trim();
-      if (_timeEndController.text.isNotEmpty) {
-        timeString += " - ${_timeEndController.text.trim()}";
+      final deadlineDateTime = DateTime(
+        _deadlineDate.year,
+        _deadlineDate.month,
+        _deadlineDate.day,
+        _deadlineTime.hour,
+        _deadlineTime.minute,
+      );
+
+      if (endDateTime.isBefore(startDateTime)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Giờ kết thúc phải sau giờ bắt đầu'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
       }
 
       final updatedEvent = widget.event.copyWith(
         title: _nameController.text.trim(),
         description: _descController.text.trim(),
-        date: _dateController.text.trim(),
-        time: timeString,
         location: _locationController.text.trim(),
+        startTime: startDateTime,
+        endTime: endDateTime,
+        registrationDeadline: deadlineDateTime,
         isMandatory: _isMandatory,
-        isOpen: _isOpen,
       );
 
       Navigator.of(context).pop(updatedEvent);
@@ -202,9 +162,9 @@ class _EditEventDialogState extends State<EditEventDialog> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -227,7 +187,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   _buildLabel('Tên sự kiện'),
                   const SizedBox(height: 8),
@@ -235,8 +195,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
                     controller: _nameController,
                     validator: (v) => v!.isEmpty ? 'Vui lòng nhập tên' : null,
                   ),
-                  const SizedBox(height: 16),
 
+                  const SizedBox(height: 16),
                   _buildLabel('Mô tả'),
                   const SizedBox(height: 8),
                   _buildTextField(
@@ -244,67 +204,92 @@ class _EditEventDialogState extends State<EditEventDialog> {
                     maxLines: 3,
                     validator: (v) => v!.isEmpty ? 'Vui lòng nhập mô tả' : null,
                   ),
-                  const SizedBox(height: 16),
 
-                  _buildLabel('Ngày'),
+                  const SizedBox(height: 16),
+                  _buildLabel('Thời gian sự kiện'),
                   const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _dateController,
-                    readOnly: true,
-                    onTap: _pickDate,
-                    icon: Icons.calendar_today_outlined,
-                    validator: (v) => v!.isEmpty ? 'Chọn ngày' : null,
-                  ),
-                  const SizedBox(height: 16),
 
+                  // --- [SỬA LỖI] Tách thành 2 dòng ---
+                  _buildDateTimePicker(
+                    text:
+                        "Ngày: ${DateFormat('dd/MM/yyyy').format(_selectedDate)}",
+                    icon: Icons.calendar_today_outlined,
+                    onTap: () => _pickDate(context, true),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel('Giờ bắt đầu'),
-                            const SizedBox(height: 8),
-                            _buildTextField(
-                              controller: _timeStartController,
-                              readOnly: true,
-                              onTap: _pickStartTime,
-                              icon: Icons.access_time,
-                              validator: (v) => v!.isEmpty ? 'Chọn giờ' : null,
-                            ),
-                          ],
+                        child: _buildDateTimePicker(
+                          text: "Bắt đầu: ${_startTime.format(context)}",
+                          onTap: () =>
+                              _pickTime(context, (t) => _startTime = t),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel('Giờ kết thúc'),
-                            const SizedBox(height: 8),
-                            _buildTextField(
-                              controller: _timeEndController,
-                              readOnly: true,
-                              onTap: _pickEndTime,
-                              icon: Icons.access_time,
-                              hintText: 'Tùy chọn',
-                            ),
-                          ],
+                        child: _buildDateTimePicker(
+                          text: "Kết thúc: ${_endTime.format(context)}",
+                          onTap: () => _pickTime(context, (t) => _endTime = t),
                         ),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.timer_outlined,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Chỉnh sửa hạn đăng ký',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.red[700],
+                          fontFamily: 'Arimo',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: _buildDateTimePicker(
+                          text: DateFormat('dd/MM/yyyy').format(_deadlineDate),
+                          icon: Icons.event_busy,
+                          onTap: () => _pickDate(context, false),
+                          borderColor: Colors.red.shade200,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 1,
+                        child: _buildDateTimePicker(
+                          text: _deadlineTime.format(context),
+                          onTap: () =>
+                              _pickTime(context, (t) => _deadlineTime = t),
+                          borderColor: Colors.red.shade200,
+                        ),
+                      ),
+                    ],
+                  ),
 
+                  const SizedBox(height: 16),
                   _buildLabel('Địa điểm'),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _locationController,
                     validator: (v) => v!.isEmpty ? 'Nhập địa điểm' : null,
                   ),
-                  const SizedBox(height: 16),
 
+                  const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => setState(() => _isMandatory = !_isMandatory),
                     child: Row(
@@ -333,40 +318,12 @@ class _EditEventDialogState extends State<EditEventDialog> {
                               : null,
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          'Sự kiện bắt buộc',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF354152),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildLabel('Trạng thái sự kiện'),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFD0D5DB)),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildRadioOption("Đang mở", true),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: const Color(0xFFD0D5DB),
-                        ),
-                        _buildRadioOption("Đã đóng", false),
+                        _buildLabel('Sự kiện bắt buộc'),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 32),
-
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
@@ -398,7 +355,6 @@ class _EditEventDialogState extends State<EditEventDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            elevation: 0,
                           ),
                           child: const Text(
                             'Lưu thay đổi',
@@ -432,32 +388,63 @@ class _EditEventDialogState extends State<EditEventDialog> {
     );
   }
 
+  Widget _buildDateTimePicker({
+    required String text,
+    IconData? icon,
+    required VoidCallback onTap,
+    Color? borderColor,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: borderColor ?? const Color(0xFFD0D5DB),
+            ),
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF101727)),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (icon != null) ...[
+              const SizedBox(width: 4),
+              Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
-    String? hintText,
     int maxLines = 1,
-    bool readOnly = false,
-    VoidCallback? onTap,
-    IconData? icon,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      readOnly: readOnly,
-      onTap: onTap,
       validator: validator,
       style: const TextStyle(fontSize: 16, color: Color(0xFF101727)),
       decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(color: Colors.black.withOpacity(0.3)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
         ),
-        suffixIcon: icon != null
-            ? Icon(icon, color: const Color(0xFF9CA3AF))
-            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFD0D5DB)),
@@ -473,33 +460,6 @@ class _EditEventDialogState extends State<EditEventDialog> {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Colors.red),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadioOption(String label, bool value) {
-    final isSelected = _isOpen == value;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _isOpen = value),
-        child: Container(
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFE0E7FF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(value ? 0 : 0),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? const Color(0xFF155DFC)
-                  : const Color(0xFF354152),
-            ),
-          ),
         ),
       ),
     );

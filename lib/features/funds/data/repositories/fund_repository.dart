@@ -16,6 +16,7 @@ abstract class FundRepository {
   });
   Future<FundCampaign?> fetchActiveCampaign(String classId);
   Future<void> closeAllActiveCampaigns(String classId);
+  Future<List<UnpaidMember>> fetchUnpaidMembers(String classId);
   Future<void> addExpense({
     required String classId,
     required String title,
@@ -172,4 +173,50 @@ class FundRepositoryImpl implements FundRepository {
       return FundTransaction.fromMap(row);
     }).toList();
   }
+
+  @override
+Future<List<UnpaidMember>> fetchUnpaidMembers(String classId) async {
+  // 1. Campaign đang mở
+  final campaignRes = await supabase
+      .from('fund_campaigns')
+      .select('id')
+      .eq('class_id', classId)
+      .eq('is_closed', false)
+      .limit(1);
+
+  if (campaignRes.isEmpty) return [];
+
+  final campaignId = campaignRes.first['id'];
+
+  // 2. Tất cả thành viên lớp
+  final members = await supabase
+      .from('class_members')
+      .select('user_id, profiles(full_name, student_code)')
+      .eq('class_id', classId);
+
+  // 3. Những người đã nộp
+  final paid = await supabase
+      .from('fund_transactions')
+      .select('payer_id')
+      .eq('campaign_id', campaignId)
+      .eq('is_expense', false);
+
+  final paidUserIds = paid
+      .map<String>((e) => e['payer_id'] as String)
+      .toSet();
+
+  // 4. Filter chưa nộp
+  final unpaid = members.where((m) {
+    return !paidUserIds.contains(m['user_id']);
+  });
+
+  return unpaid.map<UnpaidMember>((m) {
+    return UnpaidMember(
+      userId: m['user_id'],
+      fullName: m['profiles']['full_name'],
+      studentCode: m['profiles']['student_code'],
+    );
+  }).toList();
+}
+
 }

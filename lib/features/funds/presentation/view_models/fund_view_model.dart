@@ -71,3 +71,9 @@ final fundTransactionsProvider =
     FutureProvider.family<List<FundTransaction>, String>((ref, classId) async {
       return ref.watch(fundRepositoryProvider).fetchExpenses(classId);
     });
+
+final fundUnpaidProvider =
+    FutureProvider.family<List<UnpaidMember>, String>((ref, classId) async {
+  return ref.watch(fundRepositoryProvider).fetchUnpaidMembers(classId);
+});
+

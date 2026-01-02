@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart'; // Nếu chưa có, hãy thêm intl vào pubspec.yaml để format ngày giờ chuẩn hơn
+
 enum EventStatus { upcoming, registered, participated }
 
 class Student {
@@ -20,12 +22,16 @@ class ClassEvent {
   final String id;
   final String title;
   final String description;
-  final String date;
-  final String time;
+
+  // Thời gian diễn ra sự kiện
+  final DateTime startTime;
+  final DateTime? endTime;
+
+  // Thời gian chốt đăng ký (Quan trọng cho logic Mở/Đóng)
+  final DateTime registrationDeadline;
+
   final String location;
   final bool isMandatory;
-  final EventStatus status;
-  final bool isOpen;
   final List<Student> participants;
   final List<Student> nonParticipants;
   final List<Student> unconfirmed;
@@ -34,25 +40,57 @@ class ClassEvent {
     required this.id,
     required this.title,
     required this.description,
-    required this.date,
-    required this.time,
+    required this.startTime,
+    this.endTime,
+    required this.registrationDeadline,
     required this.location,
     this.isMandatory = false,
-    this.status = EventStatus.upcoming,
-    this.isOpen = true,
     this.participants = const [],
     this.nonParticipants = const [],
     this.unconfirmed = const [],
   });
 
-  // --- Getters ---
+  // --- GETTERS LOGIC ---
+
+  // 1. Logic quyết định Mở hay Đóng: So sánh hiện tại với Deadline
+  bool get isOpen {
+    final now = DateTime.now();
+    return now.isBefore(registrationDeadline);
+  }
+
+  // 2. Format Ngày sự kiện (VD: 20/11/2025)
+  String get dateDisplay {
+    return "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}";
+  }
+
+  // 3. Format Giờ sự kiện (VD: 07:00 - 09:00)
+  String get timeDisplay {
+    final startStr =
+        "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+    if (endTime != null) {
+      final endStr =
+          "${endTime!.hour.toString().padLeft(2, '0')}:${endTime!.minute.toString().padLeft(2, '0')}";
+      return "$startStr - $endStr";
+    }
+    return startStr;
+  }
+
+  // 4. Format Hạn đăng ký để hiển thị UI (VD: 17:00 19/11/2025)
+  String get deadlineDisplay {
+    return "${registrationDeadline.hour.toString().padLeft(2, '0')}:${registrationDeadline.minute.toString().padLeft(2, '0')} ${registrationDeadline.day}/${registrationDeadline.month}/${registrationDeadline.year}";
+  }
+
+  // 5. Thời gian còn lại để đăng ký (Dùng cho đếm ngược)
+  Duration get timeRemainingToRegister =>
+      registrationDeadline.difference(DateTime.now());
+
   int get registeredCount => participants.length;
   int get unregisteredCount => unconfirmed.length;
   int get totalCount =>
       participants.length + nonParticipants.length + unconfirmed.length;
   double get progress => totalCount == 0 ? 0 : registeredCount / totalCount;
 
-  // Factory từ Supabase JSON
+  // --- FACTORY ---
   factory ClassEvent.fromJson(Map<String, dynamic> json) {
     final participants = <Student>[];
     final nonParticipants = <Student>[];
@@ -73,83 +111,51 @@ class ClassEvent {
       }
     }
 
-    // Parse start_time
-    final startTime = DateTime.parse(json['start_time']).toLocal();
-    final dateStr =
-        "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}";
-
-    String timeStr =
-        "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
-
-    // Parse end_time nếu có (đây là giờ kết thúc dự kiến, không phải closed timestamp)
-    if (json['end_time'] != null) {
-      try {
-        final endTime = DateTime.parse(json['end_time']).toLocal();
-        timeStr +=
-            " - ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
-      } catch (e) {
-        print('⚠️ Lỗi parse end_time: $e');
-      }
-    }
-
-    // --- LOGIC ĐÚNG: isOpen chỉ phụ thuộc vào end_time có null hay không ---
-    // end_time == null => Sự kiện đang mở
-    // end_time != null => Sự kiện đã đóng (đã có người bấm "Đã đóng" và lưu)
-    bool calculatedIsOpen = json['end_time'] == null;
-
     return ClassEvent(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      date: dateStr,
-      time: timeStr,
+      // Parse và chuyển về Local Time
+      startTime: DateTime.parse(json['start_time']).toLocal(),
+      endTime: json['end_time'] != null
+          ? DateTime.parse(json['end_time']).toLocal()
+          : null,
+
+      // Parse Registration Deadline (Có fallback nếu DB cũ chưa có dữ liệu này)
+      registrationDeadline: json['registration_deadline'] != null
+          ? DateTime.parse(json['registration_deadline']).toLocal()
+          : DateTime.parse(
+              json['start_time'],
+            ).toLocal(), // Mặc định bằng start_time nếu null
+
       location: json['location'] ?? '',
-      isMandatory: json['is_mandatory'] ?? false, // Boolean từ DB
-      status: EventStatus.upcoming,
-      isOpen: calculatedIsOpen,
+      isMandatory: json['is_mandatory'] ?? false,
       participants: participants,
       nonParticipants: nonParticipants,
       unconfirmed: unconfirmed,
     );
   }
 
-  // Convert sang JSON
+  // --- TO JSON ---
   Map<String, dynamic> toJson(String classId) {
-    // Parse ngày tháng từ chuỗi hiển thị về DateTime để lưu DB
-    final dateParts = date.split('/');
-    final day = int.parse(dateParts[0]);
-    final month = int.parse(dateParts[1]);
-    final year = int.parse(dateParts[2]);
-
-    final timeParts = time.split(' - ');
-    final startTimeParts = timeParts[0].split(':');
-    final startHour = int.parse(startTimeParts[0]);
-    final startMinute = int.parse(startTimeParts[1]);
-
-    final startTime = DateTime(year, month, day, startHour, startMinute);
-
-    final result = {
+    final Map<String, dynamic> result = {
       'title': title,
       'description': description,
       'start_time': startTime.toIso8601String(),
+      'registration_deadline': registrationDeadline
+          .toIso8601String(), // Lưu deadline
       'location': location,
-      'is_mandatory': isMandatory, // Boolean
+      'is_mandatory': isMandatory,
     };
 
-    // Chỉ thêm class_id nếu không rỗng (cho trường hợp tạo mới)
     if (classId.isNotEmpty) {
       result['class_id'] = classId;
     }
 
-    // Nếu có giờ kết thúc dự kiến trong chuỗi time, lưu vào DB
-    // CHÚ Ý: Đây là giờ kết thúc DỰ KIẾN, không phải closed timestamp
-    // Closed timestamp sẽ được xử lý riêng ở Repository
-    if (timeParts.length > 1) {
-      final endTimeParts = timeParts[1].trim().split(':');
-      final endHour = int.parse(endTimeParts[0]);
-      final endMinute = int.parse(endTimeParts[1]);
-      final endTime = DateTime(year, month, day, endHour, endMinute);
-      result['end_time'] = endTime.toIso8601String();
+    if (endTime != null) {
+      result['end_time'] = endTime!.toIso8601String();
+    } else {
+      result['end_time'] = null;
     }
 
     return result;
@@ -160,12 +166,11 @@ class ClassEvent {
     String? id,
     String? title,
     String? description,
-    String? date,
-    String? time,
+    DateTime? startTime,
+    DateTime? endTime,
+    DateTime? registrationDeadline,
     String? location,
     bool? isMandatory,
-    EventStatus? status,
-    bool? isOpen,
     List<Student>? participants,
     List<Student>? nonParticipants,
     List<Student>? unconfirmed,
@@ -174,12 +179,11 @@ class ClassEvent {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      date: date ?? this.date,
-      time: time ?? this.time,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      registrationDeadline: registrationDeadline ?? this.registrationDeadline,
       location: location ?? this.location,
       isMandatory: isMandatory ?? this.isMandatory,
-      status: status ?? this.status,
-      isOpen: isOpen ?? this.isOpen,
       participants: participants ?? this.participants,
       nonParticipants: nonParticipants ?? this.nonParticipants,
       unconfirmed: unconfirmed ?? this.unconfirmed,

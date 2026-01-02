@@ -1,5 +1,3 @@
-// File: lib/features/events/presentation/view_models/owner_event_view_model.dart
-
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/event_models.dart';
@@ -11,11 +9,9 @@ final ownerEventsProvider = FutureProvider.autoDispose
       return ref.watch(eventRepositoryProvider).fetchOwnerEvents(classId);
     });
 
-// Controller xử lý action
+// Controller xử lý các hành động Thêm/Sửa/Xóa
 final eventControllerProvider = AsyncNotifierProvider<EventController, void>(
-  () {
-    return EventController();
-  },
+  () => EventController(),
 );
 
 class EventController extends AsyncNotifier<void> {
@@ -32,10 +28,7 @@ class EventController extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       await ref.read(eventRepositoryProvider).createEvent(classId, event);
-
-      // Refresh list
       ref.invalidate(ownerEventsProvider(classId));
-
       onSuccess();
     } catch (e) {
       onError(e.toString());
@@ -54,9 +47,7 @@ class EventController extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       await ref.read(eventRepositoryProvider).updateEvent(event);
-
       ref.invalidate(ownerEventsProvider(classId));
-
       onSuccess();
     } catch (e) {
       onError(e.toString());
@@ -75,9 +66,7 @@ class EventController extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       await ref.read(eventRepositoryProvider).deleteEvent(eventId);
-
       ref.invalidate(ownerEventsProvider(classId));
-
       onSuccess();
     } catch (e) {
       onError(e.toString());

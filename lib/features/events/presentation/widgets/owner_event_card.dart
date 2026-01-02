@@ -2,17 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../data/repositories/event_repository.dart'; //Thêm dòng này
 import '../../data/models/event_models.dart';
+import '../../data/models/event_models.dart';
+import '../../data/models/event_models.dart';
+import '../view_models/owner_event_view_model.dart';
 import 'edit_event_dialog.dart';
 import 'delete_event_dialog.dart';
 import 'event_details_dialog.dart';
-import '../view_models/owner_event_view_model.dart';
+import 'export_event_excel.dart'; 
 
 class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;
-  final String classId; // Thêm classId
+  final String classId;
 
   const OwnerEventCard({super.key, required this.event, required this.classId});
+
+  String _getDeadlineStatusText() {
+    if (!event.isOpen) return "Đã hết hạn đăng ký";
+    final duration = event.timeRemainingToRegister;
+    if (duration.inDays > 0) return "Còn ${duration.inDays} ngày đăng ký";
+    if (duration.inHours > 0) return "Còn ${duration.inHours} giờ đăng ký";
+    return "Sắp hết hạn (< ${duration.inMinutes} phút)";
+  }
+
+  Color _getDeadlineColor() {
+    if (!event.isOpen) return Colors.red;
+    if (event.timeRemainingToRegister.inDays < 1) return Colors.orange;
+    return Colors.green;
+  }
 
   void _showSnackbar(BuildContext context, String msg, Color color) {
     if (!context.mounted) return;
@@ -45,8 +63,8 @@ class OwnerEventCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. HEADER
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
@@ -61,9 +79,6 @@ class OwnerEventCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // B. Tags
-              // Luôn hiển thị trạng thái bắt buộc nếu có
               if (event.isMandatory) ...[
                 _buildStackedStatusChip(
                   'Bắt',
@@ -73,91 +88,21 @@ class OwnerEventCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-
-              // --- LOGIC HIỂN THỊ TAG TRẠNG THÁI (ĐANG MỞ / ĐÃ ĐÓNG) ---
-              if (event.isOpen)
-                _buildStackedStatusChip(
-                  'Đang',
-                  'mở',
-                  const Color(0xFFDCFCE7),
-                  const Color(0xFF008235),
-                )
-              else
-                _buildStackedStatusChip(
-                  'Đã',
-                  'đóng',
-                  const Color(0xFFF3F4F6), // Màu nền xám nhạt
-                  const Color(0xFF6B7280), // Màu chữ xám đậm
-                ),
-
-              const SizedBox(width: 12),
-
-              // C. Action Icons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Nút Sửa
-                  _buildActionButton(LucideIcons.pencil, Colors.blue, () async {
-                    final result = await showDialog<ClassEvent>(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => EditEventDialog(event: event),
-                    );
-
-                    if (result != null && context.mounted) {
-                      ref
-                          .read(eventControllerProvider.notifier)
-                          .updateEvent(
-                            classId: classId,
-                            event: result,
-                            onSuccess: () => _showSnackbar(
-                              context,
-                              'Cập nhật sự kiện thành công!',
-                              Colors.green,
-                            ),
-                            onError: (e) =>
-                                _showSnackbar(context, 'Lỗi: $e', Colors.red),
-                          );
-                    }
-                  }),
-
-                  const SizedBox(width: 4),
-
-                  // Nút Xóa
-                  _buildActionButton(LucideIcons.trash2, Colors.red, () async {
-                    final confirmDelete = await showDialog<bool>(
-                      context: context,
-                      builder: (context) =>
-                          DeleteEventDialog(eventName: event.title),
-                    );
-
-                    if (confirmDelete == true && context.mounted) {
-                      ref
-                          .read(eventControllerProvider.notifier)
-                          .deleteEvent(
-                            classId: classId,
-                            eventId: event.id,
-                            onSuccess: () {
-                              _showSnackbar(
-                                context,
-                                'Xóa sự kiện thành công!',
-                                Colors.green,
-                              );
-                              // Không cần invalidate ở đây nữa, Controller đã làm rồi
-                            },
-                            onError: (e) {
-                              _showSnackbar(context, 'Lỗi: $e', Colors.red);
-                            },
-                          );
-                    }
-                  }),
-                ],
+              _buildStackedStatusChip(
+                event.isOpen ? 'Đang' : 'Đã',
+                event.isOpen ? 'mở' : 'đóng',
+                event.isOpen
+                    ? const Color(0xFFDCFCE7)
+                    : const Color(0xFFF3F4F6),
+                event.isOpen
+                    ? const Color(0xFF008235)
+                    : const Color(0xFF6B7280),
               ),
+              const SizedBox(width: 8),
+              _buildActionIcons(context, ref),
             ],
           ),
           const SizedBox(height: 12),
-
-          // 2. Description
           Text(
             event.description,
             maxLines: 2,
@@ -169,202 +114,179 @@ class OwnerEventCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 3. Date & Time Row (Thẳng hàng ngang)
-          Row(
-            children: [
-              Expanded(child: _buildInfoRow(LucideIcons.calendar, event.date)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildInfoRow(LucideIcons.clock, event.time)),
-            ],
-          ),
-
-          // 4. Location Row (Địa điểm)
-          const SizedBox(height: 12),
-          _buildInfoRow(LucideIcons.mapPin, event.location),
-
-          const SizedBox(height: 16),
-
-          // 5. Progress Bar & Ratio
           Row(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: event.progress,
-                    backgroundColor: const Color(0xFFE5E7EB),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF2B7FFF),
+                child: _buildInfoRow(LucideIcons.calendar, event.dateDisplay),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildInfoRow(LucideIcons.clock, event.timeDisplay),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildInfoRow(LucideIcons.mapPin, event.location),
+          const SizedBox(height: 12),
+
+          // 2. DEADLINE
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: _getDeadlineColor().withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _getDeadlineColor().withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(LucideIcons.timer, size: 16, color: _getDeadlineColor()),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hạn ĐK: ${event.deadlineDisplay}",
+                      style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    minHeight: 6,
+                    Text(
+                      _getDeadlineStatusText(),
+                      style: GoogleFonts.roboto(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _getDeadlineColor(),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 3. PROGRESS & STATS
+          _buildProgressBar(),
+          const SizedBox(height: 20),
+          _buildStatisticCards(),
+          const SizedBox(height: 20),
+
+          // 4. ACTION BUTTONS (Dòng này CSS giống demo.dart)
+          _buildButton(
+            text: 'Xem chi tiết sinh viên',
+            icon: LucideIcons.users,
+            isOutlined: true,
+            onPressed: () => showDialog(
+              context: context,
+              builder: (context) => EventDetailsDialog(event: event),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildButton(
+                  text: 'Gửi nhắc nhở',
+                  icon: LucideIcons.bellRing,
+                  bgColor: const Color(0xFFF54900),
+                  onPressed: () => _showSnackbar(
+                    context,
+                    "Đã gửi thông báo thành công!",
+                    Colors.orange,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                "${event.registeredCount}/${event.totalCount}",
-                style: GoogleFonts.roboto(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: _buildButton(
+                  text: 'Xuất Excel',
+                  icon: LucideIcons.sheet,
+                  bgColor: const Color(0xFF155DFC),
+                  onPressed: () async {
+                    try {
+                      await ExportEventExcel.execute(event);
+                      _showSnackbar(
+                        context,
+                        "Xuất file Excel thành công!",
+                        Colors.green,
+                      );
+                    } catch (e) {
+                      _showSnackbar(context, e.toString(), Colors.red);
+                    }
+                  },
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-
-          // 6. Statistic Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatisticCard(
-                  icon: Icons.check_circle,
-                  iconColor: const Color(0xFF0D532B),
-                  title: "Đã đăng ký",
-                  count: "${event.registeredCount} sinh viên",
-                  countColor: const Color(0xFF00A63E),
-                  backgroundColor: const Color(0xFFF0FDF4),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatisticCard(
-                  icon: Icons.cancel,
-                  iconColor: const Color(0xFF7E2A0B),
-                  title: "Chưa đăng ký",
-                  count: "${event.unregisteredCount} sinh viên",
-                  countColor: const Color(0xFFF54900),
-                  backgroundColor: const Color(0xFFFFF7ED),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // 7. Action Button
-          // Nút Xem chi tiết
-          _buildFullWidthButton(
-            text: 'Xem chi tiết',
-            icon: LucideIcons.users,
-            isOutlined: true,
-            onPressed: () {
-              // Gọi Dialog Xem chi tiết
-              showDialog(
-                context: context,
-                builder: (context) => EventDetailsDialog(event: event),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildFullWidthButton(
-            text: 'Gửi nhắc nhở',
-            icon: LucideIcons.bellRing,
-            backgroundColor: const Color(0xFFF54900),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 12),
-          _buildFullWidthButton(
-            text: 'Xuất Excel',
-            icon: LucideIcons.sheet,
-            backgroundColor: const Color(0xFF155DFC),
-            onPressed: () {},
           ),
         ],
       ),
     );
   }
 
-  // --- WIDGET HELPERS ---
-
-  Widget _buildStackedStatusChip(
-    String line1,
-    String line2,
-    Color backgroundColor,
-    Color textColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            line1,
-            style: GoogleFonts.roboto(
-              fontSize: 9,
-              height: 1.0,
-              color: textColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            line2,
-            style: GoogleFonts.roboto(
-              fontSize: 9,
-              height: 1.0,
-              color: textColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(50),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Icon(icon, size: 20, color: color),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String text) {
+  // --- WIDGET CON ---
+  Widget _buildProgressBar() {
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
         Expanded(
-          // Thay Flexible bằng Expanded để chiếm hết không gian
-          child: Text(
-            text,
-            style: GoogleFonts.roboto(
-              fontSize: 14,
-              color: const Color(0xFF4B5563),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: event.progress,
+              backgroundColor: const Color(0xFFE5E7EB),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF2B7FFF),
+              ),
+              minHeight: 6,
             ),
-            // Bỏ overflow để text wrap xuống dòng nếu dài
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          "${event.registeredCount}/${event.totalCount}",
+          style: GoogleFonts.roboto(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatisticCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.check_circle,
+            color: const Color(0xFF00A63E),
+            bgColor: const Color(0xFFF0FDF4),
+            title: "Đã đăng ký",
+            count: "${event.registeredCount}",
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatItem(
+            icon: Icons.cancel,
+            color: const Color(0xFFF54900),
+            bgColor: const Color(0xFFFFF7ED),
+            title: "Chưa đăng ký",
+            count: "${event.unregisteredCount}",
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatisticCard({
+  Widget _buildStatItem({
     required IconData icon,
-    required Color iconColor,
+    required Color color,
+    required Color bgColor,
     required String title,
     required String count,
-    required Color countColor,
-    required Color backgroundColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -372,28 +294,27 @@ class OwnerEventCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: iconColor),
+              Icon(icon, size: 16, color: color),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: Text(
                   title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.roboto(
-                    fontSize: 13,
-                    color: iconColor,
+                    fontSize: 12,
+                    color: color,
                     fontWeight: FontWeight.w600,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             count,
             style: GoogleFonts.roboto(
-              fontSize: 15,
-              color: countColor,
+              fontSize: 16,
+              color: color,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -402,31 +323,30 @@ class OwnerEventCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildFullWidthButton({
+  Widget _buildButton({
     required String text,
     required IconData icon,
     required VoidCallback onPressed,
-    Color? backgroundColor,
+    Color? bgColor,
     bool isOutlined = false,
   }) {
-    final ButtonStyle style = isOutlined
+    final style = isOutlined
         ? OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            side: BorderSide(color: Colors.grey.shade300),
+            side: const BorderSide(color: Color(0xFFD0D5DB)),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            foregroundColor: const Color(0xFF374151),
-            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF354152),
           )
         : ElevatedButton.styleFrom(
-            backgroundColor: backgroundColor,
-            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            backgroundColor: bgColor,
+            foregroundColor: Colors.white,
             elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           );
 
     return SizedBox(
@@ -434,28 +354,120 @@ class OwnerEventCard extends ConsumerWidget {
       child: isOutlined
           ? OutlinedButton.icon(
               onPressed: onPressed,
-              style: style,
-              icon: Icon(icon, size: 20),
+              icon: Icon(icon, size: 18),
               label: Text(
                 text,
-                style: GoogleFonts.roboto(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w500),
               ),
+              style: style,
             )
           : ElevatedButton.icon(
               onPressed: onPressed,
-              style: style,
-              icon: Icon(icon, size: 20),
+              icon: Icon(icon, size: 18),
               label: Text(
                 text,
-                style: GoogleFonts.roboto(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
               ),
+              style: style,
             ),
+    );
+  }
+
+  Widget _buildActionIcons(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        InkWell(
+          onTap: () async {
+            final res = await showDialog<ClassEvent>(
+              context: context,
+              builder: (ctx) => EditEventDialog(event: event),
+            );
+            if (res != null)
+              ref
+                  .read(eventControllerProvider.notifier)
+                  .updateEvent(
+                    classId: classId,
+                    event: res,
+                    onSuccess: () => _showSnackbar(
+                      context,
+                      "Cập nhật thành công",
+                      Colors.green,
+                    ),
+                    onError: (e) => _showSnackbar(context, e, Colors.red),
+                  );
+          },
+          child: const Icon(LucideIcons.pencil, size: 20, color: Colors.blue),
+        ),
+        const SizedBox(width: 12),
+        InkWell(
+          onTap: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => DeleteEventDialog(eventName: event.title),
+            );
+            if (confirm == true)
+              ref
+                  .read(eventControllerProvider.notifier)
+                  .deleteEvent(
+                    classId: classId,
+                    eventId: event.id,
+                    onSuccess: () =>
+                        _showSnackbar(context, "Đã xóa", Colors.green),
+                    onError: (e) => _showSnackbar(context, e, Colors.red),
+                  );
+          },
+          child: const Icon(LucideIcons.trash2, size: 20, color: Colors.red),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStackedStatusChip(String l1, String l2, Color bg, Color txt) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            l1,
+            style: GoogleFonts.roboto(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: txt,
+            ),
+          ),
+          Text(
+            l2,
+            style: GoogleFonts.roboto(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: txt,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            text,
+            style: GoogleFonts.roboto(
+              fontSize: 14,
+              color: const Color(0xFF4B5563),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

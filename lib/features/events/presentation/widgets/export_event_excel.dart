@@ -12,7 +12,7 @@ class ExportEventExcel {
       excel.rename('Sheet1', sheetName);
       Sheet sheetObject = excel[sheetName];
 
-      // Style cho Header bảng
+      // 1. Định dạng Style
       CellStyle headerStyle = CellStyle(
         backgroundColorHex: ExcelColor.fromHexString('#155DFC'),
         fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
@@ -25,7 +25,7 @@ class ExportEventExcel {
         bold: true,
       );
 
-      // 1. Thông tin chung
+      // 2. Thông tin chung sự kiện
       sheetObject.appendRow([
         TextCellValue('SỰ KIỆN:'),
         TextCellValue(event.title.toUpperCase()),
@@ -38,63 +38,80 @@ class ExportEventExcel {
         TextCellValue('ĐỊA ĐIỂM:'),
         TextCellValue(event.location),
       ]);
-      sheetObject.appendRow([TextCellValue('')]);
 
-      // 2. Header bảng dữ liệu
+      // [YÊU CẦU] Thêm dòng TỔNG SINH VIÊN
+      sheetObject.appendRow([
+        TextCellValue('TỔNG SINH VIÊN:'),
+        IntCellValue(event.totalCount),
+      ]);
+
+      sheetObject.appendRow([TextCellValue('')]); // Dòng trống
+
+      // 3. Tiêu đề bảng (Header dữ liệu)
       sheetObject.appendRow([
         TextCellValue('STT'),
+        TextCellValue('Mã Sinh Viên'),
         TextCellValue('Họ và Tên'),
+        TextCellValue('Tổ/Đội'),
         TextCellValue('Trạng thái chi tiết'),
       ]);
 
-      for (var i = 0; i < 3; i++) {
+      // Apply style cho header (Dòng này nằm ở index 5 do có thêm dòng Tổng sinh viên)
+      int headerRowIndex = sheetObject.maxRows - 1;
+      for (var i = 0; i < 5; i++) {
         sheetObject
-                .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 4))
+                .cell(
+                  CellIndex.indexByColumnRow(
+                    columnIndex: i,
+                    rowIndex: headerRowIndex,
+                  ),
+                )
                 .cellStyle =
             headerStyle;
       }
 
-      int stt = 1;
+      // 4. Đổ dữ liệu theo nhóm - [YÊU CẦU] Reset STT về 1 cho mỗi nhóm
+
+      // Nhóm 1: Đã đăng ký
       _addRowGroup(
         sheetObject,
-        "DANH SÁCH THAM GIA",
+        "DANH SÁCH ĐÃ ĐĂNG KÝ (${event.participants.length})",
         event.participants,
-        "Đã đăng ký",
+        "Tham gia",
         groupStyle,
-        stt,
       );
-      stt += event.participants.length;
+
+      // Nhóm 2: Chưa đăng ký (Báo vắng)
       _addRowGroup(
         sheetObject,
-        "DANH SÁCH BÁO VẮNG",
+        "DANH SÁCH CHƯA ĐĂNG KÝ (${event.nonParticipants.length})",
         event.nonParticipants,
         "Không tham gia",
         groupStyle,
-        stt,
       );
-      stt += event.nonParticipants.length;
+
+      // Nhóm 3: Chưa phản hồi
       _addRowGroup(
         sheetObject,
-        "DANH SÁCH CHƯA PHẢN HỒI",
+        "DANH SÁCH CHƯA PHẢN HỒI (${event.unconfirmed.length})",
         event.unconfirmed,
         "Chưa xác nhận",
         groupStyle,
-        stt,
       );
 
-      // 3. Lưu và Chia sẻ
+      // 5. Lưu file và thực hiện chia sẻ
       var fileBytes = excel.save();
       if (fileBytes != null) {
         final directory = await getTemporaryDirectory();
         final String fileName =
-            'Export_${event.title.replaceAll(' ', '_')}.xlsx';
+            'Bao_cao_${event.title.replaceAll(' ', '_')}.xlsx';
         final File file = File('${directory.path}/$fileName')
           ..createSync(recursive: true)
           ..writeAsBytesSync(fileBytes);
 
         await Share.shareXFiles([
           XFile(file.path),
-        ], text: 'Dữ liệu sự kiện: ${event.title}');
+        ], text: 'Báo cáo sự kiện: ${event.title}');
       }
     } catch (e) {
       throw Exception("Lỗi xuất Excel: $e");
@@ -104,11 +121,11 @@ class ExportEventExcel {
   static void _addRowGroup(
     Sheet sheet,
     String title,
-    List students,
+    List<Student> students,
     String label,
     CellStyle style,
-    int startStt,
   ) {
+    // Dòng tiêu đề nhóm (Đã kèm số lượng từ tham số truyền vào)
     sheet.appendRow([TextCellValue(title)]);
     sheet
             .cell(
@@ -123,18 +140,23 @@ class ExportEventExcel {
     if (students.isEmpty) {
       sheet.appendRow([
         TextCellValue('-'),
+        TextCellValue('-'),
         TextCellValue('Trống'),
+        TextCellValue('-'),
         TextCellValue('-'),
       ]);
     } else {
+      // [YÊU CẦU] STT luôn bắt đầu từ 1 cho mỗi khi hàm này được gọi
       for (var i = 0; i < students.length; i++) {
         sheet.appendRow([
-          IntCellValue(startStt + i),
+          IntCellValue(i + 1), // Reset STT về 1, 2, 3...
+          TextCellValue(students[i].studentCode),
           TextCellValue(students[i].name),
+          TextCellValue(students[i].teamName),
           TextCellValue(label),
         ]);
       }
     }
-    sheet.appendRow([TextCellValue('')]);
+    sheet.appendRow([TextCellValue('')]); // Dòng trống ngăn cách các nhóm
   }
 }

@@ -1,4 +1,4 @@
-import 'package:intl/intl.dart'; // Nếu chưa có, hãy thêm intl vào pubspec.yaml để format ngày giờ chuẩn hơn
+import 'package:intl/intl.dart';
 
 enum EventStatus { upcoming, registered, participated }
 
@@ -6,14 +6,36 @@ class Student {
   final String id;
   final String name;
   final String? avatarUrl;
+  final String studentCode; // Mã sinh viên
+  final String teamName; // Tên tổ/đội
 
-  Student({required this.id, required this.name, this.avatarUrl});
+  Student({
+    required this.id,
+    required this.name,
+    this.avatarUrl,
+    required this.studentCode,
+    required this.teamName,
+  });
 
   factory Student.fromJson(Map<String, dynamic> json) {
+    // Xử lý dữ liệu lồng nhau từ các bảng profiles và class_members
+    // Giả định logic join: event_participants -> profiles & class_members -> teams
+    final profile = json['profiles'];
+
     return Student(
       id: json['user_id'] ?? '',
-      name: json['profiles']?['full_name'] ?? 'Unknown',
-      avatarUrl: json['profiles']?['avatar_url'],
+      name: profile?['full_name'] ?? 'Unknown',
+      avatarUrl: profile?['avatar_url'],
+      // Lấy student_code từ dữ liệu join, fallback về 'N/A'
+      studentCode:
+          json['student_code'] ??
+          json['class_members']?['student_code'] ??
+          'N/A',
+      // Lấy tên team từ bảng teams lồng trong class_members hoặc trực tiếp
+      teamName:
+          json['teams']?['name'] ??
+          json['class_members']?['teams']?['name'] ??
+          'Không có tổ',
     );
   }
 }
@@ -60,16 +82,14 @@ class ClassEvent {
 
   // 2. Format Ngày sự kiện (VD: 20/11/2025)
   String get dateDisplay {
-    return "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}";
+    return DateFormat('dd/MM/yyyy').format(startTime);
   }
 
   // 3. Format Giờ sự kiện (VD: 07:00 - 09:00)
   String get timeDisplay {
-    final startStr =
-        "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+    final startStr = DateFormat('HH:mm').format(startTime);
     if (endTime != null) {
-      final endStr =
-          "${endTime!.hour.toString().padLeft(2, '0')}:${endTime!.minute.toString().padLeft(2, '0')}";
+      final endStr = DateFormat('HH:mm').format(endTime!);
       return "$startStr - $endStr";
     }
     return startStr;
@@ -77,7 +97,7 @@ class ClassEvent {
 
   // 4. Format Hạn đăng ký để hiển thị UI (VD: 17:00 19/11/2025)
   String get deadlineDisplay {
-    return "${registrationDeadline.hour.toString().padLeft(2, '0')}:${registrationDeadline.minute.toString().padLeft(2, '0')} ${registrationDeadline.day}/${registrationDeadline.month}/${registrationDeadline.year}";
+    return DateFormat('HH:mm dd/MM/yyyy').format(registrationDeadline);
   }
 
   // 5. Thời gian còn lại để đăng ký (Dùng cho đếm ngược)
@@ -115,19 +135,13 @@ class ClassEvent {
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      // Parse và chuyển về Local Time
       startTime: DateTime.parse(json['start_time']).toLocal(),
       endTime: json['end_time'] != null
           ? DateTime.parse(json['end_time']).toLocal()
           : null,
-
-      // Parse Registration Deadline (Có fallback nếu DB cũ chưa có dữ liệu này)
       registrationDeadline: json['registration_deadline'] != null
           ? DateTime.parse(json['registration_deadline']).toLocal()
-          : DateTime.parse(
-              json['start_time'],
-            ).toLocal(), // Mặc định bằng start_time nếu null
-
+          : DateTime.parse(json['start_time']).toLocal(),
       location: json['location'] ?? '',
       isMandatory: json['is_mandatory'] ?? false,
       participants: participants,
@@ -141,9 +155,8 @@ class ClassEvent {
     final Map<String, dynamic> result = {
       'title': title,
       'description': description,
-      'start_time': startTime.toIso8601String(),
-      'registration_deadline': registrationDeadline
-          .toIso8601String(), // Lưu deadline
+      'start_time': startTime.toUtc().toIso8601String(),
+      'registration_deadline': registrationDeadline.toUtc().toIso8601String(),
       'location': location,
       'is_mandatory': isMandatory,
     };
@@ -153,7 +166,7 @@ class ClassEvent {
     }
 
     if (endTime != null) {
-      result['end_time'] = endTime!.toIso8601String();
+      result['end_time'] = endTime!.toUtc().toIso8601String();
     } else {
       result['end_time'] = null;
     }

@@ -85,7 +85,7 @@ class ClassEvent {
       registrationDeadline.difference(DateTime.now());
 
   int get registeredCount => participants.length;
-  int get unregisteredCount => unconfirmed.length;
+  int get unregisteredCount => nonParticipants.length + unconfirmed.length;
   int get totalCount =>
       participants.length + nonParticipants.length + unconfirmed.length;
   double get progress => totalCount == 0 ? 0 : registeredCount / totalCount;

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../data/repositories/event_repository.dart'; 
-import '../../data/models/event_models.dart';
-import '../../data/models/event_models.dart';
+import '../../data/repositories/event_repository.dart';
 import '../../data/models/event_models.dart';
 import '../view_models/owner_event_view_model.dart';
 import 'edit_event_dialog.dart';
@@ -45,6 +43,10 @@ class OwnerEventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // LOGIC MỚI: Chưa đăng ký = Không tham gia + Chưa xác nhận
+    final int unregisteredTotal =
+        event.nonParticipants.length + event.unconfirmed.length;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -169,12 +171,12 @@ class OwnerEventCard extends ConsumerWidget {
           // 3. PROGRESS & STATS
           _buildProgressBar(),
           const SizedBox(height: 20),
-          _buildStatisticCards(),
+          _buildStatisticCards(event.unregisteredCount),
           const SizedBox(height: 20),
 
-          // 4. ACTION BUTTONS (Dòng này CSS giống demo.dart)
+          // 4. ACTION BUTTONS
           _buildButton(
-            text: 'Xem chi tiết sinh viên',
+            text: 'Xem chi tiết',
             icon: LucideIcons.users,
             isOutlined: true,
             onPressed: () => showDialog(
@@ -188,7 +190,7 @@ class OwnerEventCard extends ConsumerWidget {
               Expanded(
                 child: _buildButton(
                   text: 'Gửi nhắc nhở',
-                  icon: LucideIcons.bellRing,
+                  icon: LucideIcons.bell,
                   bgColor: const Color(0xFFF54900),
                   onPressed: () => _showSnackbar(
                     context,
@@ -243,14 +245,15 @@ class OwnerEventCard extends ConsumerWidget {
         ),
         const SizedBox(width: 12),
         Text(
-          "${event.registeredCount}/${event.totalCount}",
+          "${event.registeredCount}/${event.totalCount} Sinh viên",
           style: GoogleFonts.roboto(fontSize: 13, fontWeight: FontWeight.w500),
         ),
       ],
     );
   }
 
-  Widget _buildStatisticCards() {
+  // Cập nhật hàm này để nhận giá trị unregisteredCount chính xác
+  Widget _buildStatisticCards(int unregisteredCount) {
     return Row(
       children: [
         Expanded(
@@ -269,7 +272,7 @@ class OwnerEventCard extends ConsumerWidget {
             color: const Color(0xFFF54900),
             bgColor: const Color(0xFFFFF7ED),
             title: "Chưa đăng ký",
-            count: "${event.unregisteredCount}",
+            count: "$unregisteredCount", // Hiển thị giá trị đã tính toán
           ),
         ),
       ],
@@ -311,7 +314,7 @@ class OwnerEventCard extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            count,
+            "$count sinh viên",
             style: GoogleFonts.roboto(
               fontSize: 16,
               color: color,
@@ -382,7 +385,7 @@ class OwnerEventCard extends ConsumerWidget {
               context: context,
               builder: (ctx) => EditEventDialog(event: event),
             );
-            if (res != null)
+            if (res != null) {
               ref
                   .read(eventControllerProvider.notifier)
                   .updateEvent(
@@ -395,6 +398,7 @@ class OwnerEventCard extends ConsumerWidget {
                     ),
                     onError: (e) => _showSnackbar(context, e, Colors.red),
                   );
+            }
           },
           child: const Icon(LucideIcons.pencil, size: 20, color: Colors.blue),
         ),
@@ -405,7 +409,7 @@ class OwnerEventCard extends ConsumerWidget {
               context: context,
               builder: (ctx) => DeleteEventDialog(eventName: event.title),
             );
-            if (confirm == true)
+            if (confirm == true) {
               ref
                   .read(eventControllerProvider.notifier)
                   .deleteEvent(
@@ -415,6 +419,7 @@ class OwnerEventCard extends ConsumerWidget {
                         _showSnackbar(context, "Đã xóa", Colors.green),
                     onError: (e) => _showSnackbar(context, e, Colors.red),
                   );
+            }
           },
           child: const Icon(LucideIcons.trash2, size: 20, color: Colors.red),
         ),

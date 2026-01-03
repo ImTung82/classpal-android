@@ -30,9 +30,10 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
   @override
   void initState() {
     super.initState();
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
-    _selectedDate = tomorrow;
-    _deadlineDate = tomorrow;
+    // Mặc định là ngày hôm nay, nhưng đảm bảo không chọn được quá khứ qua firstDate
+    final now = DateTime.now();
+    _selectedDate = now;
+    _deadlineDate = now;
   }
 
   @override
@@ -45,10 +46,17 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
 
   // --- HELPER CHỌN NGÀY/GIỜ ---
   Future<void> _pickDate(BuildContext context, bool isEventDate) async {
+    final now = DateTime.now();
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ); // Mốc ngày hôm nay 00:00
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isEventDate ? _selectedDate : _deadlineDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      firstDate: today, // [YÊU CẦU] Chặn chọn ngày trước ngày hôm nay
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
@@ -98,6 +106,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
   // --- SUBMIT ---
   void _onSubmit() {
     if (_formKey.currentState!.validate()) {
+      // Tạo DateTime từ các thành phần đã chọn (Giờ địa phương)
       final startDateTime = DateTime(
         _selectedDate.year,
         _selectedDate.month,
@@ -132,13 +141,14 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
         return;
       }
 
+      // [YÊU CẦU] Fix lỗi 7 tiếng bằng cách chuyển sang UTC trước khi lưu
       final newEvent = ClassEvent(
         id: '',
         title: _nameController.text.trim(),
         description: _descController.text.trim(),
-        startTime: startDateTime,
-        endTime: endDateTime,
-        registrationDeadline: deadlineDateTime,
+        startTime: startDateTime.toUtc(), // CHUYỂN SANG UTC
+        endTime: endDateTime.toUtc(), // CHUYỂN SANG UTC
+        registrationDeadline: deadlineDateTime.toUtc(), // CHUYỂN SANG UTC
         location: _locationController.text.trim(),
         isMandatory: _isMandatory,
       );
@@ -153,9 +163,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-        ), // Giảm padding ngoài để thêm diện tích
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -181,7 +189,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   _buildLabel('Tên sự kiện'),
                   const SizedBox(height: 8),
                   _buildTextField(
@@ -191,7 +198,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                         ? 'Vui lòng nhập tên'
                         : null,
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Mô tả'),
                   const SizedBox(height: 8),
@@ -203,13 +209,9 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                         ? 'Vui lòng nhập mô tả'
                         : null,
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Thời gian diễn ra'),
                   const SizedBox(height: 8),
-
-                  // --- [SỬA LỖI] Tách thành 2 dòng ---
-                  // Dòng 1: Ngày
                   _buildDateTimePicker(
                     text:
                         "Ngày: ${DateFormat('dd/MM/yyyy').format(_selectedDate)}",
@@ -217,7 +219,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                     onTap: () => _pickDate(context, true),
                   ),
                   const SizedBox(height: 12),
-                  // Dòng 2: Giờ Bắt đầu - Giờ Kết thúc
                   Row(
                     children: [
                       Expanded(
@@ -236,9 +237,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-                  // --- Deadline ---
                   Row(
                     children: [
                       const Icon(
@@ -262,7 +261,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                   Row(
                     children: [
                       Expanded(
-                        flex: 1, // Chia đều 1:1 cho an toàn
+                        flex: 1,
                         child: _buildDateTimePicker(
                           text: DateFormat('dd/MM/yyyy').format(_deadlineDate),
                           icon: Icons.event_busy,
@@ -282,7 +281,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Địa điểm'),
                   const SizedBox(height: 8),
@@ -293,7 +291,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                         ? 'Vui lòng nhập địa điểm'
                         : null,
                   ),
-
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => setState(() => _isMandatory = !_isMandatory),
@@ -327,7 +324,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -403,7 +399,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
       onTap: onTap,
       child: InputDecorator(
         decoration: InputDecoration(
-          // [TINH CHỈNH] Giảm padding bên trong để tránh vỡ layout trên màn hình bé
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 10,
@@ -419,7 +414,6 @@ class _CreateEventDialogState extends State<CreateEventDialog> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Flexible giúp text tự xuống dòng hoặc cắt bớt nếu quá dài
             Flexible(
               child: Text(
                 text,

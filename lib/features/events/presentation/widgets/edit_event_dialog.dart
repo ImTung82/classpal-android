@@ -34,11 +34,12 @@ class _EditEventDialogState extends State<EditEventDialog> {
     _locationController = TextEditingController(text: widget.event.location);
     _isMandatory = widget.event.isMandatory;
 
-    _selectedDate = widget.event.startTime;
-    _startTime = TimeOfDay.fromDateTime(widget.event.startTime);
+    // Chuyển về Local time để hiển thị đúng trên UI khi bắt đầu edit
+    _selectedDate = widget.event.startTime.toLocal();
+    _startTime = TimeOfDay.fromDateTime(widget.event.startTime.toLocal());
 
     if (widget.event.endTime != null) {
-      _endTime = TimeOfDay.fromDateTime(widget.event.endTime!);
+      _endTime = TimeOfDay.fromDateTime(widget.event.endTime!.toLocal());
     } else {
       _endTime = TimeOfDay(
         hour: (_startTime.hour + 2) % 24,
@@ -46,8 +47,10 @@ class _EditEventDialogState extends State<EditEventDialog> {
       );
     }
 
-    _deadlineDate = widget.event.registrationDeadline;
-    _deadlineTime = TimeOfDay.fromDateTime(widget.event.registrationDeadline);
+    _deadlineDate = widget.event.registrationDeadline.toLocal();
+    _deadlineTime = TimeOfDay.fromDateTime(
+      widget.event.registrationDeadline.toLocal(),
+    );
   }
 
   @override
@@ -59,10 +62,14 @@ class _EditEventDialogState extends State<EditEventDialog> {
   }
 
   Future<void> _pickDate(BuildContext context, bool isEventDate) async {
+    final now = DateTime.now();
+    // Tạo ngày hôm nay (00:00:00) để làm mốc so sánh cho firstDate
+    final today = DateTime(now.year, now.month, now.day);
+
     final picked = await showDatePicker(
       context: context,
       initialDate: isEventDate ? _selectedDate : _deadlineDate,
-      firstDate: DateTime(2020),
+      firstDate: today, // Chặn chọn các ngày trong quá khứ
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
@@ -78,6 +85,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
       setState(() {
         if (isEventDate) {
           _selectedDate = picked;
+          // Nếu ngày sự kiện thay đổi mà nhỏ hơn hạn đăng ký hiện tại,
+          // có thể cần điều chỉnh hạn đăng ký (tùy logic nghiệp vụ)
         } else {
           _deadlineDate = picked;
         }
@@ -88,10 +97,11 @@ class _EditEventDialogState extends State<EditEventDialog> {
   Future<void> _pickTime(
     BuildContext context,
     Function(TimeOfDay) onPicked,
+    TimeOfDay initialTime,
   ) async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: initialTime,
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -108,7 +118,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
 
   void _onSave() {
     if (_formKey.currentState!.validate()) {
-      final startDateTime = DateTime(
+      // Gộp ngày và giờ (Local Time)
+      final startDateTimeLocal = DateTime(
         _selectedDate.year,
         _selectedDate.month,
         _selectedDate.day,
@@ -116,7 +127,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
         _startTime.minute,
       );
 
-      final endDateTime = DateTime(
+      final endDateTimeLocal = DateTime(
         _selectedDate.year,
         _selectedDate.month,
         _selectedDate.day,
@@ -124,7 +135,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
         _endTime.minute,
       );
 
-      final deadlineDateTime = DateTime(
+      final deadlineDateTimeLocal = DateTime(
         _deadlineDate.year,
         _deadlineDate.month,
         _deadlineDate.day,
@@ -132,7 +143,8 @@ class _EditEventDialogState extends State<EditEventDialog> {
         _deadlineTime.minute,
       );
 
-      if (endDateTime.isBefore(startDateTime)) {
+      // Kiểm tra logic thời gian
+      if (endDateTimeLocal.isBefore(startDateTimeLocal)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Giờ kết thúc phải sau giờ bắt đầu'),
@@ -142,13 +154,14 @@ class _EditEventDialogState extends State<EditEventDialog> {
         return;
       }
 
+      // [SỬA LỖI] Sử dụng .toUtc() trước khi đóng gói dữ liệu để gửi lên Server
       final updatedEvent = widget.event.copyWith(
         title: _nameController.text.trim(),
         description: _descController.text.trim(),
         location: _locationController.text.trim(),
-        startTime: startDateTime,
-        endTime: endDateTime,
-        registrationDeadline: deadlineDateTime,
+        startTime: startDateTimeLocal.toUtc(),
+        endTime: endDateTimeLocal.toUtc(),
+        registrationDeadline: deadlineDateTimeLocal.toUtc(),
         isMandatory: _isMandatory,
       );
 
@@ -188,28 +201,25 @@ class _EditEventDialogState extends State<EditEventDialog> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   _buildLabel('Tên sự kiện'),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _nameController,
-                    validator: (v) => v!.isEmpty ? 'Vui lòng nhập tên' : null,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Vui lòng nhập tên' : null,
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Mô tả'),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _descController,
                     maxLines: 3,
-                    validator: (v) => v!.isEmpty ? 'Vui lòng nhập mô tả' : null,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Vui lòng nhập mô tả' : null,
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Thời gian sự kiện'),
                   const SizedBox(height: 8),
-
-                  // --- [SỬA LỖI] Tách thành 2 dòng ---
                   _buildDateTimePicker(
                     text:
                         "Ngày: ${DateFormat('dd/MM/yyyy').format(_selectedDate)}",
@@ -222,20 +232,23 @@ class _EditEventDialogState extends State<EditEventDialog> {
                       Expanded(
                         child: _buildDateTimePicker(
                           text: "Bắt đầu: ${_startTime.format(context)}",
-                          onTap: () =>
-                              _pickTime(context, (t) => _startTime = t),
+                          onTap: () => _pickTime(
+                            context,
+                            (t) => _startTime = t,
+                            _startTime,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildDateTimePicker(
                           text: "Kết thúc: ${_endTime.format(context)}",
-                          onTap: () => _pickTime(context, (t) => _endTime = t),
+                          onTap: () =>
+                              _pickTime(context, (t) => _endTime = t, _endTime),
                         ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -273,22 +286,24 @@ class _EditEventDialogState extends State<EditEventDialog> {
                         flex: 1,
                         child: _buildDateTimePicker(
                           text: _deadlineTime.format(context),
-                          onTap: () =>
-                              _pickTime(context, (t) => _deadlineTime = t),
+                          onTap: () => _pickTime(
+                            context,
+                            (t) => _deadlineTime = t,
+                            _deadlineTime,
+                          ),
                           borderColor: Colors.red.shade200,
                         ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
                   _buildLabel('Địa điểm'),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _locationController,
-                    validator: (v) => v!.isEmpty ? 'Nhập địa điểm' : null,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Nhập địa điểm' : null,
                   ),
-
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => setState(() => _isMandatory = !_isMandatory),
@@ -322,7 +337,6 @@ class _EditEventDialogState extends State<EditEventDialog> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
                   Row(
                     children: [

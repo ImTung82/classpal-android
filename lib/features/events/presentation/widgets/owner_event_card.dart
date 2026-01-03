@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../data/repositories/event_repository.dart'; //Thêm dòng này
+import '../../data/repositories/event_repository.dart'; 
 import '../../data/models/event_models.dart';
 import '../../data/models/event_models.dart';
 import '../../data/models/event_models.dart';
@@ -10,7 +10,7 @@ import '../view_models/owner_event_view_model.dart';
 import 'edit_event_dialog.dart';
 import 'delete_event_dialog.dart';
 import 'event_details_dialog.dart';
-import 'export_event_excel.dart'; 
+import 'export_event_excel.dart';
 
 class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;

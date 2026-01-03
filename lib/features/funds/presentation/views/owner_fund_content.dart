@@ -19,6 +19,7 @@ class OwnerFundContent extends ConsumerWidget {
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final campaignAsync = ref.watch(fundCampaignProvider(classId));
     final transactionsAsync = ref.watch(fundTransactionsProvider(classId));
+    final unpaidAsync = ref.watch(fundUnpaidProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -199,7 +200,18 @@ class OwnerFundContent extends ConsumerWidget {
                         ),
                       );
                     }
-                    return CampaignCard(campaign: campaign);
+                    return unpaidAsync.when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, s) => Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text(
+                          "Lỗi thành viên:\n$e",
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      data: (members) =>
+                          CampaignCard(campaign: campaign, members: members),
+                    );
                   },
                 ),
               ],
@@ -264,9 +276,7 @@ class OwnerFundContent extends ConsumerWidget {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              backgroundColor: const Color(
-                                0xFF16A34A,
-                              ),
+                              backgroundColor: const Color(0xFF16A34A),
                               behavior: SnackBarBehavior.floating,
                               duration: const Duration(seconds: 2),
                             ),

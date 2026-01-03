@@ -6,8 +6,12 @@ import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 
 class CampaignCard extends StatelessWidget {
   final FundCampaign campaign;
-
-  const CampaignCard({super.key, required this.campaign});
+  final List<UnpaidMember> members;
+  const CampaignCard({
+    super.key,
+    required this.campaign,
+    required this.members,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +132,68 @@ class CampaignCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+
+          Column(
+            children: members.map((m) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFFEDD5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.xCircle,
+                      color: Colors.orange,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            m.fullName,
+                            style: GoogleFonts.roboto(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            m.studentCode,
+                            style: GoogleFonts.roboto(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    ElevatedButton(
+                      onPressed: () {
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF22C55E),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text(
+                        "Xác nhận",
+                        style: TextStyle(fontSize: 11, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
 
           const SizedBox(height: 16),

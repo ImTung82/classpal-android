@@ -4,8 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/duty_models.dart';
 import '../../data/repositories/duty_repository.dart';
 
-// --- Owner Providers ---
-
 final scoreBoardProvider = FutureProvider.family<List<GroupScore>, String>((
   ref,
   classId,
@@ -19,8 +17,6 @@ final activeDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
 ) async {
   return ref.watch(dutyRepositoryProvider).fetchActiveDuties(classId);
 });
-
-// --- Student Providers ---
 
 final myDutyProvider = FutureProvider.family<DutyTask?, String>((
   ref,
@@ -38,7 +34,6 @@ final upcomingDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
   return ref.watch(dutyRepositoryProvider).fetchUpcomingDuties(classId);
 });
 
-// Provider kiểm tra quyền Tổ trưởng/Lớp trưởng
 final isLeaderProvider = FutureProvider.family<bool, String>((
   ref,
   classId,
@@ -53,11 +48,8 @@ final isLeaderProvider = FutureProvider.family<bool, String>((
       .eq('user_id', userId)
       .maybeSingle();
 
-  // Kiểm tra role là 'leader' (do bạn sửa tay trên DB) hoặc 'owner' (Lớp trưởng)
   return data?['role'] == 'leader' || data?['role'] == 'owner';
 });
-
-// --- Controller ---
 
 final dutyControllerProvider = AsyncNotifierProvider<DutyController, void>(() {
   return DutyController();
@@ -85,8 +77,6 @@ class DutyController extends AsyncNotifier<void> {
             startDate: startDate,
             taskTitles: taskTitles,
           );
-
-      // Làm mới dữ liệu sau khi tạo thành công
       ref.invalidate(activeDutiesProvider(classId));
       ref.invalidate(upcomingDutiesProvider(classId));
       onSuccess();
@@ -111,7 +101,6 @@ class DutyController extends AsyncNotifier<void> {
       ref.invalidate(myDutyProvider(classId));
       ref.invalidate(activeDutiesProvider(classId));
       ref.invalidate(scoreBoardProvider(classId));
-
       onSuccess();
     } catch (e) {
       onError(e.toString());

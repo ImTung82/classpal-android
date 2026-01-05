@@ -14,19 +14,20 @@ class StudentDutyCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(dutyControllerProvider).isLoading;
+    final isLeader = ref.watch(isLeaderProvider(classId)).value ?? false;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFFA855F7)], // Blue to Purple
+        gradient: LinearGradient(
+          colors: _getCardColors(task.status),
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
+            color: _getCardColors(task.status).first.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -39,7 +40,7 @@ class StudentDutyCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                task.dateRange.split('•').first.trim(),
+                task.dateRange,
                 style: GoogleFonts.roboto(color: Colors.white70, fontSize: 12),
               ),
               Container(
@@ -48,8 +49,8 @@ class StudentDutyCard extends ConsumerWidget {
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  LucideIcons.users,
+                child: Icon(
+                  _getStatusIcon(task.status),
                   color: Colors.white,
                   size: 16,
                 ),
@@ -76,55 +77,115 @@ class StudentDutyCard extends ConsumerWidget {
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () {
-                      ref
-                          .read(dutyControllerProvider.notifier)
-                          .markAsCompleted(
-                            classId: classId,
-                            dutyId: task.id,
-                            onSuccess: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Đã đánh dấu hoàn thành"),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            },
-                            onError: (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(e),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            },
-                          );
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF3B82F6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      "Đánh dấu hoàn thành",
-                      style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
-                    ),
-            ),
+            child: _buildActionButton(context, ref, isLeader, isLoading),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context,
+    WidgetRef ref,
+    bool isLeader,
+    bool isLoading,
+  ) {
+    if (task.status == 'Done')
+      return _buildStatusLabel("✅ Nhiệm vụ đã hoàn thành");
+    if (task.status == 'Missed')
+      return _buildStatusLabel("❌ Không hoàn thành (Bị trừ 5đ)");
+
+    if (isLeader && task.status == 'Active') {
+      return ElevatedButton(
+        onPressed: isLoading ? null : () => _markCompleted(context, ref),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF3B82F6),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                "Xác nhận hoàn thành (Tổ trưởng)",
+                style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+              ),
+      );
+    }
+
+    return _buildStatusLabel(
+      task.status == 'Active'
+          ? "Đang chờ Tổ trưởng xác nhận..."
+          : "Nhiệm vụ sắp tới",
+    );
+  }
+
+  Widget _buildStatusLabel(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.roboto(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  void _markCompleted(BuildContext context, WidgetRef ref) {
+    ref
+        .read(dutyControllerProvider.notifier)
+        .markAsCompleted(
+          classId: classId,
+          dutyId: task.id,
+          onSuccess: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Đã xác nhận hoàn thành!"),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+          onError: (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e), backgroundColor: Colors.red),
+            );
+          },
+        );
+  }
+
+  List<Color> _getCardColors(String status) {
+    switch (status) {
+      case 'Done':
+        return [const Color(0xFF10B981), const Color(0xFF059669)];
+      case 'Missed':
+        return [const Color(0xFFEF4444), const Color(0xFFB91C1C)];
+      default:
+        return [const Color(0xFF3B82F6), const Color(0xFFA855F7)];
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'Done':
+        return LucideIcons.checkCircle;
+      case 'Missed':
+        return LucideIcons.alertCircle;
+      default:
+        return LucideIcons.users;
+    }
   }
 }

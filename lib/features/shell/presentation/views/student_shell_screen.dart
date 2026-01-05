@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../../../core/widgets/app_menu_drawer.dart';
-import '../../../classes/data/models/class_model.dart'; 
+import '../../../classes/data/models/class_model.dart';
 
 import '../../../dashboard/presentation/views/student_dashboard_content.dart';
 import '../../../teams/presentation/views/student_team_content.dart';
@@ -36,21 +36,26 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
     // Khởi tạo page và truyền classId
     _pages = [
       const StudentDashboardContent(),
-      StudentTeamContent(classId: widget.classModel.id), // [ĐÃ SỬA] Truyền classId
+      StudentTeamContent(
+        classId: widget.classModel.id,
+      ), // [ĐÃ SỬA] Truyền classId
       const StudentDutyContent(),
       StudentAssetContent(classId: widget.classModel.id),
-      const StudentEventContent(),
       StudentFundContent(classId: widget.classModel.id),
+      StudentEventContent(classId: widget.classModel.id),
       const StudentNotificationContent(),
     ];
   }
 
   String _getSubtitleForIndex(int index) {
     switch (index) {
-      case 0: return "Thành viên";
-      case 1: return "Đội nhóm";
+      case 0:
+        return "Thành viên";
+      case 1:
+        return "Đội nhóm";
       // ... thêm các case khác nếu cần
-      default: return "Thành viên";
+      default:
+        return "Thành viên";
     }
   }
 
@@ -68,9 +73,9 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
         onNotificationPressed: () {
           setState(() {
-            _currentIndex = 6; 
+            _currentIndex = 6;
           });
-        }
+        },
       ),
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: AppBottomNav(

@@ -16,7 +16,7 @@ class ClassRepository {
 
     final response = await _supabase
         .from('class_members')
-        .select('role, classes(*)') 
+        .select('role, student_code, classes(*)') 
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('joined_at', ascending: false);

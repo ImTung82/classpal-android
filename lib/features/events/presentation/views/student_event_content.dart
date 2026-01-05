@@ -1,60 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart'; // [IMPORT FONT]
-import '../view_models/event_view_model.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../view_models/event_view_model.dart'; // Đảm bảo đường dẫn này đúng với file chứa studentEventsProvider
 import '../widgets/student_event_card.dart';
 
 class StudentEventContent extends ConsumerWidget {
-  const StudentEventContent({super.key});
+  final String classId;
+
+  const StudentEventContent({super.key, required this.classId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(eventsProvider);
+    // Gọi Provider lấy danh sách sự kiện cho sinh viên theo classId
+    final eventsAsync = ref.watch(studentEventsProvider(classId));
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // [CẬP NHẬT] Font & Size giống hệt Teams (StudentTeamContent)
-          Text(
-            "Sự kiện",
-            style: GoogleFonts.roboto(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Làm mới danh sách sự kiện
+        ref.invalidate(studentEventsProvider(classId));
+      },
+      child: eventsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Lỗi tải sự kiện: $err',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.roboto(color: Colors.red),
             ),
           ),
-          Text(
-            "Đăng ký tham gia các sự kiện lớp",
-            style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(
-            height: 16,
-          ), // Giảm khoảng cách từ 24 xuống 16 cho giống Teams
-
-          eventsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) =>
-                Text('Lỗi: $err', style: GoogleFonts.roboto()),
-            data: (events) {
-              if (events.isEmpty) {
-                return Center(
-                  child: Text(
-                    "Chưa có sự kiện nào",
-                    style: GoogleFonts.roboto(color: Colors.grey),
+        ),
+        data: (events) {
+          if (events.isEmpty) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.event_note,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Chưa có sự kiện nào trong lớp này",
+                        style: GoogleFonts.roboto(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              }
-              return Column(
-                children: events
-                    .map((event) => StudentEventCard(event: event))
-                    .toList(),
-              );
-            },
-          ),
+                ),
+              ),
+            );
+          }
 
-          const SizedBox(height: 80),
-        ],
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return StudentEventCard(event: event, classId: classId);
+            },
+          );
+        },
       ),
     );
   }

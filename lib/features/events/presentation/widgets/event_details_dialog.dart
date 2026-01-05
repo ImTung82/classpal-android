@@ -11,7 +11,6 @@ class EventDetailsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 1. Chuẩn bị danh sách các thẻ thống kê sẽ hiển thị
-    // Chỉ thêm vào list nếu danh sách sinh viên tương ứng không rỗng
     List<Widget> visibleStatCards = [];
 
     if (event.participants.isNotEmpty) {
@@ -83,18 +82,21 @@ class EventDetailsDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // 2. Thống kê (Hiển thị động dựa trên list visibleStatCards)
+            // 2. Thống kê (Tự động chia đều chiều ngang và bằng nhau về chiều cao)
             if (visibleStatCards.isNotEmpty)
-              Row(
-                children: [
-                  // Dùng vòng lặp để chèn SizedBox vào giữa các thẻ
-                  for (int i = 0; i < visibleStatCards.length; i++) ...[
-                    visibleStatCards[i],
-                    // Chỉ thêm khoảng cách nếu không phải là phần tử cuối cùng
-                    if (i < visibleStatCards.length - 1)
-                      const SizedBox(width: 8),
+              IntrinsicHeight(
+                // Đảm bảo các khung có chiều cao bằng nhau tuyệt đối
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment
+                      .stretch, // Ép các thẻ con giãn hết chiều cao
+                  children: [
+                    for (int i = 0; i < visibleStatCards.length; i++) ...[
+                      visibleStatCards[i],
+                      if (i < visibleStatCards.length - 1)
+                        const SizedBox(width: 8),
+                    ],
                   ],
-                ],
+                ),
               ),
 
             const SizedBox(height: 24),
@@ -161,7 +163,6 @@ class EventDetailsDialog extends StatelessWidget {
                       ),
                     ],
 
-                    // Hiển thị thông báo nếu sự kiện hoàn toàn trống
                     if (event.totalCount == 0)
                       const Center(
                         child: Padding(
@@ -222,6 +223,8 @@ class EventDetailsDialog extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            MainAxisAlignment.center, // Căn giữa nội dung theo chiều dọc
         children: [
           Text(
             label,

@@ -11,13 +11,12 @@ import '../../features/auth/presentation/view_models/auth_view_model.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/classes/data/models/class_model.dart';
 
-// [IMPORT PROFILE - MỚI]
+// [IMPORT PROFILE]
 import '../../features/profile/presentation/views/edit_profile_screen.dart';
 import '../../features/profile/presentation/views/change_password_screen.dart';
 
 class AppMenuDrawer extends ConsumerWidget {
-  final ClassModel?
-  classModel; // Có thể null (nếu đang ở màn hình danh sách lớp)
+  final ClassModel? classModel; // Có thể null (nếu đang ở màn hình danh sách lớp)
 
   const AppMenuDrawer({super.key, this.classModel});
 
@@ -29,21 +28,15 @@ class AppMenuDrawer extends ConsumerWidget {
 
     final String fullName = user?.userMetadata?['full_name'] ?? "Người dùng";
     final String email = user?.email ?? "Chưa cập nhật email";
-    final String avatarChar = fullName.isNotEmpty
-        ? fullName[0].toUpperCase()
-        : "U";
+    final String avatarChar = fullName.isNotEmpty ? fullName[0].toUpperCase() : "U";
 
     // 2. Logic hiển thị thông tin lớp (nếu có)
     final bool isInClass = classModel != null;
     final bool isOwner = isInClass && classModel!.role == 'owner';
 
     // Màu sắc Role
-    final badgeColor = isOwner
-        ? const Color(0xFF6A5AE0)
-        : const Color(0xFFFF8A00);
-    final badgeBgColor = isOwner
-        ? const Color(0xFFF3E8FF)
-        : const Color(0xFFFFF4E5);
+    final badgeColor = isOwner ? const Color(0xFF6A5AE0) : const Color(0xFFFF8A00);
+    final badgeBgColor = isOwner ? const Color(0xFFF3E8FF) : const Color(0xFFFFF4E5);
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
 
     return Drawer(
@@ -244,39 +237,83 @@ class AppMenuDrawer extends ConsumerWidget {
 
                         const SizedBox(height: 12),
 
-                        // Hàng 3: Mã lớp
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF6A5AE0).withOpacity(0.2),
+                        // Hàng 3: Mã lớp & Mã Sinh Viên [CẬP NHẬT]
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            // Mã lớp
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF6A5AE0).withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "Mã lớp: ",
+                                    style: GoogleFonts.roboto(
+                                      color: Colors.grey[600],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  SelectableText(
+                                    classModel!.code,
+                                    style: GoogleFonts.roboto(
+                                      color: const Color(0xFF6A5AE0),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Mã lớp: ",
-                                style: GoogleFonts.roboto(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
+
+                            // Mã Sinh Viên (Nếu có)
+                            if (classModel!.studentCode != null && 
+                                classModel!.studentCode!.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.orange.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "Mã SV: ",
+                                      style: GoogleFonts.roboto(
+                                        color: Colors.grey[600],
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    SelectableText(
+                                      classModel!.studentCode!,
+                                      style: GoogleFonts.roboto(
+                                        color: Colors.deepOrange,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              SelectableText(
-                                classModel!.code,
-                                style: GoogleFonts.roboto(
-                                  color: const Color(0xFF6A5AE0),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -314,7 +351,7 @@ class AppMenuDrawer extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
-                // [MỚI] Nút Hồ sơ cá nhân
+                // Nút Hồ sơ cá nhân
                 _buildMenuItem(
                   icon: LucideIcons.user,
                   title: "Hồ sơ cá nhân",
@@ -332,7 +369,7 @@ class AppMenuDrawer extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
-                // [MỚI] Nút Đổi mật khẩu
+                // Nút Đổi mật khẩu
                 _buildMenuItem(
                   icon: LucideIcons.lock,
                   title: "Đổi mật khẩu",

@@ -4,12 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../view_models/owner_event_view_model.dart';
 import '../widgets/owner_event_card.dart';
-import '../widgets/create_event_dialog.dart'; 
+import '../widgets/create_event_dialog.dart';
 import '../../data/models/event_models.dart';
 
 class OwnerEventContent extends ConsumerStatefulWidget {
   final String classId;
-
   const OwnerEventContent({super.key, required this.classId});
 
   @override
@@ -28,51 +27,23 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
     );
   }
 
-  Future<void> _showCreateEventDialog() async {
-    // Hiển thị Dialog tạo mới
-    final result = await showDialog<ClassEvent>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const CreateEventDialog();
-      },
-    );
-
-    // Nếu người dùng bấm tạo và trả về dữ liệu event
-    if (result != null && mounted) {
-      ref
-          .read(eventControllerProvider.notifier)
-          .createEvent(
-            classId: widget.classId,
-            event: result,
-            onSuccess: () =>
-                _showSnackbar('Tạo sự kiện thành công!', Colors.green),
-            onError: (e) => _showSnackbar('Lỗi: $e', Colors.red),
-          );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Watch providers defined in owner_event_view_model.dart
     final eventsAsync = ref.watch(ownerEventsProvider(widget.classId));
-
-    // Lắng nghe trạng thái loading toàn cục của controller (cho việc Create/Delete)
     final isGlobalLoading = ref.watch(eventControllerProvider).isLoading;
 
     return Stack(
       children: [
         RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(ownerEventsProvider(widget.classId));
-          },
+          onRefresh: () async =>
+              ref.invalidate(ownerEventsProvider(widget.classId)),
           child: SingleChildScrollView(
-            physics:
-                const AlwaysScrollableScrollPhysics(), // Để pull-to-refresh hoạt động ngay cả khi list ngắn
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Text(
                   "Quản lý sự kiện",
                   style: GoogleFonts.roboto(
@@ -86,12 +57,31 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
                 ),
                 const SizedBox(height: 16),
 
-                // Nút Tạo sự kiện
+                // Button to Create Event
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton.icon(
-                    onPressed: _showCreateEventDialog,
+                    onPressed: () async {
+                      final res = await showDialog<ClassEvent>(
+                        context: context,
+                        builder: (ctx) => const CreateEventDialog(),
+                      );
+                      if (res != null && mounted) {
+                        ref
+                            .read(eventControllerProvider.notifier)
+                            .createEvent(
+                              classId: widget.classId,
+                              event: res,
+                              onSuccess: () => _showSnackbar(
+                                'Tạo sự kiện thành công!',
+                                Colors.green,
+                              ),
+                              onError: (e) =>
+                                  _showSnackbar('Lỗi: $e', Colors.red),
+                            );
+                      }
+                    },
                     icon: const Icon(LucideIcons.plus, size: 20),
                     label: const Text("Tạo sự kiện mới"),
                     style: ElevatedButton.styleFrom(
@@ -106,7 +96,7 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
                 ),
                 const SizedBox(height: 20),
 
-                // Danh sách sự kiện
+                // Event List Rendering
                 eventsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
@@ -126,27 +116,23 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
                       );
                     }
                     return Column(
-                      children: events
-                          .map(
-                            (event) => OwnerEventCard(
-                              event: event,
-                              classId: widget.classId,
-                            ),
-                          )
-                          .toList(),
+                      children: events.map<Widget>((event) {
+                        return OwnerEventCard(
+                          key: ValueKey(event.id),
+                          event: event,
+                          classId: widget.classId,
+                        );
+                      }).toList(),
                     );
                   },
                 ),
-
-                const SizedBox(
-                  height: 80,
-                ), // Padding bottom để không bị che bởi FAB hoặc bottom bar
+                const SizedBox(height: 80),
               ],
             ),
           ),
         ),
 
-        // Global Loading Overlay
+        // Global Loading Overlay (for async operations like Create/Delete)
         if (isGlobalLoading)
           const Positioned.fill(
             child: ColoredBox(

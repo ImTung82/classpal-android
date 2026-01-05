@@ -1,25 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // [IMPORT FONT]
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/event_models.dart';
+import '../view_models/event_view_model.dart';
+import 'unregister_event_dialog.dart';
 
-class StudentEventCard extends StatelessWidget {
+class StudentEventCard extends ConsumerWidget {
   final ClassEvent event;
+  final String classId;
 
-  const StudentEventCard({super.key, required this.event});
+  const StudentEventCard({
+    super.key,
+    required this.event,
+    required this.classId,
+  });
+
+  void _showSnackbar(BuildContext context, String msg, Color color) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isRegistered = event.participants.any((s) => s.id == currentUserId);
+
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16), // Giảm margin bottom cho gọn
-      padding: const EdgeInsets.all(
-        20,
-      ), // Padding 20 giống GroupCard của Teams (nếu có)
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16), // Bo góc 16 giống GroupCard
-        // Viền xanh nhạt
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFB8F7CF), width: 1),
         boxShadow: [
           BoxShadow(
@@ -32,14 +52,12 @@ class StudentEventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header: Tiêu đề + Badge
+          // HEADER
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   event.title,
-                  // [CẬP NHẬT] Font Roboto, Size 16, Bold giống tên Tổ
                   style: GoogleFonts.roboto(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -72,29 +90,50 @@ class StudentEventCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // 2. Mô tả (Body Text)
           Text(
             event.description,
-            // [CẬP NHẬT] Size 14, màu xám đậm (giống style Teams)
             style: GoogleFonts.roboto(
               fontSize: 14,
               color: const Color(0xFF4B5563),
               height: 1.5,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
 
-          // 3. Thông tin chi tiết
-          _buildInfoRow(LucideIcons.calendar, event.date),
+          _buildInfoRow(LucideIcons.calendar, event.dateDisplay),
           const SizedBox(height: 8),
-          _buildInfoRow(LucideIcons.clock, event.time),
+          _buildInfoRow(LucideIcons.clock, event.timeDisplay),
           const SizedBox(height: 8),
           _buildInfoRow(LucideIcons.mapPin, event.location),
-
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                LucideIcons.timer,
+                size: 16,
+                color: event.isOpen ? const Color(0xFFF59E0B) : Colors.red,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  event.isOpen
+                      ? "Hạn đăng ký: ${event.deadlineDisplay}"
+                      : "Đã hết hạn đăng ký",
+                  style: GoogleFonts.roboto(
+                    fontSize: 13,
+                    color: event.isOpen ? const Color(0xFFB45309) : Colors.red,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
 
-          // 4. Hành động
-          _buildActionSection(),
+          // ACTION SECTION: Xử lý Logic ở đây
+          _buildActionSection(context, ref, isRegistered),
         ],
       ),
     );
@@ -103,12 +142,11 @@ class StudentEventCard extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey), // Icon màu Grey
+        Icon(icon, size: 16, color: Colors.grey),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            // [CẬP NHẬT] Size 13, màu Grey
             style: GoogleFonts.roboto(fontSize: 13, color: Colors.grey[700]),
           ),
         ),
@@ -116,8 +154,13 @@ class StudentEventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionSection() {
-    if (event.status == EventStatus.registered) {
+  Widget _buildActionSection(
+    BuildContext context,
+    WidgetRef ref,
+    bool isRegistered,
+  ) {
+    // 1. ĐÃ ĐĂNG KÝ
+    if (isRegistered) {
       return Column(
         children: [
           Container(
@@ -144,48 +187,76 @@ class StudentEventCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 40,
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(
-                  0xFFEF4444,
-                ), // Màu đỏ chuẩn Tailwind
-                side: const BorderSide(color: Color(0xFFFECACA)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          if (event.isOpen) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: () async {
+                  // Hiển thị Dialog Hủy đăng ký
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) =>
+                        UnregisterEventDialog(eventName: event.title),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    ref
+                        .read(studentEventControllerProvider.notifier)
+                        .leaveEvent(
+                          classId: classId,
+                          eventId: event.id,
+                          onSuccess: () => _showSnackbar(
+                            context,
+                            "Đã hủy đăng ký thành công",
+                            Colors.orange,
+                          ),
+                          onError: (e) =>
+                              _showSnackbar(context, "Lỗi: $e", Colors.red),
+                        );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFEF4444),
+                  side: const BorderSide(color: Color(0xFFFECACA)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: const Color(0xFFFEF2F2),
                 ),
-                backgroundColor: const Color(0xFFFEF2F2),
-              ),
-              child: Text(
-                'Hủy đăng ký',
-                style: GoogleFonts.roboto(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                child: Text(
+                  'Hủy đăng ký',
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       );
-    } else if (event.status == EventStatus.participated) {
-      return Container(
+    }
+
+    // 2. CHƯA ĐĂNG KÝ
+    if (!event.isOpen) {
+      return SizedBox(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(
-            0xFF10B981,
-          ), // Xanh Emerald (giống màu Tổ 3 trong Teams)
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
+        height: 44,
+        child: ElevatedButton(
+          onPressed: null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[300],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 0,
+          ),
           child: Text(
-            '✓ Đã tham gia',
+            'Đã đóng đăng ký',
             style: GoogleFonts.roboto(
-              color: Colors.white,
+              color: Colors.grey[600],
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -194,14 +265,24 @@ class StudentEventCard extends StatelessWidget {
       );
     }
 
-    // Upcoming
+    // Nút Đăng ký
     return SizedBox(
       width: double.infinity,
-      height: 44, // Chiều cao chuẩn nút bấm
+      height: 44,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          ref
+              .read(studentEventControllerProvider.notifier)
+              .joinEvent(
+                classId: classId,
+                eventId: event.id,
+                onSuccess: () =>
+                    _showSnackbar(context, "Đăng ký thành công!", Colors.green),
+                onError: (e) => _showSnackbar(context, "Lỗi: $e", Colors.red),
+              );
+        },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF407CFF), // Giữ màu brand
+          backgroundColor: const Color(0xFF407CFF),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),

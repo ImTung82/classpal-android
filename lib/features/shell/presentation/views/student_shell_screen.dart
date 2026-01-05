@@ -33,16 +33,16 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
   @override
   void initState() {
     super.initState();
-    // Khởi tạo page và truyền classId
+    
     _pages = [
       const StudentDashboardContent(),
       StudentTeamContent(
         classId: widget.classModel.id,
-      ), // [ĐÃ SỬA] Truyền classId
+      ), 
       const StudentDutyContent(),
       StudentAssetContent(classId: widget.classModel.id),
-      StudentFundContent(classId: widget.classModel.id),
       StudentEventContent(classId: widget.classModel.id),
+      StudentFundContent(classId: widget.classModel.id),
       const StudentNotificationContent(),
     ];
   }

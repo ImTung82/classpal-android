@@ -14,9 +14,11 @@ abstract class FundRepository {
     required int amountPerPerson,
     DateTime? deadline,
   });
-  Future<FundCampaign?> fetchActiveCampaign(String classId);
-  Future<void> closeAllActiveCampaigns(String classId);
-  Future<List<UnpaidMember>> fetchUnpaidMembers(String classId);
+  Future<List<FundCampaign>> fetchCampaigns(String classId);
+  Future<List<UnpaidMember>> fetchUnpaidMembers({
+    required String classId,
+    required String campaignId,
+  });
   Future<void> addExpense({
     required String classId,
     required String title,
@@ -25,6 +27,13 @@ abstract class FundRepository {
     String? evidenceUrl,
   });
   Future<List<FundTransaction>> fetchExpenses(String classId);
+  Future<void> confirmPaid({
+    required String classId,
+    required String campaignId,
+    required String userId,
+    required String payerName,
+    required int amount,
+  });
 }
 
 class FundRepositoryImpl implements FundRepository {
@@ -60,22 +69,12 @@ class FundRepositoryImpl implements FundRepository {
   }
 
   @override
-  Future<void> closeAllActiveCampaigns(String classId) async {
-    await supabase
-        .from('fund_campaigns')
-        .update({'is_closed': true})
-        .eq('class_id', classId)
-        .eq('is_closed', false);
-  }
-
-  @override
   Future<void> createCampaign({
     required String classId,
     required String title,
     required int amountPerPerson,
     DateTime? deadline,
   }) async {
-    await closeAllActiveCampaigns(classId);
     await supabase.from('fund_campaigns').insert({
       'class_id': classId,
       'title': title,
@@ -85,57 +84,55 @@ class FundRepositoryImpl implements FundRepository {
           : "${deadline.year}-"
                 "${deadline.month.toString().padLeft(2, '0')}-"
                 "${deadline.day.toString().padLeft(2, '0')}",
+      'is_closed': false,
     });
   }
 
   @override
-  Future<FundCampaign?> fetchActiveCampaign(String classId) async {
-    // 1. Campaign đang mở
+  Future<List<FundCampaign>> fetchCampaigns(String classId) async {
     final campaigns = await supabase
         .from('fund_campaigns')
         .select()
         .eq('class_id', classId)
         .eq('is_closed', false)
-        .order('created_at', ascending: false)
-        .limit(1);
+        .order('created_at', ascending: false);
 
-    if (campaigns.isEmpty) return null;
-
-    final campaign = campaigns.first;
-
-    final campaignId = campaign['id'];
-
-    // 2. Tổng số thành viên lớp
-    final totalMembers = await supabase
+    final members = await supabase
         .from('class_members')
         .select('id')
         .eq('class_id', classId);
 
-    // 3. Những người đã nộp
-    final paidMembers = await supabase
-        .from('fund_transactions')
-        .select('payer_id')
-        .eq('campaign_id', campaignId)
-        .eq('is_expense', false);
+    final totalMemberCount = members.length;
 
-    // 4. Tổng tiền đã thu
-    final collected = await supabase
-        .from('fund_transactions')
-        .select('amount')
-        .eq('campaign_id', campaignId)
-        .eq('is_expense', false);
+    List<FundCampaign> result = [];
 
-    final collectedAmount = collected.fold<int>(
-      0,
-      (sum, row) => sum + (row['amount'] as int),
-    );
+    for (final campaign in campaigns) {
+      final campaignId = campaign['id'];
 
-    return FundCampaign.fromMap(
-      campaign,
-      paidCount: paidMembers.length,
-      totalMemberCount: totalMembers.length,
-      collectedAmount: collectedAmount,
-    );
+      final paid = await supabase
+          .from('fund_transactions')
+          .select('payer_id, amount')
+          .eq('campaign_id', campaignId)
+          .eq('is_expense', false);
+
+      final paidUserIds = paid.map((e) => e['payer_id'] as String).toSet();
+
+      final collectedAmount = paid.fold<int>(
+        0,
+        (sum, e) => sum + (e['amount'] as int),
+      );
+
+      result.add(
+        FundCampaign.fromMap(
+          campaign,
+          paidCount: paidUserIds.length,
+          totalMemberCount: totalMemberCount,
+          collectedAmount: collectedAmount,
+        ),
+      );
+    }
+
+    return result;
   }
 
   @override
@@ -167,26 +164,79 @@ class FundRepositoryImpl implements FundRepository {
         .select()
         .eq('class_id', classId)
         .eq('is_expense', true)
-        .order('created_at', ascending: false);
-
+        .order('created_at', ascending: false)
+        .limit(8);
     return res.map<FundTransaction>((row) {
       return FundTransaction.fromMap(row);
     }).toList();
   }
 
   @override
-  Future<List<UnpaidMember>> fetchUnpaidMembers(String classId) async {
+  Future<List<UnpaidMember>> fetchUnpaidMembers({
+    required String classId,
+    required String campaignId,
+  }) async {
     final members = await supabase
         .from('class_members')
         .select('user_id, student_code, profiles(full_name)')
         .eq('class_id', classId);
 
+    final paid = await supabase
+        .from('fund_transactions')
+        .select('payer_id')
+        .eq('campaign_id', campaignId)
+        .eq('is_expense', false);
+
+    final paidUserIds = paid.map((e) => e['payer_id'] as String).toSet();
+
     return members.map<UnpaidMember>((m) {
+      final userId = m['user_id'] as String;
+
       return UnpaidMember(
-        userId: m['user_id'],
+        userId: userId,
         fullName: m['profiles']?['full_name'] ?? 'Chưa có tên',
-        studentCode: m['student_code'] ?? '',
+        studentCode: (m['student_code'] ?? '').toString(),
+        isPaid: paidUserIds.contains(userId),
       );
     }).toList();
+  }
+
+  @override
+  Future<void> confirmPaid({
+    required String classId,
+    required String campaignId,
+    required String userId,
+    required String payerName,
+    required int amount,
+  }) async {
+    // 1. Ghi nhận nộp tiền
+    await supabase.from('fund_transactions').insert({
+      'class_id': classId,
+      'campaign_id': campaignId,
+      'title': 'Nộp quỹ',
+      'amount': amount,
+      'is_expense': false,
+      'payer_id': userId,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+
+    // 2. Check đã đủ người chưa
+    final members = await supabase
+        .from('class_members')
+        .select('id')
+        .eq('class_id', classId);
+
+    final paid = await supabase
+        .from('fund_transactions')
+        .select('payer_id')
+        .eq('campaign_id', campaignId)
+        .eq('is_expense', false);
+
+    if (paid.length >= members.length) {
+      await supabase
+          .from('fund_campaigns')
+          .update({'is_closed': true})
+          .eq('id', campaignId);
+    }
   }
 }

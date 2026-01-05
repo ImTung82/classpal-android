@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../view_models/fund_view_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/personal_status_card.dart';
 import '../widgets/unpaid_list_item.dart';
-import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
+import '../../../../core/utils/currency_utils.dart'; 
 
 class StudentFundContent extends ConsumerWidget {
   final String classId;
@@ -17,8 +18,7 @@ class StudentFundContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final transactionsAsync = ref.watch(fundTransactionsProvider(classId));
-    final campaignAsync = ref.watch(fundCampaignProvider(classId));
-    final unpaidAsync = ref.watch(fundUnpaidProvider(classId));
+    final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -97,11 +97,11 @@ class StudentFundContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          campaignAsync.when(
+          campaignsAsync.when(
             loading: () => const SizedBox(),
-            error: (e, s) => const SizedBox(),
-            data: (campaign) {
-              if (campaign == null) {
+            error: (_, __) => const SizedBox(),
+            data: (campaigns) {
+              if (campaigns.isEmpty) {
                 return Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -115,7 +115,52 @@ class StudentFundContent extends ConsumerWidget {
                 );
               }
 
-              return PersonalStatusCard(campaign: campaign);
+              final myId = Supabase.instance.client.auth.currentUser?.id;
+
+              return Column(
+                children: campaigns.map((campaign) {
+                  final unpaidAsync = ref.watch(
+                    fundUnpaidProvider((
+                      classId: classId,
+                      campaignId: campaign.id,
+                    )),
+                  );
+
+                  return unpaidAsync.when(
+                    loading: () => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: PersonalStatusCard(
+                        campaign: campaign,
+                        isPaid: false,
+                        unpaidMembers: const [],
+                      ),
+                    ),
+                    error: (_, __) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: PersonalStatusCard(
+                        campaign: campaign,
+                        isPaid: false,
+                        unpaidMembers: const [],
+                      ),
+                    ),
+                    data: (members) {
+                      /// 🔥 xác định trạng thái của SINH VIÊN HIỆN TẠI
+                      final isUnpaid =
+                          myId != null &&
+                          members.any((m) => m.userId == myId && !m.isPaid);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: PersonalStatusCard(
+                          campaign: campaign,
+                          isPaid: !isUnpaid,
+                          unpaidMembers: members, // 🔥 QUAN TRỌNG
+                        ),
+                      );
+                    },
+                  );
+                }).toList(),
+              );
             },
           ),
 
@@ -150,41 +195,6 @@ class StudentFundContent extends ConsumerWidget {
                     .toList(),
               );
             },
-          ),
-
-          const SizedBox(height: 24),
-
-          /// 4. Danh sách chưa nộp
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Danh sách chưa nộp",
-                  style: GoogleFonts.roboto(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                unpaidAsync.when(
-                  loading: () => const SizedBox(),
-                  error: (e, s) => const SizedBox(),
-                  data: (list) => Column(
-                    children: list
-                        .map((u) => UnpaidListItem(name: u.fullName))
-                        .toList(),
-                  ),
-                ),
-              ],
-            ),
           ),
 
           const SizedBox(height: 80),

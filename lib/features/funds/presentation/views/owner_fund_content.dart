@@ -17,9 +17,9 @@ class OwnerFundContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
-    final campaignAsync = ref.watch(fundCampaignProvider(classId));
+    final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
     final transactionsAsync = ref.watch(fundTransactionsProvider(classId));
-    final unpaidAsync = ref.watch(fundUnpaidProvider(classId));
+
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -182,38 +182,50 @@ class OwnerFundContent extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // Nội dung sau này (CampaignCard)
-                campaignAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (e, s) => Text("Lỗi: $e"),
-                  data: (campaign) {
-                    if (campaign == null) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: Text(
-                            "Chưa có khoản thu",
-                            style: GoogleFonts.roboto(color: Colors.grey),
-                          ),
-                        ),
-                      );
-                    }
-                    return unpaidAsync.when(
-                      loading: () => const CircularProgressIndicator(),
-                      error: (e, s) => Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(
-                          "Lỗi thành viên:\n$e",
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                      data: (members) =>
-                          CampaignCard(campaign: campaign, members: members),
+                campaignsAsync.when(
+  loading: () => const CircularProgressIndicator(),
+  error: (e, s) => Text("Lỗi: $e"),
+  data: (campaigns) {
+    if (campaigns.isEmpty) {
+      return const Text("Chưa có khoản thu");
+    }
+
+    return Column(
+      children: campaigns.map((campaign) {
+        final unpaidAsync = ref.watch(
+          fundUnpaidProvider(
+            (classId: classId, campaignId: campaign.id),
+          ),
+        );
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: unpaidAsync.when(
+            loading: () => CampaignCard(
+              campaign: campaign,
+              members: const [],
+              onConfirmPaid: (_) {},
+            ),
+            error: (e, s) => Text("Lỗi thành viên: $e"),
+            data: (members) => CampaignCard(
+              campaign: campaign,
+              members: members, // 🔥 ĐÃ ĐÚNG THEO CAMPAIGN
+              onConfirmPaid: (member) async {
+                await ref.read(fundActionProvider).confirmPaid(
+                      classId: classId,
+                      campaign: campaign,
+                      member: member,
                     );
-                  },
-                ),
+              },
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  },
+),
+
+
               ],
             ),
           ),

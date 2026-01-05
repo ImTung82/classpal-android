@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../../../../core/utils/storage_utils.dart';
 
 Future<void> showCreateExpenseOverlay(
   BuildContext context, {
@@ -19,11 +21,12 @@ Future<void> showCreateExpenseOverlay(
 
   final ImagePicker picker = ImagePicker();
   DateTime? selectedDate;
+  XFile? selectedImage;
 
   String? titleError;
   String? amountError;
   String? dateError;
-
+  
   await showDialog(
     context: context,
     barrierDismissible: false,
@@ -33,57 +36,75 @@ Future<void> showCreateExpenseOverlay(
       return StatefulBuilder(
         builder: (context, setState) {
           void validateAndSubmit() async {
-            String? _titleError;
-            String? _amountError;
-            String? _dateError;
+  try {
+    String? _titleError;
+    String? _amountError;
+    String? _dateError;
 
-            final title = titleController.text.trim();
-            final amountText = amountController.text.trim();
+    final title = titleController.text.trim();
+    final amountText = amountController.text.trim();
 
-            if (title.isEmpty) {
-              _titleError = "Vui lòng nhập mô tả";
-            }
+    if (title.isEmpty) {
+      _titleError = "Vui lòng nhập mô tả";
+    }
 
-            int? amount;
-            if (amountText.isEmpty) {
-              _amountError = "Vui lòng nhập số tiền";
-            } else {
-              amount = int.tryParse(amountText);
-              if (amount == null || amount <= 0) {
-                _amountError = "Số tiền không hợp lệ";
-              }
-            }
+    int? amount;
+    if (amountText.isEmpty) {
+      _amountError = "Vui lòng nhập số tiền";
+    } else {
+      amount = int.tryParse(amountText);
+      if (amount == null || amount <= 0) {
+        _amountError = "Số tiền không hợp lệ";
+      }
+    }
 
-            if (selectedDate == null) {
-              _dateError = "Vui lòng chọn ngày chi";
-            }
+    if (selectedDate == null) {
+      _dateError = "Vui lòng chọn ngày chi";
+    }
 
-           
-            setState(() {
-              titleError = _titleError;
-              amountError = _amountError;
-              dateError = _dateError;
-            });
+    setState(() {
+      titleError = _titleError;
+      amountError = _amountError;
+      dateError = _dateError;
+    });
 
-            
-            if (_titleError != null ||
-                _amountError != null ||
-                _dateError != null) {
-              return;
-            }
+    if (_titleError != null ||
+        _amountError != null ||
+        _dateError != null) {
+      return;
+    }
 
-          
-            await onSubmit(
-              title: title,
-              amount: amount!,
-              spentAt: selectedDate,
-              evidenceUrl: evidenceController.text.isEmpty
-                  ? null
-                  : evidenceController.text,
-            );
+    String? imageUrl;
 
-            Navigator.pop(context);
-          }
+if (selectedImage != null) {
+  imageUrl = await StorageUtils.uploadEvidence(selectedImage!);
+}
+
+
+    await onSubmit(
+      title: title,
+      amount: amount!,
+      spentAt: selectedDate,
+      evidenceUrl: imageUrl,
+    );
+
+    Navigator.pop(context);
+  } catch (e, s) {
+    debugPrint("❌ Lỗi upload / submit: $e");
+    debugPrintStack(stackTrace: s);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "Không thể tải ảnh lên. Vui lòng thử lại.",
+          style: GoogleFonts.roboto(),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
 
           return Dialog(
             backgroundColor: Colors.white,
@@ -162,14 +183,21 @@ Future<void> showCreateExpenseOverlay(
                   const SizedBox(height: 6),
                   GestureDetector(
                     onTap: () async {
-                      final image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          evidenceController.text = image.name;
-                        });
-                      }
+                      final picker = ImagePicker();
+
+final image = await picker.pickImage(
+  source: ImageSource.gallery,
+  imageQuality: 80, // giảm dung lượng
+);
+
+if (image != null) {
+  setState(() {
+    selectedImage = image;
+    evidenceController.text = image.name;
+  });
+}
+
+
                     },
                     child: Container(
                       width: double.infinity,
@@ -264,9 +292,6 @@ Future<void> showCreateExpenseOverlay(
   );
 }
 
-/// =====================
-/// UI HELPERS
-/// =====================
 
 Widget _label(String text) =>
     Text(text, style: GoogleFonts.roboto(fontSize: 13));

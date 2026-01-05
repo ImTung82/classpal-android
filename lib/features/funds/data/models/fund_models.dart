@@ -119,10 +119,11 @@ class UnpaidMember {
   final String userId;
   final String fullName;
   final String studentCode;
-
+  final bool isPaid;
   const UnpaidMember({
     required this.userId,
     required this.fullName,
     required this.studentCode,
+    required this.isPaid,
   });
 }

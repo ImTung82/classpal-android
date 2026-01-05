@@ -32,9 +32,9 @@ class _FundAction {
           deadline: deadline,
         );
 
-    // refresh UI
+
     ref.invalidate(fundSummaryProvider(classId));
-    ref.invalidate(fundCampaignProvider(classId)); // làm sau
+    ref.invalidate(fundCampaignsProvider(classId)); 
   }
 
   Future<void> addExpense({
@@ -54,26 +54,52 @@ class _FundAction {
           evidenceUrl: evidenceUrl,
         );
 
-    // 🔥 REFRESH UI NGAY
     ref.invalidate(fundSummaryProvider(classId));
     ref.invalidate(fundTransactionsProvider(classId));
   }
+
+  Future<void> confirmPaid({
+    required String classId,
+    required FundCampaign campaign,
+    required UnpaidMember member,
+  }) async {
+    await ref
+        .read(fundRepositoryProvider)
+        .confirmPaid(
+          classId: classId,
+          campaignId: campaign.id,
+          userId: member.userId,
+          payerName: member.fullName,
+          amount: campaign.amountPerPerson,
+        );
+
+    ref.invalidate(fundCampaignsProvider(classId));
+    ref.invalidate(
+      fundUnpaidProvider((classId: classId, campaignId: campaign.id)),
+    );
+    ref.invalidate(fundSummaryProvider(classId));
+  }
 }
 
-final fundCampaignProvider = FutureProvider.family<FundCampaign?, String>((
-  ref,
-  classId,
-) async {
-  return ref.watch(fundRepositoryProvider).fetchActiveCampaign(classId);
-});
+final fundCampaignsProvider = FutureProvider.family<List<FundCampaign>, String>(
+  (ref, classId) async {
+    return ref.watch(fundRepositoryProvider).fetchCampaigns(classId);
+  },
+);
 
 final fundTransactionsProvider =
     FutureProvider.family<List<FundTransaction>, String>((ref, classId) async {
       return ref.watch(fundRepositoryProvider).fetchExpenses(classId);
     });
 
-final fundUnpaidProvider =
-    FutureProvider.family<List<UnpaidMember>, String>((ref, classId) async {
-  return ref.watch(fundRepositoryProvider).fetchUnpaidMembers(classId);
-});
+typedef UnpaidArgs = ({String classId, String campaignId});
 
+final fundUnpaidProvider =
+    FutureProvider.family<List<UnpaidMember>, UnpaidArgs>((ref, args) async {
+      return ref
+          .watch(fundRepositoryProvider)
+          .fetchUnpaidMembers(
+            classId: args.classId,
+            campaignId: args.campaignId,
+          );
+    });

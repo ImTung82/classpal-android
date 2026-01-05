@@ -14,6 +14,7 @@ class CreateDutyDialog extends ConsumerStatefulWidget {
 }
 
 class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
+  // Giữ nguyên các biến state của bạn
   final Set<String> _selectedTeamIds = {};
   DateTime _selectedDate = DateTime.now();
 
@@ -27,12 +28,53 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     super.dispose();
   }
 
+  // LOGIC SUBMIT MỚI: Khớp với createDutyRotation
+  Future<void> _submitData() async {
+    final String title = _titleController.text.trim().isEmpty
+        ? "Trực nhật"
+        : _titleController.text.trim();
+    final String desc = _descriptionController.text.trim();
+
+    // Tách danh sách nhiệm vụ nếu LT nhập dạng "Lau bảng, Tắt điện"
+    List<String> taskTitles = title
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    // Nếu có description, nối vào từng nhiệm vụ
+    if (desc.isNotEmpty) {
+      taskTitles = taskTitles.map((t) => "$t: $desc").toList();
+    }
+
+    await ref
+        .read(dutyControllerProvider.notifier)
+        .createDuty(
+          classId: widget.classId,
+          startDate: _selectedDate,
+          taskTitles: taskTitles,
+          onSuccess: () {
+            if (mounted) Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Tạo nhiệm vụ thành công!"),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+          onError: (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Lỗi: $e"), backgroundColor: Colors.red),
+            );
+          },
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final teamsAsync = ref.watch(teamGroupsProvider(widget.classId));
     final isLoading = ref.watch(dutyControllerProvider).isLoading;
 
-    // GestureDetector bọc ngoài cùng để đóng bàn phím khi bấm ra vùng trống
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Dialog(
@@ -58,7 +100,7 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                 const SizedBox(height: 20),
 
                 _buildSectionTitle('Tên nhiệm vụ'),
-                _buildTextField(_titleController, 'VD: Trực nhật'),
+                _buildTextField(_titleController, 'VD: Trực nhật, Lau bảng...'),
                 const SizedBox(height: 16),
 
                 _buildSectionTitle('Mô tả công việc'),
@@ -102,9 +144,7 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: InkWell(
-                        onTap: isLoading || _selectedTeamIds.isEmpty
-                            ? null
-                            : _submitData,
+                        onTap: isLoading ? null : _submitData,
                         child: _buildActionButton(
                           isLoading ? 'Đang tạo...' : 'Tạo nhiệm vụ',
                           bgColor: const Color(0xFF155DFC),
@@ -122,18 +162,9 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  // Logic chia lưới linh hoạt theo số lượng tổ
   Widget _buildTeamsGrid(List<TeamGroup> teams) {
     if (teams.isEmpty) return const Text("Chưa có tổ nào trong lớp");
-
-    int crossAxisCount;
-    if (teams.length == 1) {
-      crossAxisCount = 1;
-    } else if (teams.length == 3) {
-      crossAxisCount = 3;
-    } else {
-      crossAxisCount = 2; // Cho trường hợp 2 tổ, 4 tổ hoặc nhiều hơn
-    }
+    int crossAxisCount = teams.length == 1 ? 1 : (teams.length == 3 ? 3 : 2);
 
     return GridView.builder(
       shrinkWrap: true,
@@ -279,34 +310,13 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  Future<void> _submitData() async {
-    final String title = _titleController.text.trim().isEmpty
-        ? "Trực nhật"
-        : _titleController.text.trim();
-    final String desc = _descriptionController.text.trim();
-    final String fullNote = desc.isEmpty ? title : "$title: $desc";
-
-    for (var teamId in _selectedTeamIds) {
-      await ref
-          .read(dutyControllerProvider.notifier)
-          .createDuty(
-            classId: widget.classId,
-            teamId: teamId,
-            date: _selectedDate,
-            note: fullNote,
-            onSuccess: () {},
-            onError: (e) {},
-          );
-    }
-    if (mounted) Navigator.pop(context);
-  }
-
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime(2030),
+      selectableDayPredicate: (DateTime val) => val.weekday == DateTime.monday,
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }

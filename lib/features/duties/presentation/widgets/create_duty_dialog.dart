@@ -162,7 +162,7 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  // GIỮ NGUYÊN CÁC HÀM BUILD WIDGET CSS CỦA BẠN
+  // Logic chia lưới linh hoạt theo số lượng tổ
   Widget _buildTeamsGrid(List<TeamGroup> teams) {
     if (teams.isEmpty) return const Text("Chưa có tổ nào trong lớp");
     int crossAxisCount = teams.length == 1 ? 1 : (teams.length == 3 ? 3 : 2);

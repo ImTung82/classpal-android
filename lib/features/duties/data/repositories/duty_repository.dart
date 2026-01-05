@@ -12,12 +12,12 @@ abstract class DutyRepository {
   Future<DutyTask?> fetchMyDuty(String classId, String userId);
   Future<List<DutyTask>> fetchUpcomingDuties(String classId);
 
-  Future<void> createDuty(
-    String classId,
-    String teamId,
-    DateTime date,
-    String? note,
-  );
+  Future<void> createDutyRotation({
+    required String classId,
+    required DateTime startDate,
+    required List<String> taskTitles,
+  });
+
   Future<void> markAsCompleted(String dutyId);
   Future<void> sendReminder(String dutyId);
 }
@@ -30,10 +30,11 @@ class SupabaseDutyRepository implements DutyRepository {
   @override
   Future<List<GroupScore>> fetchScoreBoard(String classId) async {
     try {
-      // Tối ưu: Lấy thông tin tổ và đếm số thành viên trong 1 lần gọi (Single Query)
       final data = await _supabase
           .from('teams')
-          .select('id, name, score, class_members(count)')
+          .select(
+            'id, name, score, class_members!class_members_team_id_fkey(count)',
+          )
           .eq('class_id', classId)
           .order('score', ascending: false);
 
@@ -43,7 +44,6 @@ class SupabaseDutyRepository implements DutyRepository {
         final index = entry.key;
         final team = entry.value;
 
-        // Trích xuất số lượng thành viên từ kết quả join count
         final countList = team['class_members'] as List;
         final memberCount = countList.isNotEmpty
             ? countList[0]['count'] as int
@@ -62,30 +62,82 @@ class SupabaseDutyRepository implements DutyRepository {
   }
 
   @override
+  Future<void> createDutyRotation({
+    required String classId,
+    required DateTime startDate,
+    required List<String> taskTitles,
+  }) async {
+    try {
+
+      final teamsData = await _supabase
+          .from('teams')
+          .select('id')
+          .eq('class_id', classId)
+          .order('created_at', ascending: true);
+
+      final List<String> teamIds = (teamsData as List)
+          .map((t) => t['id'] as String)
+          .toList();
+
+      if (teamIds.isEmpty) {
+        throw Exception(
+          'Không thể tạo nhiệm vụ vì lớp này chưa được chia tổ (bảng teams trống).',
+        );
+      }
+
+      if (taskTitles.isEmpty) return;
+
+      List<Map<String, dynamic>> batchDuties = [];
+
+      for (int week = 0; week < 4; week++) {
+        DateTime weekStartDate = startDate.add(Duration(days: week * 7));
+        for (int i = 0; i < taskTitles.length; i++) {
+          int assignedTeamIdx = (i + week) % teamIds.length;
+          batchDuties.add({
+            'class_id': classId,
+            'team_id': teamIds[assignedTeamIdx],
+            'date': weekStartDate.toIso8601String(),
+            'note': taskTitles[i],
+            'status': 'pending',
+          });
+        }
+      }
+
+      final response = await _supabase
+          .from('duties')
+          .insert(batchDuties)
+          .select();
+
+    } catch (e) {
+
+      throw Exception('Lỗi khi tạo chu kỳ xoay vòng: $e');
+    }
+  }
+
+  @override
   Future<List<DutyTask>> fetchActiveDuties(String classId) async {
     try {
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+      final firstDayMonth = DateTime(now.year, now.month, 1);
+      final lastDayMonth = DateTime(now.year, now.month + 1, 0);
 
-      // Lấy nhiệm vụ trong vòng 7 ngày tới kể từ hôm nay
       final data = await _supabase
           .from('duties')
           .select('*, teams(id, name)')
           .eq('class_id', classId)
-          .gte('date', today.toIso8601String())
-          .lte('date', today.add(const Duration(days: 7)).toIso8601String())
+          .gte('date', firstDayMonth.toIso8601String())
+          .lte('date', lastDayMonth.toIso8601String())
           .order('date', ascending: true);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
     } catch (e) {
-      throw Exception('Lỗi khi tải nhiệm vụ đang hoạt động: $e');
+      throw Exception('Lỗi khi tải nhiệm vụ: $e');
     }
   }
 
   @override
   Future<DutyTask?> fetchMyDuty(String classId, String userId) async {
     try {
-      // 1. Tìm team_id của người dùng hiện tại
       final memberData = await _supabase
           .from('class_members')
           .select('team_id')
@@ -94,10 +146,8 @@ class SupabaseDutyRepository implements DutyRepository {
           .maybeSingle();
 
       if (memberData == null || memberData['team_id'] == null) return null;
-
       final teamId = memberData['team_id'];
 
-      // 2. Tìm nhiệm vụ gần nhất của tổ đó (trong vòng 7 ngày tới)
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -123,7 +173,6 @@ class SupabaseDutyRepository implements DutyRepository {
   Future<List<DutyTask>> fetchUpcomingDuties(String classId) async {
     try {
       final now = DateTime.now();
-      // Mốc bắt đầu là từ 00:00:00 ngày mai để không trùng với nhiệm vụ hôm nay
       final tomorrow = DateTime(
         now.year,
         now.month,
@@ -136,31 +185,11 @@ class SupabaseDutyRepository implements DutyRepository {
           .eq('class_id', classId)
           .gte('date', tomorrow.toIso8601String())
           .order('date', ascending: true)
-          .limit(10); // Lấy tối đa 10 nhiệm vụ tương lai
+          .limit(10);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
     } catch (e) {
       throw Exception('Lỗi khi tải lịch sắp tới: $e');
-    }
-  }
-
-  @override
-  Future<void> createDuty(
-    String classId,
-    String teamId,
-    DateTime date,
-    String? note,
-  ) async {
-    try {
-      await _supabase.from('duties').insert({
-        'class_id': classId,
-        'team_id': teamId,
-        'date': date.toIso8601String(),
-        'note': note,
-        'status': 'pending',
-      });
-    } catch (e) {
-      throw Exception('Lỗi khi tạo nhiệm vụ: $e');
     }
   }
 
@@ -179,7 +208,6 @@ class SupabaseDutyRepository implements DutyRepository {
   @override
   Future<void> sendReminder(String dutyId) async {
     try {
-      // 1. Lấy thông tin chi tiết nhiệm vụ
       final dutyData = await _supabase
           .from('duties')
           .select('*, teams(id, name), classes(id, name)')
@@ -189,13 +217,11 @@ class SupabaseDutyRepository implements DutyRepository {
       final teamId = dutyData['team_id'];
       if (teamId == null) return;
 
-      // 2. Lấy danh sách thành viên trong tổ đó
       final membersData = await _supabase
           .from('class_members')
           .select('user_id')
           .eq('team_id', teamId);
 
-      // 3. Chuẩn bị danh sách thông báo
       final notifications = (membersData as List)
           .map(
             (member) => {

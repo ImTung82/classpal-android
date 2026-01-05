@@ -9,7 +9,7 @@ import '../widgets/group_card.dart';
 import '../widgets/unassigned_member_item.dart';
 import '../widgets/create_team_dialog.dart';
 import '../widgets/select_team_dialog.dart';
-import '../widgets/delete_team_dialog.dart'; // [IMPORT MỚI]
+import '../widgets/delete_team_dialog.dart';
 
 class OwnerTeamContent extends ConsumerStatefulWidget {
   final String classId;
@@ -62,7 +62,7 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
     );
   }
 
-  // DIALOG 2: XÁC NHẬN XÓA TỔ [ĐÃ CẬP NHẬT GIAO DIỆN MỚI]
+  // DIALOG 2: XÁC NHẬN XÓA TỔ
   void _confirmDeleteTeam(TeamGroup group) {
     showDialog(
       context: context,
@@ -99,6 +99,15 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
     );
   }
 
+  // [MỚI] Hàm xử lý Refresh
+  Future<void> _onRefresh() async {
+    // Gọi ref.refresh(...).future để ép tải lại và đợi cho đến khi xong
+    await Future.wait([
+      ref.refresh(teamGroupsProvider(widget.classId).future),
+      ref.refresh(unassignedMembersProvider(widget.classId).future),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupsAsync = ref.watch(teamGroupsProvider(widget.classId));
@@ -107,80 +116,95 @@ class _OwnerTeamContentState extends ConsumerState<OwnerTeamContent> {
 
     return Stack(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-               Text("Quản lý tổ", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold)),
-               Text("Tổ chức và phân công thành viên", style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14)),
-               const SizedBox(height: 16),
-               
-               // --- NỘI DUNG CHÍNH ---
-               if (_selectedTabIndex == 0) ...[
-                 SizedBox(
-                  width: double.infinity, height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showTeamDialog(), 
-                    icon: const Icon(LucideIcons.plus), 
-                    label: const Text("Tạo tổ mới"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9333EA), 
-                      foregroundColor: Colors.white, 
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+        // [MỚI] Bọc nội dung trong RefreshIndicator
+        RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: const Color(0xFF9333EA), // Màu spinner
+          child: SingleChildScrollView(
+            // [MỚI] Luôn cho phép cuộn để kích hoạt refresh ngay cả khi nội dung ngắn
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                 Text("Quản lý tổ", style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold)),
+                 Text("Tổ chức và phân công thành viên", style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14)),
+                 const SizedBox(height: 16),
+                 
+                 // --- NỘI DUNG CHÍNH ---
+                 if (_selectedTabIndex == 0) ...[
+                   SizedBox(
+                    width: double.infinity, height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showTeamDialog(), 
+                      icon: const Icon(LucideIcons.plus), 
+                      label: const Text("Tạo tổ mới"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA), 
+                        foregroundColor: Colors.white, 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                groupsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (err, _) => Text('Lỗi: $err'),
-                  data: (groups) => Column(
-                    children: groups.map((g) => GroupCard(
-                      group: g, 
-                      isEditable: true,
-                      onEditGroup: (group) => _showTeamDialog(groupToEdit: group),
-                      onDeleteGroup: (group) => _confirmDeleteTeam(group), // Gọi hàm xóa mới
-                      onRemoveMember: (member) {
-                        ref.read(teamControllerProvider.notifier).removeMember(
-                          classId: widget.classId,
-                          memberId: member.id,
-                          onSuccess: () => _showSnackbar("Đã xóa ${member.name} khỏi tổ", Colors.orange),
-                          onError: (e) => _showSnackbar(e, Colors.red),
+                  groupsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (err, _) => Text('Lỗi: $err'),
+                    data: (groups) => Column(
+                      children: groups.map((g) => GroupCard(
+                        group: g, 
+                        isEditable: true,
+                        onEditGroup: (group) => _showTeamDialog(groupToEdit: group),
+                        onDeleteGroup: (group) => _confirmDeleteTeam(group), 
+                        onRemoveMember: (member) {
+                          ref.read(teamControllerProvider.notifier).removeMember(
+                            classId: widget.classId,
+                            memberId: member.id,
+                            onSuccess: () => _showSnackbar("Đã xóa ${member.name} khỏi tổ", Colors.orange),
+                            onError: (e) => _showSnackbar(e, Colors.red),
+                          );
+                        },
+                      )).toList(),
+                    ),
+                  ),
+                  
+                  const Divider(height: 40),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Chưa phân tổ", style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16)),
+                      unassignedAsync.when(
+                        data: (list) => Text("${list.length} người", style: GoogleFonts.roboto(color: Colors.grey)),
+                        loading: () => const SizedBox(), error: (_,__) => const SizedBox(),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  unassignedAsync.when(
+                    loading: () => const SizedBox(),
+                    error: (err, _) => Text('Lỗi: $err'),
+                    data: (members) {
+                      if (members.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(child: Text("Tất cả thành viên đã có tổ", style: TextStyle(color: Colors.grey))),
                         );
-                      },
-                    )).toList(),
+                      }
+                      return Column(
+                        children: members.map((member) => UnassignedMemberItem(
+                          member: member, 
+                          isEditable: true,
+                          onAssign: () => _showSelectTeamDialog(member.id),
+                        )).toList(),
+                      );
+                    },
                   ),
-                ),
-                
-                const Divider(height: 40),
-                
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Chưa phân tổ", style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16)),
-                    unassignedAsync.when(
-                      data: (list) => Text("${list.length} người", style: GoogleFonts.roboto(color: Colors.grey)),
-                      loading: () => const SizedBox(), error: (_,__) => const SizedBox(),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                unassignedAsync.when(
-                  loading: () => const SizedBox(),
-                  error: (err, _) => Text('Lỗi: $err'),
-                  data: (members) => Column(
-                    children: members.map((member) => UnassignedMemberItem(
-                      member: member, 
-                      isEditable: true,
-                      onAssign: () => _showSelectTeamDialog(member.id),
-                    )).toList(),
-                  ),
-                ),
-               ],
-            ],
+                 ],
+              ],
+            ),
           ),
         ),
         

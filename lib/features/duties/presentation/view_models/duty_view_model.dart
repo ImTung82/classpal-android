@@ -4,7 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/duty_models.dart';
 import '../../data/repositories/duty_repository.dart';
 
-// Owner Providers
+// --- Owner Providers ---
+
 final scoreBoardProvider = FutureProvider.family<List<GroupScore>, String>((
   ref,
   classId,
@@ -19,7 +20,8 @@ final activeDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
   return ref.watch(dutyRepositoryProvider).fetchActiveDuties(classId);
 });
 
-// Student Providers
+// --- Student Providers ---
+
 final myDutyProvider = FutureProvider.family<DutyTask?, String>((
   ref,
   classId,
@@ -36,7 +38,27 @@ final upcomingDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
   return ref.watch(dutyRepositoryProvider).fetchUpcomingDuties(classId);
 });
 
-// Controller
+// Provider kiểm tra quyền Tổ trưởng/Lớp trưởng
+final isLeaderProvider = FutureProvider.family<bool, String>((
+  ref,
+  classId,
+) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return false;
+
+  final data = await Supabase.instance.client
+      .from('class_members')
+      .select('role')
+      .eq('class_id', classId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+  // Kiểm tra role là 'leader' (do bạn sửa tay trên DB) hoặc 'owner' (Lớp trưởng)
+  return data?['role'] == 'leader' || data?['role'] == 'owner';
+});
+
+// --- Controller ---
+
 final dutyControllerProvider = AsyncNotifierProvider<DutyController, void>(() {
   return DutyController();
 });
@@ -45,20 +67,28 @@ class DutyController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
+  // Cập nhật phương thức này để khớp với createDutyRotation trong Repository
   Future<void> createDuty({
     required String classId,
-    required String teamId,
-    required DateTime date,
-    String? note,
+    required DateTime startDate,
+    required List<String> taskTitles,
     required Function onSuccess,
     required Function(String) onError,
   }) async {
     state = const AsyncValue.loading();
     try {
+      // Gọi phương thức xoay vòng chéo mới
       await ref
           .read(dutyRepositoryProvider)
-          .createDuty(classId, teamId, date, note);
+          .createDutyRotation(
+            classId: classId,
+            startDate: startDate,
+            taskTitles: taskTitles,
+          );
+
+      // Làm mới dữ liệu sau khi tạo thành công
       ref.invalidate(activeDutiesProvider(classId));
+      ref.invalidate(upcomingDutiesProvider(classId));
       onSuccess();
     } catch (e) {
       onError(e.toString());
@@ -76,8 +106,12 @@ class DutyController extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       await ref.read(dutyRepositoryProvider).markAsCompleted(dutyId);
+
+      // Invalidate các provider liên quan để cập nhật UI ngay lập tức
       ref.invalidate(myDutyProvider(classId));
       ref.invalidate(activeDutiesProvider(classId));
+      ref.invalidate(scoreBoardProvider(classId));
+
       onSuccess();
     } catch (e) {
       onError(e.toString());

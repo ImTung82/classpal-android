@@ -10,16 +10,21 @@ import '../../../../core/utils/currency_utils.dart'; // Import tiện ích
 import '../widgets/create_campaign.dart';
 import '../widgets/create_expense.dart';
 
-class OwnerFundContent extends ConsumerWidget {
+class OwnerFundContent extends ConsumerStatefulWidget {
   final String classId;
   const OwnerFundContent({super.key, required this.classId});
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OwnerFundContent> createState() => _OwnerFundContentState();
+}
+
+class _OwnerFundContentState extends ConsumerState<OwnerFundContent> {
+  bool isCreatingCampaign = false;
+  @override
+  Widget build(BuildContext context) {
+    final classId = widget.classId;
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
     final transactionsAsync = ref.watch(fundTransactionsProvider(classId));
-
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -146,86 +151,119 @@ class OwnerFundContent extends ConsumerWidget {
                       ),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () async {
-                        await showCreateCampaignOverlay(
-                          context,
-                          onSubmit:
-                              ({
-                                required String title,
-                                required int amountPerPerson,
-                                DateTime? deadline,
-                              }) async {
-                                await ref
-                                    .read(fundActionProvider)
-                                    .createCampaign(
-                                      classId: classId,
-                                      title: title,
-                                      amountPerPerson: amountPerPerson,
-                                      deadline: deadline,
-                                    );
-                              },
-                        );
-                      },
+                      onPressed: isCreatingCampaign
+                          ? null
+                          : () async {
+                              bool success = false;
 
-                      icon: const Icon(LucideIcons.plus, size: 14),
-                      label: const Text("Tạo khoản thu"),
+                              setState(() => isCreatingCampaign = true);
+
+                              await showCreateCampaignOverlay(
+                                context,
+                                onSubmit:
+                                    ({
+                                      required String title,
+                                      required int amountPerPerson,
+                                      DateTime? deadline,
+                                    }) async {
+                                      await ref
+                                          .read(fundActionProvider)
+                                          .createCampaign(
+                                            classId: classId,
+                                            title: title,
+                                            amountPerPerson: amountPerPerson,
+                                            deadline: deadline,
+                                          );
+                                      success = true;
+                                    },
+                              );
+
+                              setState(() => isCreatingCampaign = false);
+
+                              if (success && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Đã tạo khoản thu thành công",
+                                      style: GoogleFonts.roboto(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    backgroundColor: const Color(0xFF16A34A),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isCreatingCampaign
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(LucideIcons.plus, size: 14),
+                      label: Text(
+                        isCreatingCampaign ? "Đang tạo..." : "Tạo khoản thu",
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         minimumSize: const Size(0, 42),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Nội dung sau này (CampaignCard)
                 campaignsAsync.when(
-  loading: () => const CircularProgressIndicator(),
-  error: (e, s) => Text("Lỗi: $e"),
-  data: (campaigns) {
-    if (campaigns.isEmpty) {
-      return const Text("Chưa có khoản thu");
-    }
+                  loading: () => const CircularProgressIndicator(),
+                  error: (e, s) => Text("Lỗi: $e"),
+                  data: (campaigns) {
+                    if (campaigns.isEmpty) {
+                      return const Text("Chưa có khoản thu");
+                    }
 
-    return Column(
-      children: campaigns.map((campaign) {
-        final unpaidAsync = ref.watch(
-          fundUnpaidProvider(
-            (classId: classId, campaignId: campaign.id),
-          ),
-        );
+                    return Column(
+                      children: campaigns.map((campaign) {
+                        final unpaidAsync = ref.watch(
+                          fundUnpaidProvider((
+                            classId: classId,
+                            campaignId: campaign.id,
+                          )),
+                        );
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: unpaidAsync.when(
-            loading: () => CampaignCard(
-              campaign: campaign,
-              members: const [],
-              onConfirmPaid: (_) {},
-            ),
-            error: (e, s) => Text("Lỗi thành viên: $e"),
-            data: (members) => CampaignCard(
-              campaign: campaign,
-              members: members, // 🔥 ĐÃ ĐÚNG THEO CAMPAIGN
-              onConfirmPaid: (member) async {
-                await ref.read(fundActionProvider).confirmPaid(
-                      classId: classId,
-                      campaign: campaign,
-                      member: member,
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: unpaidAsync.when(
+                            loading: () => CampaignCard(
+                              campaign: campaign,
+                              members: const [],
+                              onConfirmPaid: (_) {},
+                            ),
+                            error: (e, s) => Text("Lỗi thành viên: $e"),
+                            data: (members) => CampaignCard(
+                              campaign: campaign,
+                              members: members,
+                              onConfirmPaid: (member) async {
+                                await ref
+                                    .read(fundActionProvider)
+                                    .confirmPaid(
+                                      classId: classId,
+                                      campaign: campaign,
+                                      member: member,
+                                    );
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     );
-              },
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  },
-),
-
-
+                  },
+                ),
               ],
             ),
           ),

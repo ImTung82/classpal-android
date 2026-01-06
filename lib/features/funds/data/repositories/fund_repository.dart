@@ -34,6 +34,7 @@ abstract class FundRepository {
     required String payerName,
     required int amount,
   });
+  Future<List<FundCampaignHistory>> fetchCampaignHistory(String classId);
 }
 
 class FundRepositoryImpl implements FundRepository {
@@ -238,5 +239,60 @@ class FundRepositoryImpl implements FundRepository {
           .update({'is_closed': true})
           .eq('id', campaignId);
     }
+  }
+
+  @override
+  Future<List<FundCampaignHistory>> fetchCampaignHistory(String classId) async {
+    final userId = supabase.auth.currentUser!.id;
+
+    // 1. Lấy tất cả campaign (cả mở + đóng)
+    final campaigns = await supabase
+        .from('fund_campaigns')
+        .select()
+        .eq('class_id', classId)
+        .order('created_at', ascending: false);
+
+    // 2. Tổng số thành viên lớp
+    final members = await supabase
+        .from('class_members')
+        .select('id')
+        .eq('class_id', classId)
+        .eq('is_active', true);
+
+    final totalMembers = members.length;
+
+    final List<FundCampaignHistory> result = [];
+
+    for (final c in campaigns) {
+      final campaignId = c['id'];
+
+      // 3. Các khoản đã nộp
+      final paid = await supabase
+          .from('fund_transactions')
+          .select('payer_id')
+          .eq('campaign_id', campaignId)
+          .eq('is_expense', false);
+
+      final paidUserIds = paid.map((e) => e['payer_id'] as String).toSet();
+
+      // 4. Campaign model
+      final campaign = FundCampaign.fromMap(
+        c,
+        paidCount: paidUserIds.length,
+        totalMemberCount: totalMembers,
+        collectedAmount: paidUserIds.length * (c['amount_per_person'] as int),
+      );
+
+      result.add(
+        FundCampaignHistory(
+          campaign: campaign,
+          totalMembers: totalMembers,
+          paidMembers: paidUserIds.length,
+          isPaidByMe: paidUserIds.contains(userId),
+        ),
+      );
+    }
+
+    return result;
   }
 }

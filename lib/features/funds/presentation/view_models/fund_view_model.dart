@@ -78,6 +78,8 @@ class _FundAction {
       fundUnpaidProvider((classId: classId, campaignId: campaign.id)),
     );
     ref.invalidate(fundSummaryProvider(classId));
+    ref.invalidate(fundCampaignHistoryProvider(classId));
+
   }
 }
 
@@ -103,3 +105,13 @@ final fundUnpaidProvider =
             campaignId: args.campaignId,
           );
     });
+
+    final fundCampaignHistoryProvider =
+    FutureProvider.family<List<FundCampaignHistory>, String>(
+  (ref, classId) async {
+    return ref
+        .watch(fundRepositoryProvider)
+        .fetchCampaignHistory(classId);
+  },
+);
+

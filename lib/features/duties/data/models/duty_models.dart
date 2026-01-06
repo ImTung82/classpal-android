@@ -15,7 +15,11 @@ class GroupScore {
     return GroupScore(
       rank: rank,
       groupName: map['name'] ?? '',
-      memberCount: map['member_count'] ?? 0,
+      memberCount:
+          (map['class_members'] != null &&
+              (map['class_members'] as List).isNotEmpty)
+          ? map['class_members'][0]['count'] as int
+          : 0,
       score: map['score'] ?? 0,
     );
   }
@@ -29,7 +33,8 @@ class DutyTask {
   final String dateRange;
   final String status;
   final String? teamId;
-  final DateTime? date;
+  final DateTime? startTime;
+  final DateTime? endTime;
 
   DutyTask({
     required this.id,
@@ -39,46 +44,44 @@ class DutyTask {
     required this.dateRange,
     this.status = 'Upcoming',
     this.teamId,
-    this.date,
+    this.startTime,
+    this.endTime,
   });
 
   factory DutyTask.fromMap(Map<String, dynamic> map) {
     final team = map['teams'];
-    final date = map['date'] != null ? DateTime.parse(map['date']) : null;
+    final start = map['start_time'] != null
+        ? DateTime.parse(map['start_time'])
+        : null;
+    final end = map['end_time'] != null
+        ? DateTime.parse(map['end_time'])
+        : null;
     final rawStatus = map['status'] ?? 'pending';
 
-    // --- Xử lý tách Title và Description từ trường 'note' ---
+    // Xử lý note
     String rawNote = map['note'] ?? '';
     String title = 'Trực nhật';
     String description = '';
-
     if (rawNote.contains(':')) {
       List<String> parts = rawNote.split(':');
       title = parts[0].trim();
       description = parts.sublist(1).join(':').trim();
     } else {
       title = rawNote.isNotEmpty ? rawNote : 'Trực nhật';
-      description = '';
     }
 
-    // --- Logic phân loại Status để hiển thị màu sắc CSS ---
+    // Logic trạng thái theo thời gian thực
     String displayStatus = 'Upcoming';
+    final now = DateTime.now();
 
     if (rawStatus == 'completed') {
-      displayStatus = 'Done'; // Màu xanh - Hoàn thành, bảo toàn điểm
-    } else if (rawStatus == 'failed') {
-      displayStatus = 'Missed'; // Màu đỏ - Thất bại, bị trừ 5 điểm
-    } else if (date != null) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final dutyDate = DateTime(date.year, date.month, date.day);
-
-      if (dutyDate.isBefore(today)) {
-        displayStatus = 'Active';
-      } else if (dutyDate.isAtSameMomentAs(today)) {
-        displayStatus = 'Active'; // Nhiệm vụ hôm nay
-      } else {
-        displayStatus = 'Upcoming'; // Nhiệm vụ tương lai
+      displayStatus = 'Done';
+    } else if (start != null && end != null) {
+      if (now.isAfter(start) &&
+          now.isBefore(end.add(const Duration(days: 1)))) {
+        displayStatus = 'Active'; // Đang trong tuần thực hiện
+      } else if (now.isAfter(end)) {
+        displayStatus = 'Missed'; // Đã qua tuần nhưng chưa hoàn thành
       }
     }
 
@@ -87,30 +90,18 @@ class DutyTask {
       title: title,
       description: description.isNotEmpty
           ? description
-          : 'Hoàn thành để tích lũy điểm cho đội nhóm của bạn!',
+          : 'Hoàn thành để tích lũy +5 điểm!',
       assignedTo: team?['name'] ?? 'Chưa phân công',
-      dateRange: _formatDateRange(date),
+      dateRange: _formatDateRange(start, end),
       status: displayStatus,
       teamId: map['team_id'],
-      date: date,
+      startTime: start,
+      endTime: end,
     );
   }
 
-  static String _formatDateRange(DateTime? date) {
-    if (date == null) return 'Chưa xác định';
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dutyDate = DateTime(date.year, date.month, date.day);
-
-    if (dutyDate.isAtSameMomentAs(today)) {
-      return 'Hôm nay (${date.day}/${date.month})';
-    } else if (dutyDate.difference(today).inDays == 1) {
-      return 'Ngày mai (${date.day}/${date.month})';
-    } else if (dutyDate.isAfter(today)) {
-      return '${date.day}/${date.month}/${date.year}';
-    } else {
-      return '${date.day}/${date.month}';
-    }
+  static String _formatDateRange(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return 'Chưa xác định';
+    return '${start.day}/${start.month} - ${end.day}/${end.month}';
   }
 }

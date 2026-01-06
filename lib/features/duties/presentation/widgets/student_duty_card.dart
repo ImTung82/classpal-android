@@ -13,7 +13,9 @@ class StudentDutyCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Theo dõi trạng thái loading của controller
     final isLoading = ref.watch(dutyControllerProvider).isLoading;
+    // Kiểm tra quyền (Tổ trưởng hoặc Owner) từ Provider đã sửa logic ở bước trước
     final isLeader = ref.watch(isLeaderProvider(classId)).value ?? false;
 
     return Container(
@@ -75,6 +77,7 @@ class StudentDutyCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
+          // Khu vực hiển thị nút bấm hoặc nhãn trạng thái dựa trên phân quyền
           SizedBox(
             width: double.infinity,
             child: _buildActionButton(context, ref, isLeader, isLoading),
@@ -90,11 +93,17 @@ class StudentDutyCard extends ConsumerWidget {
     bool isLeader,
     bool isLoading,
   ) {
-    if (task.status == 'Done')
-      return _buildStatusLabel("Nhiệm vụ đã hoàn thành");
-    if (task.status == 'Missed')
-      return _buildStatusLabel("Không hoàn thành (Bị trừ 5đ)");
+    // 1. Nếu đã hoàn thành
+    if (task.status == 'Done') {
+      return _buildStatusLabel("✅ Nhiệm vụ đã hoàn thành");
+    }
 
+    // 2. Nếu đã quá hạn
+    if (task.status == 'Missed') {
+      return _buildStatusLabel("❌ Không hoàn thành (Bị trừ 5đ)");
+    }
+
+    // 3. Nếu là Tổ trưởng và nhiệm vụ đang diễn ra (Active)
     if (isLeader && task.status == 'Active') {
       return ElevatedButton(
         onPressed: isLoading ? null : () => _markCompleted(context, ref),
@@ -102,6 +111,7 @@ class StudentDutyCard extends ConsumerWidget {
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF3B82F6),
           padding: const EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
@@ -110,7 +120,10 @@ class StudentDutyCard extends ConsumerWidget {
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF3B82F6),
+                ),
               )
             : Text(
                 "Xác nhận hoàn thành (Tổ trưởng)",
@@ -119,13 +132,16 @@ class StudentDutyCard extends ConsumerWidget {
       );
     }
 
+    // 4. Nếu là Sinh viên thường hoặc nhiệm vụ sắp tới (Upcoming)
+    // Sinh viên thường không nhìn thấy nút, chỉ thấy dòng trạng thái
     return _buildStatusLabel(
       task.status == 'Active'
           ? "Đang chờ Tổ trưởng xác nhận..."
-          : "Nhiệm vụ sắp tới",
+          : "Nhiệm vụ tuần sau",
     );
   }
 
+  // Nhãn hiển thị trạng thái (dành cho sinh viên thường hoặc task đã xong)
   Widget _buildStatusLabel(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -152,16 +168,29 @@ class StudentDutyCard extends ConsumerWidget {
           classId: classId,
           dutyId: task.id,
           onSuccess: () {
+            // Thông báo thành công
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text("Đã xác nhận hoàn thành!"),
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text("Đã xác nhận hoàn thành! +5 điểm cho tổ."),
+                  ],
+                ),
                 backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
               ),
             );
           },
           onError: (e) {
+            // Thông báo lỗi
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text("Lỗi: $e"),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           },
         );
@@ -170,11 +199,19 @@ class StudentDutyCard extends ConsumerWidget {
   List<Color> _getCardColors(String status) {
     switch (status) {
       case 'Done':
-        return [const Color(0xFF10B981), const Color(0xFF059669)];
+        return [const Color(0xFF10B981), const Color(0xFF059669)]; // Xanh lá
       case 'Missed':
-        return [const Color(0xFFEF4444), const Color(0xFFB91C1C)];
+        return [const Color(0xFFEF4444), const Color(0xFFB91C1C)]; // Đỏ
+      case 'Active':
+        return [
+          const Color(0xFF3B82F6),
+          const Color(0xFF2563EB),
+        ]; // Xanh dương đậm
       default:
-        return [const Color(0xFF3B82F6), const Color(0xFFA855F7)];
+        return [
+          const Color(0xFF6366F1),
+          const Color(0xFF4F46E5),
+        ]; // Tím xanh (Upcoming)
     }
   }
 
@@ -184,8 +221,10 @@ class StudentDutyCard extends ConsumerWidget {
         return LucideIcons.checkCircle;
       case 'Missed':
         return LucideIcons.alertCircle;
+      case 'Active':
+        return LucideIcons.clock;
       default:
-        return LucideIcons.users;
+        return LucideIcons.calendar;
     }
   }
 }

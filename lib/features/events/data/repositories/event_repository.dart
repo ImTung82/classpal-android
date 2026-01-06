@@ -165,10 +165,7 @@ class SupabaseEventRepository implements EventRepository {
         .single();
     final eventId = response['id'];
     await _addAllStudentsToEvent(eventId, classId);
-    final currentUserId = getCurrentUserId();
-    if (currentUserId != null) {
-      await joinEvent(eventId, currentUserId);
-    }
+
     return await fetchEventById(eventId);
   }
 

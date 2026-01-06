@@ -9,7 +9,13 @@ import '../../data/models/event_models.dart';
 
 class OwnerEventContent extends ConsumerStatefulWidget {
   final String classId;
-  const OwnerEventContent({super.key, required this.classId});
+  final String className;
+
+  const OwnerEventContent({
+    super.key,
+    required this.classId,
+    required this.className,
+  });
 
   @override
   ConsumerState<OwnerEventContent> createState() => _OwnerEventContentState();
@@ -121,6 +127,8 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
                           key: ValueKey(event.id),
                           event: event,
                           classId: widget.classId,
+                          className:
+                              widget.className, // [CẬP NHẬT] Truyền xuống card
                         );
                       }).toList(),
                     );

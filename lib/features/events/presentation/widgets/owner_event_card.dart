@@ -13,8 +13,14 @@ import 'export_event_excel.dart';
 class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;
   final String classId;
+  final String className;
 
-  const OwnerEventCard({super.key, required this.event, required this.classId});
+  const OwnerEventCard({
+    super.key,
+    required this.event,
+    required this.classId,
+    required this.className,
+  });
 
   String _getDeadlineStatusText() {
     if (!event.isOpen) return "Đã hết hạn đăng ký";
@@ -43,7 +49,6 @@ class OwnerEventCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // LOGIC MỚI: Chưa đăng ký = Không tham gia + Chưa xác nhận
     final int unregisteredTotal =
         event.nonParticipants.length + event.unconfirmed.length;
 
@@ -207,7 +212,7 @@ class OwnerEventCard extends ConsumerWidget {
                   bgColor: const Color(0xFF155DFC),
                   onPressed: () async {
                     try {
-                      await ExportEventExcel.execute(event);
+                      await ExportEventExcel.execute(event, className);
                       _showSnackbar(
                         context,
                         "Xuất file Excel thành công!",
@@ -226,7 +231,7 @@ class OwnerEventCard extends ConsumerWidget {
     );
   }
 
-  // --- WIDGET CON ---
+  // --- CÁC WIDGET CON ---
   Widget _buildProgressBar() {
     return Row(
       children: [
@@ -252,7 +257,6 @@ class OwnerEventCard extends ConsumerWidget {
     );
   }
 
-  // Cập nhật hàm này để nhận giá trị unregisteredCount chính xác
   Widget _buildStatisticCards(int unregisteredCount) {
     return Row(
       children: [
@@ -272,7 +276,7 @@ class OwnerEventCard extends ConsumerWidget {
             color: const Color(0xFFF54900),
             bgColor: const Color(0xFFFFF7ED),
             title: "Chưa đăng ký",
-            count: "$unregisteredCount", // Hiển thị giá trị đã tính toán
+            count: "$unregisteredCount",
           ),
         ),
       ],

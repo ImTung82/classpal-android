@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../../../core/widgets/app_menu_drawer.dart';
-import '../../../classes/data/models/class_model.dart'; 
+import '../../../classes/data/models/class_model.dart';
 
 import '../../../dashboard/presentation/views/owner_dashboard_content.dart';
 import '../../../teams/presentation/views/owner_team_content.dart';
@@ -26,7 +26,7 @@ class OwnerShellScreen extends ConsumerStatefulWidget {
 class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   // Khai báo biến trễ (late) để khởi tạo sau
   late final List<Widget> _pages;
 
@@ -36,10 +36,13 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
     // Khởi tạo danh sách page tại đây để truy cập được widget.classModel
     _pages = [
       const OwnerDashboardContent(),
-      OwnerTeamContent(classId: widget.classModel.id), // [ĐÃ SỬA] Truyền classId
+      OwnerTeamContent(classId: widget.classModel.id),
       OwnerDutyContent(classId: widget.classModel.id),
       OwnerAssetContent(classId: widget.classModel.id),
-      OwnerEventContent(classId: widget.classModel.id),
+      OwnerEventContent(
+        classId: widget.classModel.id,
+        className: widget.classModel.name,
+      ),
       OwnerFundContent(classId: widget.classModel.id),
       const OwnerNotificationContent(),
     ];
@@ -47,14 +50,22 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
 
   String _getSubtitleForIndex(int index) {
     switch (index) {
-      case 0: return "Lớp trưởng";
-      case 1: return "Quản lý Đội nhóm";
-      case 2: return "Phân công Trực nhật";
-      case 3: return "Quản lý Tài sản";
-      case 4: return "Sự kiện lớp";
-      case 5: return "Thu chi Quỹ lớp";
-      case 6: return "Thông báo lớp";
-      default: return "Lớp trưởng";
+      case 0:
+        return "Lớp trưởng";
+      case 1:
+        return "Quản lý Đội nhóm";
+      case 2:
+        return "Phân công Trực nhật";
+      case 3:
+        return "Quản lý Tài sản";
+      case 4:
+        return "Sự kiện lớp";
+      case 5:
+        return "Thu chi Quỹ lớp";
+      case 6:
+        return "Thông báo lớp";
+      default:
+        return "Lớp trưởng";
     }
   }
 
@@ -72,7 +83,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
         onMenuPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
         onNotificationPressed: () {
           setState(() {
-            _currentIndex = 6; 
+            _currentIndex = 6;
           });
         },
       ),

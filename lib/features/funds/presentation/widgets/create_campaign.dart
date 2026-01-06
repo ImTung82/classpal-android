@@ -28,10 +28,12 @@ Future<void> showCreateCampaignOverlay(
     barrierDismissible: false,
     builder: (context) {
       final screenWidth = MediaQuery.of(context).size.width;
-
+      bool isSubmitting = false;
       return StatefulBuilder(
         builder: (context, setState) {
           void validateAndSubmit() async {
+            if (isSubmitting) return;
+
             String? _titleError;
             String? _amountError;
             String? _deadlineError;
@@ -69,13 +71,23 @@ Future<void> showCreateCampaignOverlay(
               return;
             }
 
-            await onSubmit(
-              title: title,
-              amountPerPerson: amount!,
-              deadline: selectedDeadline,
-            );
+            setState(() => isSubmitting = true);
 
-            Navigator.pop(context);
+            try {
+              await onSubmit(
+                title: title,
+                amountPerPerson: amount!,
+                deadline: selectedDeadline,
+              );
+              await Future.delayed(const Duration(milliseconds: 500));
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            } finally {
+              if (context.mounted) {
+                setState(() => isSubmitting = false);
+              }
+            }
           }
 
           return Dialog(
@@ -190,14 +202,24 @@ Future<void> showCreateCampaignOverlay(
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: validateAndSubmit,
+                            onPressed: isSubmitting ? null : validateAndSubmit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryBlue,
+                              minimumSize: const Size(0, 44),
                             ),
-                            child: const Text(
-                              "Tạo khoản thu",
-                              style: TextStyle(color: Colors.white),
-                            ),
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    "Tạo khoản thu",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                           ),
                         ),
                       ],

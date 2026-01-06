@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../view_models/fund_view_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/personal_status_card.dart';
-import '../widgets/unpaid_list_item.dart';
 import '../../../../core/utils/currency_utils.dart'; 
+import '../widgets/campaign_history_card.dart';
 
 class StudentFundContent extends ConsumerWidget {
   final String classId;

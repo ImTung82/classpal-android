@@ -127,3 +127,18 @@ class UnpaidMember {
     required this.isPaid,
   });
 }
+class FundCampaignHistory {
+  final FundCampaign campaign;
+  final int totalMembers;
+  final int paidMembers;
+  final bool isPaidByMe;
+
+  FundCampaignHistory({
+    required this.campaign,
+    required this.totalMembers,
+    required this.paidMembers,
+    required this.isPaidByMe,
+  });
+}
+
+

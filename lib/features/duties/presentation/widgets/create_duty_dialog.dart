@@ -14,9 +14,9 @@ class CreateDutyDialog extends ConsumerStatefulWidget {
 }
 
 class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
-  // Giữ nguyên các biến state của bạn
   final Set<String> _selectedTeamIds = {};
-  DateTime _selectedDate = DateTime.now();
+  DateTime _startDate = DateTime(2026, 1, 5); // Khởi tạo mốc tuần hiện tại
+  DateTime _endDate = DateTime(2026, 1, 10); // Kết thúc Thứ 7 tuần hiện tại
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -28,21 +28,29 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     super.dispose();
   }
 
-  // LOGIC SUBMIT MỚI: Khớp với createDutyRotation
+  // Logic tính số tuần chênh lệch thực tế để giới hạn số tổ
+  int get _selectedWeeksCount {
+    final difference = _endDate.difference(_startDate).inDays;
+    return (difference / 7).floor() + 1;
+  }
+
   Future<void> _submitData() async {
+    if (_selectedTeamIds.isEmpty) {
+      _showSnackBar("Vui lòng chọn ít nhất một tổ phụ trách.", Colors.orange);
+      return;
+    }
+
     final String title = _titleController.text.trim().isEmpty
         ? "Trực nhật"
         : _titleController.text.trim();
     final String desc = _descriptionController.text.trim();
 
-    // Tách danh sách nhiệm vụ nếu LT nhập dạng "Lau bảng, Tắt điện"
     List<String> taskTitles = title
         .split(',')
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
 
-    // Nếu có description, nối vào từng nhiệm vụ
     if (desc.isNotEmpty) {
       taskTitles = taskTitles.map((t) => "$t: $desc").toList();
     }
@@ -51,29 +59,37 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
         .read(dutyControllerProvider.notifier)
         .createDuty(
           classId: widget.classId,
-          startDate: _selectedDate,
+          startDate: _startDate,
+          endDate: _endDate,
           taskTitles: taskTitles,
+          selectedTeamIds: _selectedTeamIds.toList(),
           onSuccess: () {
-            if (mounted) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Tạo nhiệm vụ thành công!"),
-                backgroundColor: Colors.green,
-              ),
-            );
+            if (mounted) {
+              _showSnackBar("Tạo nhiệm vụ thành công!", Colors.green);
+              Navigator.pop(context);
+            }
           },
           onError: (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Lỗi: $e"), backgroundColor: Colors.red),
-            );
+            _showSnackBar("Lỗi: $e", Colors.red);
           },
         );
+  }
+
+  void _showSnackBar(String message, Color bgColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: bgColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final teamsAsync = ref.watch(teamGroupsProvider(widget.classId));
-    final isLoading = ref.watch(dutyControllerProvider).isLoading;
+    final dutyState = ref.watch(dutyControllerProvider);
+    final isLoading = dutyState.isLoading;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -98,11 +114,9 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 _buildSectionTitle('Tên nhiệm vụ'),
                 _buildTextField(_titleController, 'VD: Trực nhật, Lau bảng...'),
                 const SizedBox(height: 16),
-
                 _buildSectionTitle('Mô tả công việc'),
                 _buildTextField(
                   _descriptionController,
@@ -110,12 +124,44 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-
-                _buildSectionTitle('Ngày thực hiện'),
-                _buildDatePickerTrigger(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Bắt đầu (T2)'),
+                          _buildDatePickerTrigger(isStartDate: true),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('Kết thúc (T7)'),
+                          _buildDatePickerTrigger(isStartDate: false),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
-
-                _buildSectionTitle('Chọn tổ phụ trách'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionTitle('Chọn tổ phụ trách'),
+                    Text(
+                      'Tối đa: $_selectedWeeksCount tổ',
+                      style: GoogleFonts.arimo(
+                        fontSize: 12,
+                        color: const Color(0xFF155DFC),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
                 teamsAsync.when(
                   loading: () => const Center(
                     child: Padding(
@@ -127,12 +173,11 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                   data: (teams) => _buildTeamsGrid(teams),
                 ),
                 const SizedBox(height: 24),
-
                 Row(
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => Navigator.pop(context),
+                        onTap: isLoading ? null : () => Navigator.pop(context),
                         child: _buildActionButton(
                           'Hủy',
                           bgColor: Colors.white,
@@ -147,7 +192,9 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
                         onTap: isLoading ? null : _submitData,
                         child: _buildActionButton(
                           isLoading ? 'Đang tạo...' : 'Tạo nhiệm vụ',
-                          bgColor: const Color(0xFF155DFC),
+                          bgColor: isLoading
+                              ? Colors.grey
+                              : const Color(0xFF155DFC),
                           textColor: Colors.white,
                         ),
                       ),
@@ -162,7 +209,6 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  // Logic chia lưới linh hoạt theo số lượng tổ
   Widget _buildTeamsGrid(List<TeamGroup> teams) {
     if (teams.isEmpty) return const Text("Chưa có tổ nào trong lớp");
     int crossAxisCount = teams.length == 1 ? 1 : (teams.length == 3 ? 3 : 2);
@@ -181,11 +227,22 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
         final team = teams[index];
         final isSelected = _selectedTeamIds.contains(team.id);
         return GestureDetector(
-          onTap: () => setState(
-            () => isSelected
-                ? _selectedTeamIds.remove(team.id)
-                : _selectedTeamIds.add(team.id),
-          ),
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedTeamIds.remove(team.id);
+              } else {
+                if (_selectedTeamIds.length < _selectedWeeksCount) {
+                  _selectedTeamIds.add(team.id);
+                } else {
+                  _showSnackBar(
+                    "Khoảng thời gian này chỉ cho phép chọn tối đa $_selectedWeeksCount tổ.",
+                    Colors.orange,
+                  );
+                }
+              }
+            });
+          },
           child: Container(
             decoration: BoxDecoration(
               color: isSelected
@@ -257,9 +314,10 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  Widget _buildDatePickerTrigger() {
+  Widget _buildDatePickerTrigger({required bool isStartDate}) {
+    final date = isStartDate ? _startDate : _endDate;
     return InkWell(
-      onTap: _pickDate,
+      onTap: () => _pickDate(isStartDate: isStartDate),
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -271,13 +329,13 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
           children: [
             const Icon(
               Icons.calendar_today,
-              size: 16,
+              size: 14,
               color: Color(0xFF354152),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Text(
-              "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
-              style: GoogleFonts.arimo(fontSize: 14),
+              "${date.day}/${date.month}/${date.year}",
+              style: GoogleFonts.arimo(fontSize: 13),
             ),
           ],
         ),
@@ -311,14 +369,48 @@ class _CreateDutyDialogState extends ConsumerState<CreateDutyDialog> {
     );
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate({required bool isStartDate}) async {
+    final DateTime minSelectableDate = DateTime(2026, 1, 5);
+    final DateTime now = DateTime.now();
+    final DateTime firstDate = now.isBefore(minSelectableDate)
+        ? now
+        : minSelectableDate;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      initialDate: isStartDate ? _startDate : _endDate,
+      firstDate: firstDate,
       lastDate: DateTime(2030),
-      selectableDayPredicate: (DateTime val) => val.weekday == DateTime.monday,
+      selectableDayPredicate: (DateTime val) {
+        if (isStartDate) return val.weekday == DateTime.monday;
+        return val.weekday == DateTime.saturday;
+      },
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+
+    if (picked != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = picked;
+          if (_startDate.isAfter(_endDate)) {
+            _endDate = _startDate.add(const Duration(days: 5));
+          }
+        } else {
+          _endDate = picked;
+          if (_endDate.isBefore(_startDate)) {
+            _endDate = _startDate.add(const Duration(days: 5));
+            _showSnackBar(
+              "Ngày kết thúc không được trước ngày bắt đầu.",
+              Colors.orange,
+            );
+          }
+        }
+
+        final weeksCount = _selectedWeeksCount;
+        while (_selectedTeamIds.length > weeksCount &&
+            _selectedTeamIds.isNotEmpty) {
+          _selectedTeamIds.remove(_selectedTeamIds.last);
+        }
+      });
+    }
   }
 }

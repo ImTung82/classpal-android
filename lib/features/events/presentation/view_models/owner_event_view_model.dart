@@ -9,7 +9,7 @@ final ownerEventsProvider = FutureProvider.autoDispose
       return ref.watch(eventRepositoryProvider).fetchOwnerEvents(classId);
     });
 
-// Controller xử lý các hành động Thêm/Sửa/Xóa
+// Controller xử lý các hành động Thêm/Sửa/Xóa + [NEW] Tham gia/Hủy
 final eventControllerProvider = AsyncNotifierProvider<EventController, void>(
   () => EventController(),
 );
@@ -66,6 +66,51 @@ class EventController extends AsyncNotifier<void> {
     state = const AsyncValue.loading();
     try {
       await ref.read(eventRepositoryProvider).deleteEvent(eventId);
+      ref.invalidate(ownerEventsProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  // --- [NEW] THÊM LOGIC THAM GIA CHO OWNER ---
+  Future<void> joinEvent({
+    required String classId,
+    required String eventId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final userId = ref.read(eventRepositoryProvider).getCurrentUserId();
+      if (userId == null)
+        throw Exception("Không tìm thấy thông tin người dùng");
+
+      await ref.read(eventRepositoryProvider).joinEvent(eventId, userId);
+      ref.invalidate(ownerEventsProvider(classId));
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  Future<void> leaveEvent({
+    required String classId,
+    required String eventId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final userId = ref.read(eventRepositoryProvider).getCurrentUserId();
+      if (userId == null)
+        throw Exception("Không tìm thấy thông tin người dùng");
+
+      await ref.read(eventRepositoryProvider).leaveEvent(eventId, userId);
       ref.invalidate(ownerEventsProvider(classId));
       onSuccess();
     } catch (e) {

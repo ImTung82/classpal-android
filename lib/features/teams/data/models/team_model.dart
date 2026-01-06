@@ -3,16 +3,18 @@ class TeamMember {
   final String userId;
   final String name;
   final String email;
-  final String avatarColor; // Hex string (VD: "0xFF0EA5E9")
+  final String avatarColor;
   final String? avatarUrl;
+  final bool isLeader;
 
   TeamMember({
-    required this.id, 
+    required this.id,
     required this.userId,
-    required this.name, 
-    required this.email, 
+    required this.name,
+    required this.email,
     required this.avatarColor,
     this.avatarUrl,
+    this.isLeader = false, // Mặc định false
   });
 
   factory TeamMember.fromMap(Map<String, dynamic> map) {
@@ -23,11 +25,11 @@ class TeamMember {
       name: profile['full_name'] ?? 'Không tên',
       email: profile['email'] ?? '',
       avatarUrl: profile['avatar_url'],
-      avatarColor: '0xFF9CA3AF', // Màu mặc định (Xám)
+      avatarColor: '0xFF9CA3AF',
     );
   }
 
-  TeamMember copyWith({String? avatarColor}) {
+  TeamMember copyWith({String? avatarColor, bool? isLeader}) {
     return TeamMember(
       id: id,
       userId: userId,
@@ -35,6 +37,7 @@ class TeamMember {
       email: email,
       avatarColor: avatarColor ?? this.avatarColor,
       avatarUrl: avatarUrl,
+      isLeader: isLeader ?? this.isLeader,
     );
   }
 }
@@ -42,22 +45,15 @@ class TeamMember {
 class TeamGroup {
   final String id;
   final String name;
-  final int color; // Màu do Repository tính toán
+  final int color;
+  final String? leaderId;
   final List<TeamMember> members;
 
   TeamGroup({
-    required this.id, 
-    required this.name, 
-    required this.color, 
-    required this.members
+    required this.id,
+    required this.name,
+    required this.color,
+    this.leaderId,
+    required this.members,
   });
-
-  factory TeamGroup.fromMap(Map<String, dynamic> map) {
-    return TeamGroup(
-      id: map['id'],
-      name: map['name'],
-      color: 0xFF0EA5E9, // Giá trị mặc định (sẽ bị ghi đè bởi Repository)
-      members: [],
-    );
-  }
 }

@@ -18,24 +18,16 @@ class Student {
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
-    // Xử lý dữ liệu lồng nhau từ các bảng profiles và class_members
-    // Giả định logic join: event_participants -> profiles & class_members -> teams
     final profile = json['profiles'];
 
     return Student(
       id: json['user_id'] ?? '',
       name: profile?['full_name'] ?? 'Unknown',
       avatarUrl: profile?['avatar_url'],
-      // Lấy student_code từ dữ liệu join, fallback về 'N/A'
-      studentCode:
-          json['student_code'] ??
-          json['class_members']?['student_code'] ??
-          'N/A',
-      // Lấy tên team từ bảng teams lồng trong class_members hoặc trực tiếp
-      teamName:
-          json['teams']?['name'] ??
-          json['class_members']?['teams']?['name'] ??
-          'Không có tổ',
+      
+      // [FIX] Lấy dữ liệu bơm từ Repository, fallback về N/A
+      studentCode: json['student_code'] ?? 'N/A',
+      teamName: json['team_name'] ?? 'Chưa phân tổ',
     );
   }
 }
@@ -44,14 +36,9 @@ class ClassEvent {
   final String id;
   final String title;
   final String description;
-
-  // Thời gian diễn ra sự kiện
   final DateTime startTime;
   final DateTime? endTime;
-
-  // Thời gian chốt đăng ký (Quan trọng cho logic Mở/Đóng)
   final DateTime registrationDeadline;
-
   final String location;
   final bool isMandatory;
   final List<Student> participants;
@@ -72,20 +59,19 @@ class ClassEvent {
     this.unconfirmed = const [],
   });
 
-  // --- GETTERS LOGIC ---
-
-  // 1. Logic quyết định Mở hay Đóng: So sánh hiện tại với Deadline
+  // 1. Kiểm tra còn mở đăng ký không
   bool get isOpen {
     final now = DateTime.now();
     return now.isBefore(registrationDeadline);
   }
 
-  // 2. Format Ngày sự kiện (VD: 20/11/2025)
-  String get dateDisplay {
-    return DateFormat('dd/MM/yyyy').format(startTime);
-  }
+  // 2. [BỊ THIẾU LÚC NÃY] Thời gian còn lại để đăng ký
+  Duration get timeRemainingToRegister => registrationDeadline.difference(DateTime.now());
 
-  // 3. Format Giờ sự kiện (VD: 07:00 - 09:00)
+  // 3. Hiển thị ngày
+  String get dateDisplay => DateFormat('dd/MM/yyyy').format(startTime);
+
+  // 4. Hiển thị giờ (Ví dụ: 07:00 - 09:00 hoặc 07:00)
   String get timeDisplay {
     final startStr = DateFormat('HH:mm').format(startTime);
     if (endTime != null) {
@@ -95,22 +81,17 @@ class ClassEvent {
     return startStr;
   }
 
-  // 4. Format Hạn đăng ký để hiển thị UI (VD: 17:00 19/11/2025)
-  String get deadlineDisplay {
-    return DateFormat('HH:mm dd/MM/yyyy').format(registrationDeadline);
-  }
+  // 5. Hiển thị hạn đăng ký
+  String get deadlineDisplay => DateFormat('HH:mm dd/MM/yyyy').format(registrationDeadline);
 
-  // 5. Thời gian còn lại để đăng ký (Dùng cho đếm ngược)
-  Duration get timeRemainingToRegister =>
-      registrationDeadline.difference(DateTime.now());
-
+  // 6. Các chỉ số thống kê
   int get registeredCount => participants.length;
   int get unregisteredCount => nonParticipants.length + unconfirmed.length;
-  int get totalCount =>
-      participants.length + nonParticipants.length + unconfirmed.length;
+  int get totalCount => participants.length + nonParticipants.length + unconfirmed.length;
+  
+  // 7. Tiến độ đăng ký (0.0 -> 1.0)
   double get progress => totalCount == 0 ? 0 : registeredCount / totalCount;
 
-  // --- FACTORY ---
   factory ClassEvent.fromJson(Map<String, dynamic> json) {
     final participants = <Student>[];
     final nonParticipants = <Student>[];
@@ -126,7 +107,7 @@ class ClassEvent {
         } else if (status == 'not_joined') {
           nonParticipants.add(student);
         } else {
-          unconfirmed.add(student);
+          unconfirmed.add(student); // pending
         }
       }
     }
@@ -136,9 +117,7 @@ class ClassEvent {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       startTime: DateTime.parse(json['start_time']).toLocal(),
-      endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time']).toLocal()
-          : null,
+      endTime: json['end_time'] != null ? DateTime.parse(json['end_time']).toLocal() : null,
       registrationDeadline: json['registration_deadline'] != null
           ? DateTime.parse(json['registration_deadline']).toLocal()
           : DateTime.parse(json['start_time']).toLocal(),
@@ -150,7 +129,6 @@ class ClassEvent {
     );
   }
 
-  // --- TO JSON ---
   Map<String, dynamic> toJson(String classId) {
     final Map<String, dynamic> result = {
       'title': title,
@@ -160,21 +138,12 @@ class ClassEvent {
       'location': location,
       'is_mandatory': isMandatory,
     };
-
-    if (classId.isNotEmpty) {
-      result['class_id'] = classId;
-    }
-
-    if (endTime != null) {
-      result['end_time'] = endTime!.toUtc().toIso8601String();
-    } else {
-      result['end_time'] = null;
-    }
-
+    if (classId.isNotEmpty) result['class_id'] = classId;
+    if (endTime != null) result['end_time'] = endTime!.toUtc().toIso8601String();
+    else result['end_time'] = null;
     return result;
   }
 
-  // CopyWith
   ClassEvent copyWith({
     String? id,
     String? title,

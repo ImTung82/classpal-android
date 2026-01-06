@@ -196,7 +196,87 @@ class StudentFundContent extends ConsumerWidget {
               );
             },
           ),
+          const SizedBox(height: 24),
+          Text(
+            "Lịch sử khoản thu",
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
 
+          Consumer(
+            builder: (context, ref, _) {
+              final historyAsync = ref.watch(
+                fundCampaignHistoryProvider(classId),
+              );
+
+              return historyAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, s) => Text("Lỗi tải lịch sử: $e"),
+                data: (histories) {
+                  if (histories.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        "Chưa có lịch sử khoản thu",
+                        style: GoogleFonts.roboto(color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.history,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "Vuốt để xem thêm lịch sử",
+                            style: GoogleFonts.roboto(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      Container(
+                        height: 400,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(8),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: histories.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            return CampaignHistoryCard(
+                              history: histories[index],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
           const SizedBox(height: 80),
         ],
       ),

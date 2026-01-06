@@ -91,9 +91,9 @@ class StudentDutyCard extends ConsumerWidget {
     bool isLoading,
   ) {
     if (task.status == 'Done')
-      return _buildStatusLabel("✅ Nhiệm vụ đã hoàn thành");
+      return _buildStatusLabel("Nhiệm vụ đã hoàn thành");
     if (task.status == 'Missed')
-      return _buildStatusLabel("❌ Không hoàn thành (Bị trừ 5đ)");
+      return _buildStatusLabel("Không hoàn thành (Bị trừ 5đ)");
 
     if (isLeader && task.status == 'Active') {
       return ElevatedButton(

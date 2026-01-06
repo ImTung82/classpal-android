@@ -45,6 +45,7 @@ class DutyTask {
   factory DutyTask.fromMap(Map<String, dynamic> map) {
     final team = map['teams'];
     final date = map['date'] != null ? DateTime.parse(map['date']) : null;
+    final rawStatus = map['status'] ?? 'pending';
 
     // --- Xử lý tách Title và Description từ trường 'note' ---
     String rawNote = map['note'] ?? '';
@@ -52,41 +53,44 @@ class DutyTask {
     String description = '';
 
     if (rawNote.contains(':')) {
-      // Nếu note có dạng "Tiêu đề: Mô tả"
       List<String> parts = rawNote.split(':');
       title = parts[0].trim();
-      description = parts
-          .sublist(1)
-          .join(':')
-          .trim(); // Lấy phần còn lại sau dấu : đầu tiên
+      description = parts.sublist(1).join(':').trim();
     } else {
-      // Nếu không có dấu :, lấy note làm tiêu đề và để mô tả mặc định nếu trống
       title = rawNote.isNotEmpty ? rawNote : 'Trực nhật';
       description = '';
     }
 
-    // --- Xử lý Status dựa trên ngày tháng và kết quả từ DB ---
-    String status = 'Upcoming';
-    if (date != null) {
+    // --- Logic phân loại Status để hiển thị màu sắc CSS ---
+    String displayStatus = 'Upcoming';
+
+    if (rawStatus == 'completed') {
+      displayStatus = 'Done'; // Màu xanh - Hoàn thành, bảo toàn điểm
+    } else if (rawStatus == 'failed') {
+      displayStatus = 'Missed'; // Màu đỏ - Thất bại, bị trừ 5 điểm
+    } else if (date != null) {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final dutyDate = DateTime(date.year, date.month, date.day);
 
       if (dutyDate.isBefore(today)) {
-        status = map['status'] == 'completed' ? 'Done' : 'Active';
+        displayStatus = 'Active';
       } else if (dutyDate.isAtSameMomentAs(today)) {
-        status = 'Active';
+        displayStatus = 'Active'; // Nhiệm vụ hôm nay
+      } else {
+        displayStatus = 'Upcoming'; // Nhiệm vụ tương lai
       }
     }
 
     return DutyTask(
       id: map['id'] ?? '',
       title: title,
-      // Không gán cứng chuỗi "Vệ sinh lớp học..." nữa mà lấy từ dữ liệu đã tách
-      description: description.isNotEmpty ? description : 'Nhiệm vụ hàng ngày',
+      description: description.isNotEmpty
+          ? description
+          : 'Hoàn thành để tích lũy điểm cho đội nhóm của bạn!',
       assignedTo: team?['name'] ?? 'Chưa phân công',
       dateRange: _formatDateRange(date),
-      status: status,
+      status: displayStatus,
       teamId: map['team_id'],
       date: date,
     );
@@ -104,7 +108,6 @@ class DutyTask {
     } else if (dutyDate.difference(today).inDays == 1) {
       return 'Ngày mai (${date.day}/${date.month})';
     } else if (dutyDate.isAfter(today)) {
-      // Định dạng cho các ngày trong tương lai xa hơn
       return '${date.day}/${date.month}/${date.year}';
     } else {
       return '${date.day}/${date.month}';

@@ -3,11 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 Future<void> showCreateCampaignOverlay(
   BuildContext context, {
-  required void Function({
+  required Future<void> Function({
     required String title,
     required int amountPerPerson,
     DateTime? deadline,
-  }) onSubmit,
+  })
+  onSubmit,
 }) async {
   final titleController = TextEditingController();
   final amountController = TextEditingController();
@@ -30,7 +31,7 @@ Future<void> showCreateCampaignOverlay(
 
       return StatefulBuilder(
         builder: (context, setState) {
-          void validateAndSubmit() {
+          void validateAndSubmit() async {
             String? _titleError;
             String? _amountError;
             String? _deadlineError;
@@ -68,7 +69,7 @@ Future<void> showCreateCampaignOverlay(
               return;
             }
 
-            onSubmit(
+            await onSubmit(
               title: title,
               amountPerPerson: amount!,
               deadline: selectedDeadline,
@@ -78,135 +79,139 @@ Future<void> showCreateCampaignOverlay(
           }
 
           return Dialog(
-  insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-  backgroundColor: Colors.white,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(16),
-    side: BorderSide(color: borderColor),
-  ),
-  child: ConstrainedBox(
-    constraints: BoxConstraints(
-      maxWidth: MediaQuery.of(context).size.width * 0.9,
-      maxHeight: MediaQuery.of(context).size.height * 0.85,
-    ),
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Tạo khoản thu mới",
-            style: GoogleFonts.roboto(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
             ),
-          ),
-          const SizedBox(height: 20),
-
-          _label("Tên khoản thu"),
-          _inputField(
-            controller: titleController,
-            hint: "VD: Quỹ lớp Học kỳ 2",
-            borderColor: borderColor,
-          ),
-          _error(titleError),
-
-          const SizedBox(height: 12),
-
-          _label("Số tiền/người (VNĐ)"),
-          _inputField(
-            controller: amountController,
-            hint: "100000",
-            keyboardType: TextInputType.number,
-            borderColor: borderColor,
-          ),
-          _error(amountError),
-
-          const SizedBox(height: 12),
-
-          _label("Hạn nộp"),
-          TextField(
-            controller: deadlineController,
-            readOnly: true,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: borderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: primaryBlue),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: borderColor),
             ),
-            onTap: () async {
-              final date = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                firstDate: DateTime.now(),
-                lastDate: DateTime(2100),
-              );
-              if (date != null) {
-                setState(() {
-                  selectedDeadline = date;
-                  deadlineController.text =
-                      "${date.day.toString().padLeft(2, '0')}/"
-                      "${date.month.toString().padLeft(2, '0')}/"
-                      "${date.year}";
-                  deadlineError = null;
-                });
-              }
-            },
-          ),
-          _error(deadlineError),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Tạo khoản thu mới",
+                      style: GoogleFonts.roboto(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-          const SizedBox(height: 24),
+                    _label("Tên khoản thu"),
+                    _inputField(
+                      controller: titleController,
+                      hint: "VD: Quỹ lớp Học kỳ 2",
+                      borderColor: borderColor,
+                    ),
+                    _error(titleError),
 
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Hủy"),
+                    const SizedBox(height: 12),
+
+                    _label("Số tiền/người (VNĐ)"),
+                    _inputField(
+                      controller: amountController,
+                      hint: "100000",
+                      keyboardType: TextInputType.number,
+                      borderColor: borderColor,
+                    ),
+                    _error(amountError),
+
+                    const SizedBox(height: 12),
+
+                    _label("Hạn nộp"),
+                    TextField(
+                      controller: deadlineController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        suffixIcon: const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: primaryBlue),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            selectedDeadline = date;
+                            deadlineController.text =
+                                "${date.day.toString().padLeft(2, '0')}/"
+                                "${date.month.toString().padLeft(2, '0')}/"
+                                "${date.year}";
+                            deadlineError = null;
+                          });
+                        }
+                      },
+                    ),
+                    _error(deadlineError),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Hủy"),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: validateAndSubmit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryBlue,
+                            ),
+                            child: const Text(
+                              "Tạo khoản thu",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: validateAndSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                  ),
-                  child: const Text(
-                    "Tạo khoản thu",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  ),
-);
-
+            ),
+          );
         },
       );
     },
   );
 }
-
 
 Widget _label(String text) =>
     Text(text, style: GoogleFonts.roboto(fontSize: 13));
@@ -217,10 +222,7 @@ Widget _error(String? text) {
     padding: const EdgeInsets.only(top: 4),
     child: Text(
       text,
-      style: GoogleFonts.roboto(
-        color: Colors.red.shade600,
-        fontSize: 12,
-      ),
+      style: GoogleFonts.roboto(color: Colors.red.shade600, fontSize: 12),
     ),
   );
 }

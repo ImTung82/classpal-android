@@ -107,139 +107,118 @@ if (selectedImage != null) {
 
 
           return Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey.shade300),
+  insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+  backgroundColor: Colors.white,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    side: BorderSide(color: Colors.grey.shade300),
+  ),
+  child: ConstrainedBox(
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.85,
+    ),
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Thêm khoản chi",
+            style: GoogleFonts.roboto(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: 20),
+
+          _label("Mô tả"),
+          _input(titleController, hint: "VD: Tiền photo tài liệu"),
+          _error(titleError),
+
+          const SizedBox(height: 12),
+
+          _label("Số tiền (VNĐ)"),
+          _input(
+            amountController,
+            hint: "50000",
+            keyboardType: TextInputType.number,
+          ),
+          _error(amountError),
+
+          const SizedBox(height: 12),
+
+          _label("Ngày chi"),
+          _input(
+            dateController,
+            readOnly: true,
+            suffix: Icons.calendar_today_outlined,
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+              );
+              if (date != null) {
+                setState(() {
+                  selectedDate = date;
+                  dateController.text =
+                      "${date.day}/${date.month}/${date.year}";
+                  dateError = null;
+                });
+              }
+            },
+          ),
+          _error(dateError),
+
+          const SizedBox(height: 16),
+
+          _label("Hóa đơn (nếu có)"),
+          const SizedBox(height: 6),
+
+          GestureDetector(
+            onTap: () async {
+              final image = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 80,
+              );
+              if (image != null) {
+                setState(() {
+                  selectedImage = image;
+                  evidenceController.text = image.name;
+                });
+              }
+            },
             child: Container(
-              width: width * 0.85,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 14,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    "Thêm khoản chi",
-                    style: GoogleFonts.roboto(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  const Icon(Icons.image_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      evidenceController.text.isEmpty
+                          ? "Chọn ảnh hóa đơn"
+                          : evidenceController.text,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
 
-                  _label("Mô tả"),
-                  _input(titleController, hint: "VD: Tiền photo tài liệu"),
-                  _error(titleError),
+          const SizedBox(height: 24),
 
-                  const SizedBox(height: 12),
-
-                  _label("Số tiền (VNĐ)"),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _input(
-                        amountController,
-                        hint: "50000",
-                        keyboardType: TextInputType.number,
-                      ),
-                      _error(amountError),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _label("Ngày chi"),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _input(
-                        dateController,
-                        readOnly: true,
-                        suffix: Icons.calendar_today_outlined,
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (date != null) {
-                            setState(() {
-                              selectedDate = date;
-                              dateController.text =
-                                  "${date.day}/${date.month}/${date.year}";
-                              dateError = null;
-                            });
-                          }
-                        },
-                      ),
-                      _error(dateError),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  _label("Hóa đơn (nếu có)"),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () async {
-                      final picker = ImagePicker();
-
-final image = await picker.pickImage(
-  source: ImageSource.gallery,
-  imageQuality: 80, // giảm dung lượng
-);
-
-if (image != null) {
-  setState(() {
-    selectedImage = image;
-    evidenceController.text = image.name;
-  });
-}
-
-
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.image_outlined,
-                            size: 18,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              evidenceController.text.isEmpty
-                                  ? "Chọn ảnh hóa đơn"
-                                  : evidenceController.text,
-                              style: GoogleFonts.roboto(
-                                fontSize: 13,
-                                color: evidenceController.text.isEmpty
-                                    ? Colors.grey
-                                    : Colors.black,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Row(
+          Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
@@ -282,10 +261,12 @@ if (image != null) {
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          );
+        ],
+      ),
+    ),
+  ),
+);
+
         },
       );
     },

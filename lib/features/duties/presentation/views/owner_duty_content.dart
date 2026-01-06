@@ -7,6 +7,7 @@ import '../view_models/duty_view_model.dart';
 import '../widgets/score_board_item.dart';
 import '../widgets/active_duty_card.dart';
 import '../widgets/create_duty_dialog.dart';
+import '../../data/models/duty_models.dart';
 
 class OwnerDutyContent extends ConsumerWidget {
   final String classId;
@@ -17,6 +18,8 @@ class OwnerDutyContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scoresAsync = ref.watch(scoreBoardProvider(classId));
     final activeDutiesAsync = ref.watch(activeDutiesProvider(classId));
+    // Sử dụng provider mới để lấy duy nhất dữ liệu tuần sau
+    final nextWeekDutiesAsync = ref.watch(nextWeekDutiesProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -49,7 +52,7 @@ class OwnerDutyContent extends ConsumerWidget {
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text("Tạo nhiệm vụ"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB), // Blue
+                backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -109,31 +112,70 @@ class OwnerDutyContent extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Section Nhiệm vụ đang hoạt động
+          // Section 1: Nhiệm vụ tuần này
           Text(
-            "Nhiệm vụ đang hoạt động",
+            "Nhiệm vụ tuần này",
             style: GoogleFonts.roboto(
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 180, // Chiều cao cố định cho list ngang
-            child: activeDutiesAsync.when(
-              loading: () => const SizedBox(),
-              error: (e, s) => const SizedBox(),
-              data: (duties) => ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: duties.length,
-                itemBuilder: (context, index) =>
-                    ActiveDutyCard(task: duties[index], classId: classId),
-              ),
+          _buildDutyHorizontalList(activeDutiesAsync, classId),
+
+          const SizedBox(height: 24),
+
+          // Section 2: Nhiệm vụ tuần sau (Dữ liệu đã được lọc lte/gte trong Repository)
+          Text(
+            "Nhiệm vụ tuần sau",
+            style: GoogleFonts.roboto(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
+          const SizedBox(height: 12),
+          _buildDutyHorizontalList(nextWeekDutiesAsync, classId),
 
           const SizedBox(height: 80),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDutyHorizontalList(
+    AsyncValue<List<DutyTask>> dutiesAsync,
+    String classId,
+  ) {
+    return SizedBox(
+      height: 180,
+      child: dutiesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text("Lỗi: $e")),
+        data: (duties) {
+          if (duties.isEmpty) {
+            return Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.grey.shade100,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Text(
+                "Chưa có nhiệm vụ nào",
+                style: GoogleFonts.roboto(color: Colors.grey),
+              ),
+            );
+          }
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: duties.length,
+            itemBuilder: (context, index) =>
+                ActiveDutyCard(task: duties[index], classId: classId),
+          );
+        },
       ),
     );
   }

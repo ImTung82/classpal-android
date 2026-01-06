@@ -45,6 +45,7 @@ dependencies:
   flutter_displaymode: ^0.7.0
   image_picker: ^1.2.1
   share_plus: ^10.1.0
+  uuid: ^4.5.2
 
 dev_dependencies:
   flutter_test:

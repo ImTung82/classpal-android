@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/duty_view_model.dart';
-import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
 import '../widgets/student_duty_card.dart';
 import '../widgets/upcoming_duty_item.dart';
-import '../../../dashboard/presentation/widgets/group_member_item.dart';
+import '../../../teams/presentation/widgets/team_member_item.dart';
 
 class StudentDutyContent extends ConsumerWidget {
   final String classId;
@@ -14,10 +13,14 @@ class StudentDutyContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch các provider để lấy dữ liệu
+    // 1. Lấy nhiệm vụ hiện tại của cá nhân/tổ
     final myDutyAsync = ref.watch(myDutyProvider(classId));
+
+    // 2. Lấy lịch trực tuần sau (Repository đã lọc lte/gte trong phạm vi 7 ngày tới)
     final upcomingAsync = ref.watch(upcomingDutiesProvider(classId));
-    final membersAsync = ref.watch(groupMembersProvider);
+
+    // 3. SỬA LỖI 1: Lấy đúng thành viên trong tổ của mình
+    final teamMembersAsync = ref.watch(myTeamMembersProvider(classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -38,7 +41,7 @@ class StudentDutyContent extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // --- Hiển thị Card nhiệm vụ hiện tại ---
+          // --- Hiển thị Card nhiệm vụ tuần này ---
           myDutyAsync.when(
             loading: () => const Center(
               child: Padding(
@@ -54,7 +57,7 @@ class StudentDutyContent extends ConsumerWidget {
 
           const SizedBox(height: 24),
 
-          // --- Danh sách thành viên trong tổ (Tên tổ lấy động từ myDutyAsync) ---
+          // --- SỬA LỖI 1: Danh sách thành viên trong tổ ---
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -71,21 +74,15 @@ class StudentDutyContent extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hiển thị tên tổ động dựa trên dữ liệu nhiệm vụ
                 Text(
-                  myDutyAsync.maybeWhen(
-                    data: (task) => task != null
-                        ? "Thành viên ${task.assignedTo}"
-                        : "Thành viên tổ của bạn",
-                    orElse: () => "Thành viên tổ",
-                  ),
+                  "Thành viên tổ của bạn",
                   style: GoogleFonts.roboto(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: 12),
-                membersAsync.when(
+                teamMembersAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.0),
                     child: LinearProgressIndicator(),
@@ -93,10 +90,16 @@ class StudentDutyContent extends ConsumerWidget {
                   error: (e, s) =>
                       const Text("Không thể tải danh sách thành viên"),
                   data: (members) => members.isEmpty
-                      ? const Text("Chưa có thành viên nào trong tổ")
+                      ? const Text("Bạn chưa được phân vào tổ nào")
                       : Column(
                           children: members
-                              .map((m) => GroupMemberItem(member: m))
+                              .map(
+                                (m) => TeamMemberItem(
+                                  member: m,
+                                  isEditable:
+                                      false, // Sinh viên không có quyền edit
+                                ),
+                              )
                               .toList(),
                         ),
                 ),
@@ -106,9 +109,9 @@ class StudentDutyContent extends ConsumerWidget {
 
           const SizedBox(height: 24),
 
-          // --- Lịch sắp tới của lớp (Bắt đầu từ ngày mai) ---
+          // --- SỬA LỖI 4: Lịch sắp tới (Chỉ hiện tuần tiếp theo) ---
           Text(
-            "Lịch sắp tới",
+            "Lịch trực tuần sau",
             style: GoogleFonts.roboto(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -135,15 +138,13 @@ class StudentDutyContent extends ConsumerWidget {
             ),
           ),
 
-          const SizedBox(
-            height: 80,
-          ), // Khoảng trống tránh bị Bottom Nav che mất
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  // Widget hiển thị khi học sinh không có nhiệm vụ trực nhật
+  // Widget hiển thị khi học sinh không có nhiệm vụ trực nhật trong tuần này
   Widget _buildNoDutyCard() {
     return Container(
       width: double.infinity,
@@ -155,7 +156,6 @@ class StudentDutyContent extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Đã sửa tên Icon từ Icons.CheckCircleOutline thành Icons.check_circle_outline
           const Icon(Icons.check_circle_outline, color: Colors.blue, size: 48),
           const SizedBox(height: 12),
           Text(
@@ -168,7 +168,7 @@ class StudentDutyContent extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "Bạn không có nhiệm vụ trực nhật trong hôm nay.",
+            "Bạn không có nhiệm vụ trực nhật trong tuần này.",
             textAlign: TextAlign.center,
             style: GoogleFonts.roboto(color: Colors.blue.shade700),
           ),

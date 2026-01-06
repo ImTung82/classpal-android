@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/duty_models.dart';
 
 final dutyRepositoryProvider = Provider<DutyRepository>((ref) {
@@ -83,6 +84,7 @@ class SupabaseDutyRepository implements DutyRepository {
       // Ví dụ: 12/1 (T2) -> 24/1 (T7 tuần sau) = 12 ngày chênh lệch -> ceil(12/7) + 1 = 2 tuần
       int totalDays = endDate.difference(startDate).inDays;
       int totalWeeks = (totalDays / 7).ceil() + 1;
+      String general_id = const Uuid().v4();
 
       for (int week = 0; week < totalWeeks; week++) {
         // Ngày bắt đầu của tuần thứ i (luôn là Thứ 2)
@@ -100,6 +102,7 @@ class SupabaseDutyRepository implements DutyRepository {
           int assignedTeamIdx = (week + i) % teamIds.length;
 
           batchDuties.add({
+            'general_id': general_id,
             'class_id': classId,
             'team_id': teamIds[assignedTeamIdx],
             'start_time': currentStart.toIso8601String(),

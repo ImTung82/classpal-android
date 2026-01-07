@@ -101,7 +101,7 @@ class _OwnerNotificationContentState
                 ),
 
               const SizedBox(height: 16),
-              const CreateNotificationSection(),
+              CreateNotificationSection(classId: widget.classId),
             ],
           );
         },

@@ -64,3 +64,24 @@ final unreadCountProvider =
     Provider.family<int, List<NotificationModel>>((ref, list) {
   return list.where((n) => !n.isRead).length;
 });
+
+final createNotificationProvider = Provider((ref) {
+  final repo = ref.read(notificationRepositoryProvider);
+
+  return ({
+    required String classId,
+    required String title,
+    required String body,
+    required String type,
+  }) async {
+    await repo.createNotificationForClass(
+      classId: classId,
+      title: title,
+      body: body,
+      type: type,
+    );
+
+    // 🔁 Refresh danh sách notifications
+    ref.invalidate(notificationListProvider(classId));
+  };
+});

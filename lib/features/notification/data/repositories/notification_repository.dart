@@ -65,4 +65,40 @@ class NotificationRepository {
         .eq('class_id', classId)
         .eq('is_read', false);
   }
+
+  Future<void> createNotificationForClass({
+    required String classId,
+    required String title,
+    required String body,
+    required String type,
+  }) async {
+    
+    final membersRes = await _client
+        .from('class_members')
+        .select('user_id')
+        .eq('class_id', classId)
+        .eq('is_active', true);
+
+    final members = (membersRes as List)
+        .map((e) => e['user_id'] as String)
+        .toList();
+
+    if (members.isEmpty) return;
+
+    final now = DateTime.now().toIso8601String();
+
+    final rows = members.map((userId) {
+      return {
+        'user_id': userId,
+        'class_id': classId,
+        'title': title,
+        'body': body,
+        'type': type,
+        'is_read': false,
+        'created_at': now,
+      };
+    }).toList();
+
+    await _client.from('notifications').insert(rows);
+  }
 }

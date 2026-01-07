@@ -37,75 +37,74 @@ class _OwnerNotificationContentState
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          NotificationHeader(
-            onMarkAllRead: () {
-              final markAll = ref.read(markAllNotificationsReadProvider);
-              markAll(widget.classId);
-            },
-          ),
+      child: asyncList.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Text('Lỗi: $e'),
+        data: (list) {
+          final unreadCount = list.where((n) => !n.isRead).length;
+          final filtered = _tabIndex == 1
+              ? list.where((n) => !n.isRead).toList()
+              : list;
 
-          const SizedBox(height: 16),
-          NotificationTabs(
-            currentIndex: _tabIndex,
-            onChanged: (i) => setState(() => _tabIndex = i),
-          ),
-          const SizedBox(height: 16),
+          return Column(
+            children: [
+              NotificationHeader(
+                onMarkAllRead: () {
+                  final markAll = ref.read(markAllNotificationsReadProvider);
+                  markAll(widget.classId);
+                },
+              ),
 
-          asyncList.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.only(top: 24),
-              child: CircularProgressIndicator(),
-            ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Text('Lỗi: $e'),
-            ),
-            data: (list) {
-              final filtered = _tabIndex == 1
-                  ? list.where((n) => !n.isRead).toList()
-                  : list;
+              const SizedBox(height: 16),
 
-              if (filtered.isEmpty) {
-                return const Padding(
+              /// ✅ Tabs nằm TRONG data
+              NotificationTabs(
+                currentIndex: _tabIndex,
+                totalCount: list.length,
+                unreadCount: unreadCount,
+                onChanged: (i) => setState(() => _tabIndex = i),
+              ),
+
+              const SizedBox(height: 16),
+
+              if (filtered.isEmpty)
+                const Padding(
                   padding: EdgeInsets.only(top: 24),
                   child: Text('Chưa có thông báo nào.'),
-                );
-              }
-
-              return Column(
-                children: [
-                  for (final n in filtered)
-                    GestureDetector(
-                      onTap: n.isRead
-                          ? null
-                          : () {
-                              final markRead = ref.read(
-                                markNotificationReadProvider,
-                              );
-                              markRead(
-                                notificationId: n.id,
-                                classId: widget.classId,
-                              );
-                            },
-                      child: NotificationCard(
-                        icon: n.icon,
-                        iconBg: n.iconBg,
-                        title: n.title,
-                        content: n.body,
-                        time: _formatTime(n.createdAt),
-                        unread: !n.isRead,
+                )
+              else
+                Column(
+                  children: [
+                    for (final n in filtered)
+                      GestureDetector(
+                        onTap: n.isRead
+                            ? null
+                            : () {
+                                final markRead = ref.read(
+                                  markNotificationReadProvider,
+                                );
+                                markRead(
+                                  notificationId: n.id,
+                                  classId: widget.classId,
+                                );
+                              },
+                        child: NotificationCard(
+                          icon: n.icon,
+                          iconBg: n.iconBg,
+                          title: n.title,
+                          content: n.body,
+                          time: _formatTime(n.createdAt),
+                          unread: !n.isRead,
+                        ),
                       ),
-                    ),
-                ],
-              );
-            },
-          ),
+                  ],
+                ),
 
-          const SizedBox(height: 16),
-          const CreateNotificationSection(),
-        ],
+              const SizedBox(height: 16),
+              const CreateNotificationSection(),
+            ],
+          );
+        },
       ),
     );
   }

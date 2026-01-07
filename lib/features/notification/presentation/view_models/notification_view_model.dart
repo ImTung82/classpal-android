@@ -56,7 +56,11 @@ final markAllNotificationsReadProvider = Provider((ref) {
       classId: classId,
     );
 
-    // refresh list
     ref.invalidate(notificationListProvider(classId));
   };
+});
+
+final unreadCountProvider =
+    Provider.family<int, List<NotificationModel>>((ref, list) {
+  return list.where((n) => !n.isRead).length;
 });

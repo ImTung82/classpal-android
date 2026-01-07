@@ -23,10 +23,10 @@ class _StudentNotificationContentState extends State<StudentNotificationContent>
         children: [
           const NotificationHeader(),
           const SizedBox(height: 16),
-          NotificationTabs(
-            currentIndex: _tabIndex,
-            onChanged: (i) => setState(() => _tabIndex = i),
-          ),
+          // NotificationTabs(
+          //   currentIndex: _tabIndex,
+          //   onChanged: (i) => setState(() => _tabIndex = i),
+          // ),
           const SizedBox(height: 16),
           NotificationCard(
             icon: LucideIcons.calendar,

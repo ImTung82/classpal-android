@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 
 class NotificationTabs extends StatelessWidget {
   final int currentIndex;
+  final int totalCount;
+  final int unreadCount;
   final ValueChanged<int> onChanged;
 
   const NotificationTabs({
     super.key,
     required this.currentIndex,
+    required this.totalCount,
+    required this.unreadCount,
     required this.onChanged,
   });
 
@@ -20,8 +24,8 @@ class NotificationTabs extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _tabItem("Tất cả (6)", 0),
-          _tabItem("Chưa đọc (2)", 1),
+          _tabItem("Tất cả ($totalCount)", 0),
+          _tabItem("Chưa đọc ($unreadCount)", 1),
         ],
       ),
     );
@@ -53,3 +57,4 @@ class NotificationTabs extends StatelessWidget {
     );
   }
 }
+

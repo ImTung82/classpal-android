@@ -8,6 +8,7 @@ import '../view_models/dashboard_view_model.dart';
 import '../widgets/task_gradient_card.dart';
 import '../widgets/dashboard_action_card.dart';
 import '../widgets/group_member_item.dart';
+import '../widgets/event_card_item.dart'; // [MỚI] Đảm bảo đã import widget này
 
 import '../../../teams/presentation/view_models/team_view_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -24,15 +25,21 @@ class StudentDashboardContent extends ConsumerWidget {
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Bạn";
 
-    // 2. Lấy danh sách nhiệm vụ (Đã cập nhật trả về List<StudentTaskData>)
+    // 2. Lấy danh sách dữ liệu (Nhiệm vụ, Sự kiện)
     final taskAsync = ref.watch(studentTaskProvider(classId));
+    final eventsAsync = ref.watch(
+      eventsProvider(classId),
+    ); // [MỚI] Gọi provider sự kiện thực tế
 
-    // 3. Lấy danh sách tổ để tìm teamId của User hiện tại
+    // 3. Lấy danh sách tổ để tìm teamId
     final groupsAsync = ref.watch(teamGroupsProvider(classId));
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(studentTaskProvider(classId));
+        ref.invalidate(
+          eventsProvider(classId),
+        ); // [MỚI] Reset sự kiện khi vuốt xuống
         ref.invalidate(teamGroupsProvider(classId));
       },
       child: SingleChildScrollView(
@@ -54,20 +61,12 @@ class StudentDashboardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // [FIX] HIỂN THỊ DANH SÁCH NHIỆM VỤ (HIỆN ĐẦY ĐỦ 4 CÁI)
+            // I. HIỂN THỊ DANH SÁCH NHIỆM VỤ TRỰC NHẬT
             taskAsync.when(
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text("Lỗi tải nhiệm vụ: $e"),
               data: (tasks) {
-                if (tasks.isEmpty) {
-                  return _buildEmptyTaskCard();
-                }
-                // Duyệt qua danh sách để hiện toàn bộ card nhiệm vụ
+                if (tasks.isEmpty) return _buildEmptyTaskCard();
                 return Column(
                   children: tasks
                       .map(
@@ -83,17 +82,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // CÁC THẺ HÀNH ĐỘNG NHANH
-            DashboardActionCard(
-              title: "Sự kiện mới",
-              description: "Hội thảo Khởi nghiệp 2024",
-              buttonText: "Đăng ký ngay",
-              icon: LucideIcons.calendar,
-              iconBgColor: const Color(0xFFF3E8FF),
-              iconColor: const Color(0xFF9333EA),
-              buttonColor: const Color(0xFFA855F7),
-              onTap: () {},
-            ),
+            // II. CÁC THẺ HÀNH ĐỘNG NHANH
             DashboardActionCard(
               title: "Quỹ lớp",
               description: "Bạn chưa nộp quỹ HK1",
@@ -105,9 +94,30 @@ class StudentDashboardContent extends ConsumerWidget {
               onTap: () {},
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // [FIX] PHẦN HIỂN THỊ ĐỒNG ĐỘI (CÓ LOGIC TỔ TRƯỞNG)
+            // III. [FIX] HIỂN THỊ SỰ KIỆN ĐANG DIỄN RA
+            _buildSectionTitle("Sự kiện đang diễn ra"),
+            const SizedBox(height: 12),
+            eventsAsync.when(
+              loading: () => const Center(child: LinearProgressIndicator()),
+              error: (e, s) => Text("Lỗi tải sự kiện: $e"),
+              data: (events) {
+                if (events.isEmpty) {
+                  return const Text(
+                    "Không có sự kiện nào sắp tới",
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+                return Column(
+                  children: events.map((e) => EventCardItem(data: e)).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI (CÓ LOGIC TỔ TRƯỞNG)
             groupsAsync.when(
               loading: () => const SizedBox(),
               error: (e, s) => const Text("Không thể tải thông tin tổ"),
@@ -115,12 +125,9 @@ class StudentDashboardContent extends ConsumerWidget {
                 final myTeamList = groups
                     .where((g) => g.members.any((m) => m.userId == user?.id))
                     .toList();
-
                 if (myTeamList.isEmpty) return const SizedBox();
 
                 final myTeam = myTeamList.first;
-
-                // Watch provider groupMembers để lấy danh sách kèm isLeader
                 final membersDetailedAsync = ref.watch(
                   groupMembersProvider(myTeam.id),
                 );
@@ -135,19 +142,12 @@ class StudentDashboardContent extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Tổ của bạn (${myTeam.name})",
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
+                      _buildSectionTitle("Tổ của bạn (${myTeam.name})"),
                       const SizedBox(height: 12),
                       membersDetailedAsync.when(
                         loading: () => const LinearProgressIndicator(),
                         error: (e, s) => const Text("Lỗi tải thành viên"),
                         data: (membersDetailed) {
-                          // Sắp xếp tổ trưởng lên đầu danh sách hiển thị
                           final sortedMembers = [...membersDetailed];
                           sortedMembers.sort(
                             (a, b) =>
@@ -169,6 +169,18 @@ class StudentDashboardContent extends ConsumerWidget {
             const SizedBox(height: 80),
           ],
         ),
+      ),
+    );
+  }
+
+  // --- Hàm Helper hiển thị tiêu đề các phần (Giống Lớp trưởng) ---
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.roboto(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: const Color(0xFF101727),
       ),
     );
   }

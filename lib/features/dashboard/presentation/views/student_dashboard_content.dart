@@ -22,14 +22,20 @@ class StudentDashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Lấy thông tin User hiện tại
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Bạn";
 
+    // 2. Lấy danh sách dữ liệu Dashboard
     final taskAsync = ref.watch(studentTaskProvider(classId));
     final eventsAsync = ref.watch(eventsProvider(classId));
+
+    // 3. Lấy dữ liệu Quỹ thực tế
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
+
+    // 4. Lấy danh sách tổ
     final groupsAsync = ref.watch(teamGroupsProvider(classId));
 
     return RefreshIndicator(
@@ -59,13 +65,15 @@ class StudentDashboardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // I. DANH SÁCH NHIỆM VỤ TRỰC NHẬT
+            // I. DANH SÁCH NHIỆM VỤ TRỰC NHẬT (Áp dụng xem thêm)
             taskAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text("Lỗi tải nhiệm vụ: $e"),
               data: (tasks) {
                 if (tasks.isEmpty) return _buildEmptyTaskCard();
-                return Column(
+                return ExpandableListWrapper(
+                  initialItems: 2, // Mặc định hiện 2 nhiệm vụ đầu tiên
+                  seeMoreLabel: "nhiệm vụ khác",
                   children: tasks
                       .map(
                         (task) => Padding(
@@ -157,7 +165,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // III. SỰ KIỆN ĐANG DIỄN RA
+            // III. SỰ KIỆN ĐANG DIỄN RA (Áp dụng xem thêm)
             _buildSectionTitle("Sự kiện đang diễn ra"),
             eventsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
@@ -169,7 +177,9 @@ class StudentDashboardContent extends ConsumerWidget {
                     style: TextStyle(color: Colors.grey),
                   );
                 }
-                return Column(
+                return ExpandableListWrapper(
+                  initialItems: 3, // Mặc định hiện 3 sự kiện đầu
+                  seeMoreLabel: "sự kiện khác",
                   children: events.map((e) => EventCardItem(data: e)).toList(),
                 );
               },
@@ -177,7 +187,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI
+            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI (Áp dụng xem thêm)
             groupsAsync.when(
               loading: () => const SizedBox(),
               error: (e, s) => const Text("Không thể tải thông tin tổ"),
@@ -221,8 +231,9 @@ class StudentDashboardContent extends ConsumerWidget {
                                 (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0),
                           );
 
-                          // HIỂN THỊ TRỰC TIẾP DANH SÁCH THÀNH VIÊN
-                          return Column(
+                          return ExpandableListWrapper(
+                            initialItems: 4, // Mặc định hiện 4 thành viên
+                            seeMoreLabel: "thành viên khác",
                             children: sortedMembers
                                 .map((m) => GroupMemberItem(member: m))
                                 .toList(),
@@ -269,6 +280,75 @@ class StudentDashboardContent extends ConsumerWidget {
         style: TextStyle(color: Colors.grey),
         textAlign: TextAlign.center,
       ),
+    );
+  }
+}
+
+// --- WIDGET XỬ LÝ XEM THÊM ---
+class ExpandableListWrapper extends StatefulWidget {
+  final List<Widget> children;
+  final int initialItems;
+  final String seeMoreLabel;
+
+  const ExpandableListWrapper({
+    super.key,
+    required this.children,
+    this.initialItems = 5,
+    this.seeMoreLabel = "mục khác",
+  });
+
+  @override
+  State<ExpandableListWrapper> createState() => _ExpandableListWrapperState();
+}
+
+class _ExpandableListWrapperState extends State<ExpandableListWrapper> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canExpand = widget.children.length > widget.initialItems;
+
+    final displayList = isExpanded
+        ? widget.children
+        : widget.children.take(widget.initialItems).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...displayList,
+        if (canExpand)
+          GestureDetector(
+            onTap: () => setState(() => isExpanded = !isExpanded),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isExpanded
+                        ? "Thu gọn"
+                        : "Xem thêm ${widget.children.length - widget.initialItems} ${widget.seeMoreLabel}",
+                    style: GoogleFonts.roboto(
+                      fontSize: 13,
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded
+                        ? LucideIcons.chevronUp
+                        : LucideIcons.chevronDown,
+                    size: 16,
+                    color: Colors.blueAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

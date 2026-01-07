@@ -6,12 +6,14 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/dashboard_models.dart';
 import '../view_models/dashboard_view_model.dart';
 import '../widgets/task_gradient_card.dart';
-import '../widgets/dashboard_action_card.dart';
 import '../widgets/group_member_item.dart';
-import '../widgets/event_card_item.dart'; // [MỚI] Đảm bảo đã import widget này
+import '../widgets/event_card_item.dart';
 
+// Import thêm view model của Quỹ và Tổ để lấy dữ liệu thật
+import '../../../funds/presentation/view_models/fund_view_model.dart';
 import '../../../teams/presentation/view_models/team_view_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
+import '../../../../core/utils/currency_utils.dart';
 
 class StudentDashboardContent extends ConsumerWidget {
   final String classId;
@@ -25,22 +27,24 @@ class StudentDashboardContent extends ConsumerWidget {
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Bạn";
 
-    // 2. Lấy danh sách dữ liệu (Nhiệm vụ, Sự kiện)
+    // 2. Lấy danh sách dữ liệu Dashboard
     final taskAsync = ref.watch(studentTaskProvider(classId));
-    final eventsAsync = ref.watch(
-      eventsProvider(classId),
-    ); // [MỚI] Gọi provider sự kiện thực tế
+    final eventsAsync = ref.watch(eventsProvider(classId));
 
-    // 3. Lấy danh sách tổ để tìm teamId
+    // 3. Lấy dữ liệu Quỹ thực tế
+    final summaryAsync = ref.watch(fundSummaryProvider(classId));
+    final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
+
+    // 4. Lấy danh sách tổ
     final groupsAsync = ref.watch(teamGroupsProvider(classId));
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(studentTaskProvider(classId));
-        ref.invalidate(
-          eventsProvider(classId),
-        ); // [MỚI] Reset sự kiện khi vuốt xuống
+        ref.invalidate(eventsProvider(classId));
         ref.invalidate(teamGroupsProvider(classId));
+        ref.invalidate(fundSummaryProvider(classId));
+        ref.invalidate(fundCampaignsProvider(classId));
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -61,7 +65,7 @@ class StudentDashboardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // I. HIỂN THỊ DANH SÁCH NHIỆM VỤ TRỰC NHẬT
+            // I. DANH SÁCH NHIỆM VỤ TRỰC NHẬT
             taskAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text("Lỗi tải nhiệm vụ: $e"),
@@ -82,21 +86,78 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // II. CÁC THẺ HÀNH ĐỘNG NHANH
-            DashboardActionCard(
-              title: "Quỹ lớp",
-              description: "Bạn chưa nộp quỹ HK1",
-              buttonText: "Xem chi tiết",
-              icon: LucideIcons.dollarSign,
-              iconBgColor: const Color(0xFFDCFCE7),
-              iconColor: const Color(0xFF16A34A),
-              buttonColor: const Color(0xFF00C853),
-              onTap: () {},
+            // II. [CẬP NHẬT] THÔNG BÁO QUỸ LỚP (Chỉ hiển thị, không nút bấm)
+            summaryAsync.when(
+              loading: () => const Center(child: LinearProgressIndicator()),
+              error: (e, s) => const SizedBox(),
+              data: (summary) => campaignsAsync.when(
+                loading: () => const SizedBox(),
+                error: (e, s) => const SizedBox(),
+                data: (campaigns) {
+                  // Tính tổng tiền cần nộp từ các campaign đang mở
+                  int totalPending = 0;
+                  for (var cp in campaigns) {
+                    totalPending += (cp.amountPerPerson ?? 0).toInt();
+                  }
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: totalPending > 0
+                          ? const Color(0xFFFFF5F5)
+                          : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: totalPending > 0
+                            ? const Color(0xFFFED7D7)
+                            : const Color(0xFFDCFCE7),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.wallet,
+                          color: totalPending > 0 ? Colors.red : Colors.green,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Quỹ lớp: ${CurrencyUtils.format(summary.balance)}",
+                                style: GoogleFonts.roboto(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: const Color(0xFF101727),
+                                ),
+                              ),
+                              if (totalPending > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    "Bạn còn thiếu: ${CurrencyUtils.format(totalPending)}",
+                                    style: GoogleFonts.roboto(
+                                      fontSize: 13,
+                                      color: Colors.red.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
 
             const SizedBox(height: 24),
 
-            // III. [FIX] HIỂN THỊ SỰ KIỆN ĐANG DIỄN RA
+            // III. SỰ KIỆN ĐANG DIỄN RA
             _buildSectionTitle("Sự kiện đang diễn ra"),
             const SizedBox(height: 12),
             eventsAsync.when(
@@ -117,7 +178,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI (CÓ LOGIC TỔ TRƯỞNG)
+            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI
             groupsAsync.when(
               loading: () => const SizedBox(),
               error: (e, s) => const Text("Không thể tải thông tin tổ"),
@@ -173,7 +234,6 @@ class StudentDashboardContent extends ConsumerWidget {
     );
   }
 
-  // --- Hàm Helper hiển thị tiêu đề các phần (Giống Lớp trưởng) ---
   Widget _buildSectionTitle(String title) {
     return Text(
       title,

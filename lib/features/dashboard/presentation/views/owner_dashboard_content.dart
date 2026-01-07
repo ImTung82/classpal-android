@@ -8,10 +8,9 @@ import '../view_models/dashboard_view_model.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/duty_list_item.dart';
 import '../widgets/event_card_item.dart';
-// Import widget mới đã tách riêng
-import '../widgets/fund_card_item.dart';
+import '../widgets/unpaid_student_item.dart';
 
-// Import thêm ViewModels và Utils của Quỹ lớp
+// Import ViewModels và Utils
 import '../../../funds/presentation/view_models/fund_view_model.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -23,15 +22,14 @@ class OwnerDashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lấy dữ liệu Dashboard chính
+    // 1. Lắng nghe các provider Dashboard
     final statsAsync = ref.watch(statsProvider(classId));
     final dutiesAsync = ref.watch(dutiesProvider(classId));
     final eventsAsync = ref.watch(eventsProvider(classId));
 
-    // 2. Lấy dữ liệu danh sách các chiến dịch Quỹ lớp
+    // 2. Lấy danh sách chiến dịch để tính nợ gộp
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
 
-    // 3. Lấy thông tin User hiện tại
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Lớp trưởng";
@@ -62,11 +60,10 @@ class OwnerDashboardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // I. THỐNG KÊ (Sinh viên, Đội nhóm, Sự kiện, Quỹ)
+            // I. THỐNG KÊ
             statsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) =>
-                  Center(child: Text('Lỗi tải thống kê: $err')),
+              error: (err, stack) => Center(child: Text('Lỗi: $err')),
               data: (stats) => GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -102,7 +99,7 @@ class OwnerDashboardContent extends ConsumerWidget {
             _buildSectionTitle("Nhiệm vụ trực nhật"),
             dutiesAsync.when(
               loading: () => const SizedBox(),
-              error: (e, s) => const Text("Không thể tải nhiệm vụ"),
+              error: (e, s) => const Text("Lỗi tải nhiệm vụ"),
               data: (duties) => duties.isEmpty
                   ? const Text(
                       "Chưa có lịch trực nhật",
@@ -121,10 +118,10 @@ class OwnerDashboardContent extends ConsumerWidget {
             _buildSectionTitle("Sự kiện đang mở"),
             eventsAsync.when(
               loading: () => const SizedBox(),
-              error: (e, s) => const Text("Không thể tải sự kiện"),
+              error: (e, s) => const Text("Lỗi tải sự kiện"),
               data: (events) => events.isEmpty
                   ? const Text(
-                      "Không có sự kiện nào sắp tới",
+                      "Không có sự kiện sắp tới",
                       style: TextStyle(color: Colors.grey),
                     )
                   : Column(
@@ -136,8 +133,8 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. [CẬP NHẬT] SINH VIÊN CHƯA NỘP QUỸ - GỌN GÀNG VỚI FUNDCARDITEM
-            _buildSectionTitle("Sinh viên chưa nộp quỹ"),
+            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP (ĐÃ BỎ FRAME)
+            _buildSectionTitle("Sinh viên chưa nộp quỹ lớp"),
             campaignsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (e, s) => Text("Lỗi tải quỹ: $e"),
@@ -149,15 +146,81 @@ class OwnerDashboardContent extends ConsumerWidget {
                   );
                 }
 
-                return Column(
-                  children: campaigns.map((campaign) {
-                    return FundCardItem(
+                // Logic gộp nợ cộng dồn theo studentCode
+                final Map<String, Map<String, dynamic>> aggregatedDebts = {};
+
+                for (var campaign in campaigns) {
+                  final unpaidData = ref.watch(
+                    fundUnpaidProvider((
                       classId: classId,
                       campaignId: campaign.id,
-                      campaignTitle: campaign.title,
-                      amountPerPerson: campaign.amountPerPerson.toInt(),
-                    );
-                  }).toList(),
+                    )),
+                  );
+
+                  unpaidData.whenData((members) {
+                    final int amount = campaign.amountPerPerson.toInt();
+                    for (final m in members) {
+                      if (m.isPaid == false) {
+                        final String sCode = m.studentCode?.toString() ?? "N/A";
+                        if (aggregatedDebts.containsKey(sCode)) {
+                          aggregatedDebts[sCode]!['debt'] =
+                              (aggregatedDebts[sCode]!['debt'] as int) + amount;
+                        } else {
+                          aggregatedDebts[sCode] = {
+                            'name': m.fullName ?? "Ẩn danh",
+                            'code': sCode,
+                            'debt': amount,
+                          };
+                        }
+                      }
+                    }
+                  });
+                }
+
+                if (aggregatedDebts.isEmpty) {
+                  return const Text(
+                    "Cả lớp đã hoàn thành nộp quỹ!",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }
+
+                // Sắp xếp theo số tiền nợ giảm dần
+                final sortedDebtList = aggregatedDebts.values.toList()
+                  ..sort(
+                    (a, b) => (b['debt'] as int).compareTo(a['debt'] as int),
+                  );
+
+                // HIỂN THỊ TRỰC TIẾP DANH SÁCH CARD SINH VIÊN
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...sortedDebtList
+                        .take(5)
+                        .map(
+                          (data) => UnpaidStudentItem(
+                            name: data['name'] as String,
+                            studentCode: data['code'] as String,
+                            totalAmount: CurrencyUtils.format(
+                              data['debt'] as int,
+                            ),
+                          ),
+                        ),
+                    if (sortedDebtList.length > 5)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 4),
+                        child: Text(
+                          "Và ${sortedDebtList.length - 5} sinh viên khác chưa nộp...",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),

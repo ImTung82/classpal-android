@@ -43,3 +43,20 @@ final markNotificationReadProvider = Provider((ref) {
   };
 });
 
+final markAllNotificationsReadProvider = Provider((ref) {
+  final repo = ref.read(notificationRepositoryProvider);
+  final client = ref.read(supabaseProvider);
+
+  return (String classId) async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    await repo.markAllAsRead(
+      userId: user.id,
+      classId: classId,
+    );
+
+    // refresh list
+    ref.invalidate(notificationListProvider(classId));
+  };
+});

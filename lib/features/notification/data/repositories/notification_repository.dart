@@ -53,4 +53,16 @@ class NotificationRepository {
         .eq('id', notificationId)
         .eq('user_id', userId);
   }
+
+  Future<void> markAllAsRead({
+    required String userId,
+    required String classId,
+  }) async {
+    await _client
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('user_id', userId)
+        .eq('class_id', classId)
+        .eq('is_read', false);
+  }
 }

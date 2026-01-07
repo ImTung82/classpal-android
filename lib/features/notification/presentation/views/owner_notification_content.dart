@@ -39,7 +39,13 @@ class _OwnerNotificationContentState
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          const NotificationHeader(),
+          NotificationHeader(
+            onMarkAllRead: () {
+              final markAll = ref.read(markAllNotificationsReadProvider);
+              markAll(widget.classId);
+            },
+          ),
+
           const SizedBox(height: 16),
           NotificationTabs(
             currentIndex: _tabIndex,

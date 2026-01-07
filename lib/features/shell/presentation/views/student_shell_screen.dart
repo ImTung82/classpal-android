@@ -36,12 +36,12 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
     
     _pages = [
       const StudentDashboardContent(),
-      StudentTeamContent(classId: widget.classModel.id), // [ĐÃ SỬA] Truyền classId
+      StudentTeamContent(classId: widget.classModel.id),
       StudentDutyContent(classId: widget.classModel.id),
       StudentAssetContent(classId: widget.classModel.id),
       StudentEventContent(classId: widget.classModel.id),
       StudentFundContent(classId: widget.classModel.id),
-      const StudentNotificationContent(),
+      StudentNotificationContent(classId: widget.classModel.id),
     ];
   }
 

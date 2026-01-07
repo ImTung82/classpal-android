@@ -85,6 +85,18 @@ final createNotificationProvider = Provider((ref) {
   };
 });
 
+final deleteNotificationProvider = Provider(
+  (ref) {
+    final repo = ref.read(notificationRepositoryProvider);
+
+    return (String notificationId, String classId) async {
+      await repo.deleteNotification(notificationId);
+      ref.invalidate(notificationListProvider(classId));
+    };
+  },
+);
+
+
 final notificationRealtimeProvider =
     Provider.family<void, String>((ref, classId) {
   final client = Supabase.instance.client;

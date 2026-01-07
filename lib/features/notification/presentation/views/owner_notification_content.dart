@@ -96,6 +96,63 @@ class _OwnerNotificationContentState
                           content: n.body,
                           time: _formatTime(n.createdAt),
                           unread: !n.isRead,
+                          onDelete: () async {
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                title: const Text(
+                                  'Xóa thông báo',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                content: const Text(
+                                  'Bạn có chắc chắn muốn xóa thông báo này?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text(
+                                      'Hủy',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                    ),
+                                    child: const Text(
+                                      'Xóa',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (ok == true) {
+                              final delete = ref.read(
+                                deleteNotificationProvider,
+                              );
+                              await delete(n.id, widget.classId);
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Đã xóa thông báo thành công',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            }
+                          },
                         ),
                       ),
                   ],

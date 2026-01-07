@@ -100,6 +100,13 @@ class NotificationRepository {
     await _client.from('notifications').insert(rows);
   }
 
+  Future<void> deleteNotification(String notificationId) async {
+    await _client
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+  }
+
   Future<void> sendFundReminderToUsers({
     required String classId,
     required String campaignTitle,

@@ -4,7 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/fund_models.dart';
 import '../../../../core/utils/currency_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-//import '../../../notification/data/repositories/notification_repository.dart';
 import '../../../notification/presentation/view_models/notification_view_model.dart';
 
 class CampaignCard extends ConsumerStatefulWidget {

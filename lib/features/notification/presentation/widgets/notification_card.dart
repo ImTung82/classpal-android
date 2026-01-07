@@ -7,7 +7,7 @@ class NotificationCard extends StatelessWidget {
   final String content;
   final String time;
   final bool unread;
-
+  final VoidCallback? onDelete;
   const NotificationCard({
     super.key,
     required this.icon,
@@ -16,6 +16,7 @@ class NotificationCard extends StatelessWidget {
     required this.content,
     required this.time,
     required this.unread,
+    this.onDelete,
   });
 
   @override
@@ -49,42 +50,49 @@ class NotificationCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     if (unread)
                       const Padding(
                         padding: EdgeInsets.only(left: 6),
-                        child: Icon(Icons.circle,
-                            size: 6, color: Colors.blue),
+                        child: Icon(Icons.circle, size: 6, color: Colors.blue),
                       ),
                     const Spacer(),
-                    const Icon(Icons.close, size: 16, color: Colors.grey),
+                    GestureDetector(
+                      onTap: onDelete,
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   content,
-                  style: const TextStyle(
-                      fontSize: 13, color: Colors.black54),
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Text(time,
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey)),
+                    Text(
+                      time,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
                     const Spacer(),
                     if (unread)
                       const Text(
                         "Đánh dấu đã đọc",
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.blue),
+                        style: TextStyle(fontSize: 11, color: Colors.blue),
                       ),
                   ],
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

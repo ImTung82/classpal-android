@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'create_notification.dart';
 
 class CreateNotificationSection extends StatelessWidget {
-  const CreateNotificationSection({super.key});
+  final String classId;
+  const CreateNotificationSection({super.key, required this.classId});
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +32,7 @@ class CreateNotificationSection extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(
                       "Là lớp trưởng, bạn có thể gửi thông báo đến tất cả thành viên trong lớp",
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.black54),
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -50,7 +51,26 @@ class CreateNotificationSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {},
+            onPressed: () async {
+  final result = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => CreateNotification(
+      classId: classId,
+    ),
+  );
+
+  if (result == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tạo thông báo thành công'),
+        backgroundColor: Color(0xFF16A34A), 
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+},
+
             child: const Text(
               "Tạo thông báo mới",
               style: TextStyle(color: Colors.white),

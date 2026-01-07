@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../data/models/fund_models.dart';
 import '../../../../core/utils/currency_utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../notification/presentation/view_models/notification_view_model.dart';
 
-class CampaignCard extends StatefulWidget {
+class CampaignCard extends ConsumerStatefulWidget {
   final FundCampaign campaign;
   final List<UnpaidMember> members;
   final void Function(UnpaidMember member) onConfirmPaid;
@@ -17,20 +19,18 @@ class CampaignCard extends StatefulWidget {
   });
 
   @override
-  State<CampaignCard> createState() => _CampaignCardState();
+  ConsumerState<CampaignCard> createState() => _CampaignCardState();
 }
 
-class _CampaignCardState extends State<CampaignCard> {
+class _CampaignCardState extends ConsumerState<CampaignCard> {
   bool showUnpaid = false;
   @override
   Widget build(BuildContext context) {
-    final unpaidOnly =
-        widget.members.where((m) => !m.isPaid).toList();
+    final unpaidOnly = widget.members.where((m) => !m.isPaid).toList();
 
     double progress = widget.campaign.totalMemberCount == 0
         ? 0
-        : widget.campaign.paidCount /
-            widget.campaign.totalMemberCount;
+        : widget.campaign.paidCount / widget.campaign.totalMemberCount;
 
     String formatDate(DateTime? date) {
       if (date == null) return "Không có";
@@ -49,7 +49,6 @@ class _CampaignCardState extends State<CampaignCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -61,8 +60,7 @@ class _CampaignCardState extends State<CampaignCard> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(20),
@@ -81,17 +79,14 @@ class _CampaignCardState extends State<CampaignCard> {
 
           const SizedBox(height: 6),
 
-          
           Text(
             "${CurrencyUtils.format(widget.campaign.amountPerPerson)}/người • "
             "Hạn: ${formatDate(widget.campaign.deadline)}",
-            style:
-                GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12),
+            style: GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12),
           ),
 
           const SizedBox(height: 16),
 
-        
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -110,8 +105,7 @@ class _CampaignCardState extends State<CampaignCard> {
             alignment: Alignment.centerRight,
             child: Text(
               "${widget.campaign.paidCount}/${widget.campaign.totalMemberCount}",
-              style:
-                  GoogleFonts.roboto(fontSize: 12, color: Colors.grey),
+              style: GoogleFonts.roboto(fontSize: 12, color: Colors.grey),
             ),
           ),
 
@@ -164,13 +158,13 @@ class _CampaignCardState extends State<CampaignCard> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 6),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF7ED),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFFFED7AA),
-                    ),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
                   ),
                   child: Row(
                     children: [
@@ -183,8 +177,7 @@ class _CampaignCardState extends State<CampaignCard> {
 
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               m.fullName,
@@ -206,18 +199,15 @@ class _CampaignCardState extends State<CampaignCard> {
                       ),
 
                       ElevatedButton(
-                        onPressed: () =>
-                            widget.onConfirmPaid(m),
+                        onPressed: () => widget.onConfirmPaid(m),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF22C55E),
-                          padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6),
+                          backgroundColor: const Color(0xFF22C55E),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                         child: const Text(
@@ -240,9 +230,31 @@ class _CampaignCardState extends State<CampaignCard> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: unpaidOnly.isEmpty
+                  ? null
+                  : () async {
+                      final repo = ref.read(notificationRepositoryProvider);
+
+                      final userIds = unpaidOnly.map((m) => m.userId).toList();
+
+                      await repo.sendFundReminderToUsers(
+                        classId: widget.campaign.classId,
+                        campaignTitle: widget.campaign.title,
+                        amountPerPerson: widget.campaign.amountPerPerson,
+                        userIds: userIds,
+                      );
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Đã gửi nhắc nhở đến các thành viên chưa nộp quỹ',
+                            ),
+                          ),
+                        );
+                      }
+                    },
               icon: const Icon(LucideIcons.send, size: 16),
-              label: const Text("Gửi nhắc nhở (5 người)"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF3D00), // Cam đỏ
                 foregroundColor: Colors.white,
@@ -250,6 +262,7 @@ class _CampaignCardState extends State<CampaignCard> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
+              label: const Text("Gửi nhắc nhở"),
             ),
           ),
         ],

@@ -27,7 +27,6 @@ Future<void> showCreateCampaignOverlay(
     context: context,
     barrierDismissible: false,
     builder: (context) {
-      final screenWidth = MediaQuery.of(context).size.width;
       bool isSubmitting = false;
       return StatefulBuilder(
         builder: (context, setState) {

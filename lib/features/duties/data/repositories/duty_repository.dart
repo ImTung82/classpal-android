@@ -248,7 +248,7 @@ class SupabaseDutyRepository implements DutyRepository {
               'class_id': dutyData['class_id'],
               'title': 'Nhắc nhở trực nhật',
               'body':
-                  'Đã đến lịch trực nhật của tổ ${dutyData['teams']['name']} tuần này. Các bạn hãy chú ý nhé!',
+                  'Đã đến lịch trực nhật của ${dutyData['teams']['name']} tuần này. Các bạn hãy chú ý nhé!',
               'type': 'duty_reminder',
             },
           )

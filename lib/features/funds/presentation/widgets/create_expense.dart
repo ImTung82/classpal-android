@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import '../../../../core/utils/storage_utils.dart';
 
 Future<void> showCreateExpenseOverlay(
@@ -31,7 +30,6 @@ Future<void> showCreateExpenseOverlay(
     context: context,
     barrierDismissible: false,
     builder: (context) {
-      final width = MediaQuery.of(context).size.width;
       bool isSubmitting = false;
       return StatefulBuilder(
         builder: (context, setState) {

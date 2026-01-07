@@ -9,7 +9,6 @@ import '../widgets/stat_card.dart';
 import '../widgets/duty_list_item.dart';
 import '../widgets/event_card_item.dart';
 import '../widgets/unpaid_student_item.dart';
-import '../widgets/expandable_list_wrapper.dart'; // Import wrapper mới
 
 // Import ViewModels và Utils
 import '../../../funds/presentation/view_models/fund_view_model.dart';
@@ -93,7 +92,7 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // II. NHIỆM VỤ TRỰC NHẬT
+            // II. NHIỆM VỤ TRỰC NHẬT (ÁP DỤNG XEM THÊM)
             _buildSectionTitle("Nhiệm vụ trực nhật"),
             dutiesAsync.when(
               loading: () => const SizedBox(),
@@ -103,7 +102,9 @@ class OwnerDashboardContent extends ConsumerWidget {
                       "Chưa có lịch trực nhật",
                       style: TextStyle(color: Colors.grey),
                     )
-                  : Column(
+                  : ExpandableListWrapper(
+                      initialItems: 3,
+                      seeMoreLabel: "nhiệm vụ khác",
                       children: duties
                           .map((d) => DutyListItem(data: d))
                           .toList(),
@@ -112,7 +113,7 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // III. SỰ KIỆN ĐANG MỞ
+            // III. SỰ KIỆN ĐANG MỞ (ÁP DỤNG XEM THÊM)
             _buildSectionTitle("Sự kiện đang mở"),
             eventsAsync.when(
               loading: () => const SizedBox(),
@@ -122,7 +123,9 @@ class OwnerDashboardContent extends ConsumerWidget {
                       "Không có sự kiện sắp tới",
                       style: TextStyle(color: Colors.grey),
                     )
-                  : Column(
+                  : ExpandableListWrapper(
+                      initialItems: 3,
+                      seeMoreLabel: "sự kiện khác",
                       children: events
                           .map((e) => EventCardItem(data: e))
                           .toList(),
@@ -131,7 +134,7 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP - SỬ DỤNG WRAPPER XEM THÊM
+            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP (ÁP DỤNG XEM THÊM)
             _buildSectionTitle("Sinh viên chưa nộp quỹ lớp"),
             campaignsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
@@ -144,7 +147,6 @@ class OwnerDashboardContent extends ConsumerWidget {
                   );
                 }
 
-                // Logic gộp nợ cộng dồn theo studentCode
                 final Map<String, Map<String, dynamic>> aggregatedDebts = {};
 
                 for (var campaign in campaigns) {
@@ -189,7 +191,6 @@ class OwnerDashboardContent extends ConsumerWidget {
                     (a, b) => (b['debt'] as int).compareTo(a['debt'] as int),
                   );
 
-                // SỬ DỤNG EXPANDABLE LIST WRAPPER TẠI ĐÂY
                 return ExpandableListWrapper(
                   initialItems: 5,
                   seeMoreLabel: "sinh viên chưa đóng",
@@ -221,6 +222,75 @@ class OwnerDashboardContent extends ConsumerWidget {
         title,
         style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
       ),
+    );
+  }
+}
+
+// --- WIDGET XỬ LÝ XEM THÊM ---
+class ExpandableListWrapper extends StatefulWidget {
+  final List<Widget> children;
+  final int initialItems;
+  final String seeMoreLabel;
+
+  const ExpandableListWrapper({
+    super.key,
+    required this.children,
+    this.initialItems = 5,
+    this.seeMoreLabel = "mục khác",
+  });
+
+  @override
+  State<ExpandableListWrapper> createState() => _ExpandableListWrapperState();
+}
+
+class _ExpandableListWrapperState extends State<ExpandableListWrapper> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canExpand = widget.children.length > widget.initialItems;
+
+    final displayList = isExpanded
+        ? widget.children
+        : widget.children.take(widget.initialItems).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...displayList,
+        if (canExpand)
+          GestureDetector(
+            onTap: () => setState(() => isExpanded = !isExpanded),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isExpanded
+                        ? "Thu gọn"
+                        : "Xem thêm ${widget.children.length - widget.initialItems} ${widget.seeMoreLabel}",
+                    style: GoogleFonts.roboto(
+                      fontSize: 13,
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded
+                        ? LucideIcons.chevronUp
+                        : LucideIcons.chevronDown,
+                    size: 16,
+                    color: Colors.blueAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

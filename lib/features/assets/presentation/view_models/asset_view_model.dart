@@ -13,7 +13,6 @@ final assetRepositoryProvider = Provider<AssetRepository>((ref) {
   return AssetRepository(ref.read(supabaseClientProvider));
 });
 
-/// Bạn sẽ truyền classId từ màn hình (owner/student)
 final assetListWithStatusProvider =
     FutureProvider.family<List<AssetStatusModel>, String>((ref, classId) async {
   return ref.read(assetRepositoryProvider).fetchAssetsWithStatus(classId: classId);

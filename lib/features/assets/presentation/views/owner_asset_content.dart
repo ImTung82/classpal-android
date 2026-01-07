@@ -15,6 +15,19 @@ import '../widgets/asset_history.dart';
 class OwnerAssetContent extends ConsumerWidget {
   final String classId;
   const OwnerAssetContent({super.key, required this.classId});
+  void _showSnack(
+    BuildContext context,
+    String message, {
+    Color color = Colors.green,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,8 +57,18 @@ class OwnerAssetContent extends ConsumerWidget {
           SizedBox(
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: () {
-                showAddAssetOverlay(context, classId: classId);
+              onPressed: () async {
+                final result = await showAddAssetOverlay(
+                  context,
+                  classId: classId,
+                );
+
+                if (result == true && context.mounted) {
+                  ref.invalidate(assetListWithStatusProvider(classId));
+                  ref.invalidate(assetSummaryProvider(classId));
+
+                  _showSnack(context, 'Đã thêm tài sản mới thành công');
+                }
               },
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text("Thêm tài sản"),
@@ -134,8 +157,8 @@ class OwnerAssetContent extends ConsumerWidget {
                             assetName: item.asset.name,
                           );
                         },
-                        onEdit: () {
-                          showEditAssetOverlay(
+                        onEdit: () async {
+                          final result = await showEditAssetOverlay(
                             context,
                             classId: classId,
                             assetId: item.asset.id,
@@ -143,6 +166,18 @@ class OwnerAssetContent extends ConsumerWidget {
                             totalQuantity: item.asset.totalQuantity,
                             note: item.asset.note,
                           );
+
+                          if (result == true && context.mounted) {
+                            ref.invalidate(
+                              assetListWithStatusProvider(classId),
+                            );
+                            ref.invalidate(assetSummaryProvider(classId));
+
+                            _showSnack(
+                              context,
+                              'Cập nhật tài sản "${item.asset.name}" thành công',
+                            );
+                          }
                         },
 
                         onDelete: () {
@@ -173,6 +208,11 @@ class OwnerAssetContent extends ConsumerWidget {
                                 assetListWithStatusProvider(classId),
                               );
                               ref.invalidate(assetSummaryProvider(classId));
+
+                              _showSnack(
+                                context,
+                                'Đã xóa tài sản "${item.asset.name}" thành công',
+                              );
                             },
                           );
                         },
@@ -247,7 +287,7 @@ class OwnerAssetContent extends ConsumerWidget {
                               child: HistoryItem(history: item),
                             );
                           }).toList(),
-                        );   
+                        );
                       },
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),

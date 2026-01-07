@@ -4,16 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../view_models/asset_view_model.dart';
 
-void showEditAssetOverlay(
+Future<bool?> showEditAssetOverlay(
   BuildContext context, {
   required String classId,
   required String assetId,
   required String name,
   required int totalQuantity,
-
   String? note,
 }) {
-  showDialog(
+  return showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => EditAssetOverlay(
@@ -25,6 +24,7 @@ void showEditAssetOverlay(
     ),
   );
 }
+
 
 class EditAssetOverlay extends ConsumerStatefulWidget {
   final String classId;
@@ -138,7 +138,7 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
       ref.invalidate(assetListWithStatusProvider(widget.classId));
       ref.invalidate(assetSummaryProvider(widget.classId));
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi cập nhật tài sản: $e')),
@@ -225,7 +225,7 @@ class _EditAssetOverlayState extends ConsumerState<EditAssetOverlay> {
                         child: TextButton(
                           onPressed: _isSubmitting
                               ? null
-                              : () => Navigator.pop(context),
+                              : () => Navigator.pop(context, false),
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.black,
                             backgroundColor:

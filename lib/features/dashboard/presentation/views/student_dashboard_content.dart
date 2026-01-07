@@ -7,8 +7,9 @@ import '../../data/models/dashboard_models.dart';
 import '../view_models/dashboard_view_model.dart';
 import '../widgets/task_gradient_card.dart';
 import '../widgets/group_member_item.dart';
+import '../widgets/event_card_item.dart';
 
-// Import thêm view model của Quỹ và Tổ để lấy dữ liệu thật
+// Import ViewModels và Utils
 import '../../../funds/presentation/view_models/fund_view_model.dart';
 import '../../../teams/presentation/view_models/team_view_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -21,20 +22,14 @@ class StudentDashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lấy thông tin User hiện tại
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Bạn";
 
-    // 2. Lấy danh sách dữ liệu Dashboard
     final taskAsync = ref.watch(studentTaskProvider(classId));
     final eventsAsync = ref.watch(eventsProvider(classId));
-
-    // 3. Lấy dữ liệu Quỹ thực tế
     final summaryAsync = ref.watch(fundSummaryProvider(classId));
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
-
-    // 4. Lấy danh sách tổ
     final groupsAsync = ref.watch(teamGroupsProvider(classId));
 
     return RefreshIndicator(
@@ -164,7 +159,6 @@ class StudentDashboardContent extends ConsumerWidget {
 
             // III. SỰ KIỆN ĐANG DIỄN RA
             _buildSectionTitle("Sự kiện đang diễn ra"),
-            const SizedBox(height: 12),
             eventsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (e, s) => Text("Lỗi tải sự kiện: $e"),
@@ -176,9 +170,7 @@ class StudentDashboardContent extends ConsumerWidget {
                   );
                 }
                 return Column(
-                  children: events
-                      .map((event) => _buildEnhancedEventCard(event))
-                      .toList(),
+                  children: events.map((e) => EventCardItem(data: e)).toList(),
                 );
               },
             ),
@@ -228,6 +220,8 @@ class StudentDashboardContent extends ConsumerWidget {
                             (a, b) =>
                                 (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0),
                           );
+
+                          // HIỂN THỊ TRỰC TIẾP DANH SÁCH THÀNH VIÊN
                           return Column(
                             children: sortedMembers
                                 .map((m) => GroupMemberItem(member: m))
@@ -247,143 +241,16 @@ class StudentDashboardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildEnhancedEventCard(EventData event) {
-    double progress = event.total > 0 ? event.current / event.total : 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon to tương đương Quỹ lớp
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F7FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  LucideIcons.calendarDays,
-                  color: Color(0xFF3B82F6),
-                  size: 24, // Size to 24 tương đương icon Wallet
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            event.title,
-                            style: GoogleFonts.roboto(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: const Color(0xFF1E293B),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // Trạng thái tag
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: event.isOpen
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            event.isOpen ? "Đang mở" : "Đã đóng",
-                            style: TextStyle(
-                              color: event.isOpen
-                                  ? const Color(0xFF2E7D32)
-                                  : Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Ngày: ${event.date}",
-                      style: GoogleFonts.roboto(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                flex: 7,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    color: const Color(0xFF3B82F6),
-                    minHeight: 8,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  "${event.current}/${event.total} Sinh viên",
-                  textAlign: TextAlign.right,
-                  style: GoogleFonts.roboto(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF475569),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.roboto(
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-        color: const Color(0xFF101727),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: GoogleFonts.roboto(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+          color: const Color(0xFF101727),
+        ),
       ),
     );
   }

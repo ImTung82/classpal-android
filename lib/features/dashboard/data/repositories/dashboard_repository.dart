@@ -166,6 +166,7 @@ class SupabaseDashboardRepository implements DashboardRepository {
           current: joinedCount,
           total: totalInClass,
           isOpen: now.isBefore(deadline),
+          isMandatory: e['is_mandatory'] ?? false,
         );
       }).toList();
     } catch (e) {

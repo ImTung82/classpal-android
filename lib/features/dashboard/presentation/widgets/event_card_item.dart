@@ -29,7 +29,7 @@ class EventCardItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Phần trên: Icon to, Tiêu đề và Tag trạng thái
+          // Phần trên: Icon to, Tiêu đề và Nhóm Tag (Bắt buộc + Trạng thái)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -43,7 +43,7 @@ class EventCardItem extends StatelessWidget {
                 child: const Icon(
                   LucideIcons.calendarDays,
                   color: Color(0xFF3B82F6),
-                  size: 24, // Size to tương đương icon Wallet
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 16),
@@ -66,28 +66,57 @@ class EventCardItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Tag trạng thái
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: data.isOpen
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            data.isOpen ? "Đang mở" : "Đã đóng",
-                            style: TextStyle(
-                              color: data.isOpen
-                                  ? const Color(0xFF2E7D32)
-                                  : Colors.grey,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
+
+                        // --- NHÓM TAG TRẠNG THÁI ---
+                        Row(
+                          children: [
+                            if (data
+                                .isMandatory) // Chỉ hiện nếu là sự kiện bắt buộc
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFFECACA),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Bắt buộc",
+                                  style: TextStyle(
+                                    color: Color(0xFFDC2626),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: data.isOpen
+                                    ? const Color(0xFFE8F5E9)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                data.isOpen ? "Đang mở" : "Đã đóng",
+                                style: TextStyle(
+                                  color: data.isOpen
+                                      ? const Color(0xFF2E7D32)
+                                      : Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -106,11 +135,11 @@ class EventCardItem extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // PHẦN THEO YÊU CẦU: Thanh tiến trình và Text nằm cùng 1 hàng ngang
+          // PHẦN TIẾN TRÌNH: Thanh tiến trình và Text nằm cùng 1 hàng ngang
           Row(
             children: [
               Expanded(
-                flex: 7, // Chiếm phần lớn chiều ngang
+                flex: 7,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
@@ -123,7 +152,7 @@ class EventCardItem extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                flex: 3, // Phần text bên phải
+                flex: 3,
                 child: Text(
                   "${data.current}/${data.total} Sinh viên",
                   textAlign: TextAlign.right,

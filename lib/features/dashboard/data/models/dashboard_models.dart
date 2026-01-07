@@ -21,12 +21,13 @@ class DutyData {
 
 // [CẬP NHẬT] Model sự kiện
 class EventData {
-  final String id; // Thêm ID để định danh khi cần xử lý click
+  final String id; 
   final String title;
   final String date;
-  final int current; // Số người đã nhấn 'Tham gia' (status = joined)
-  final int total; // Tổng số thành viên trong lớp
-  final bool isOpen; // Trạng thái 'Đang mở' hoặc 'Đã đóng' dựa trên Deadline
+  final int current; 
+  final int total; 
+  final bool isOpen;
+  final bool isMandatory; 
 
   EventData({
     required this.id,
@@ -34,6 +35,7 @@ class EventData {
     required this.date,
     required this.current,
     required this.total,
+    required this.isMandatory, 
     this.isOpen = true,
   });
 }

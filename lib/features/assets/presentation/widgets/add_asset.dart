@@ -4,13 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../view_models/asset_view_model.dart';
 
-void showAddAssetOverlay(BuildContext context, {required String classId}) {
-  showDialog(
+Future<bool?> showAddAssetOverlay(
+  BuildContext context, {
+  required String classId,
+}) {
+  return showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (_) => AddAssetOverlay(classId: classId),
   );
 }
+
 
 class AddAssetOverlay extends ConsumerStatefulWidget {
   final String classId;
@@ -110,7 +114,7 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
       ref.invalidate(assetListWithStatusProvider(widget.classId));
       ref.invalidate(assetSummaryProvider(widget.classId));
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -202,7 +206,7 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
                         child: TextButton(
                           onPressed: _isSubmitting
                               ? null
-                              : () => Navigator.pop(context),
+                              : () => Navigator.pop(context, false),
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.black,
                             backgroundColor: const Color(0xFFF5F5F5),

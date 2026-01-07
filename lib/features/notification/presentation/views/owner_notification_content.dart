@@ -22,10 +22,12 @@ class _OwnerNotificationContentState
   int _tabIndex = 0;
 
   String _formatTime(DateTime dt) {
+    final localTime = dt.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(dt);
+    final diff = now.difference(localTime);
 
-    if (diff.inMinutes < 1) return 'Vừa xong';
+    if (diff.inSeconds < 10) return 'Vừa xong';
+    if (diff.inMinutes < 1) return '${diff.inSeconds} giây trước';
     if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
     if (diff.inHours < 24) return '${diff.inHours} giờ trước';
     return '${diff.inDays} ngày trước';

@@ -64,7 +64,7 @@ class CreateNotificationSection extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Tạo thông báo thành công'),
-        backgroundColor: Color(0xFF16A34A), // xanh lá
+        backgroundColor: Color(0xFF16A34A), 
         duration: Duration(seconds: 2),
       ),
     );

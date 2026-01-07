@@ -95,7 +95,6 @@ class NotificationRepository {
         'body': body,
         'type': type,
         'is_read': false,
-        'created_at': now,
       };
     }).toList();
 

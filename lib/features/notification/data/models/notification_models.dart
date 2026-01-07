@@ -31,7 +31,7 @@ class NotificationModel {
       body: (json['body'] as String?) ?? '',
       type: (json['type'] as String?) ?? 'general',
       isRead: (json['is_read'] as bool?) ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
     );
   }
 

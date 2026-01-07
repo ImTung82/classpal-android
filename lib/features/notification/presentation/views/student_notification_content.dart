@@ -9,10 +9,7 @@ import '../view_models/notification_view_model.dart';
 class StudentNotificationContent extends ConsumerStatefulWidget {
   final String classId;
 
-  const StudentNotificationContent({
-    super.key,
-    required this.classId,
-  });
+  const StudentNotificationContent({super.key, required this.classId});
 
   @override
   ConsumerState<StudentNotificationContent> createState() =>
@@ -24,10 +21,12 @@ class _StudentNotificationContentState
   int _tabIndex = 0;
 
   String _formatTime(DateTime dt) {
+    final localTime = dt.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(dt);
+    final diff = now.difference(localTime);
 
-    if (diff.inMinutes < 1) return 'Vừa xong';
+    if (diff.inSeconds < 10) return 'Vừa xong';
+    if (diff.inMinutes < 1) return '${diff.inSeconds} giây trước';
     if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
     if (diff.inHours < 24) return '${diff.inHours} giờ trước';
     return '${diff.inDays} ngày trước';
@@ -35,15 +34,12 @@ class _StudentNotificationContentState
 
   @override
   Widget build(BuildContext context) {
-    final asyncList = ref.watch(
-      notificationListProvider(widget.classId),
-    );
+    final asyncList = ref.watch(notificationListProvider(widget.classId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: asyncList.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Text('Lỗi: $e'),
         data: (list) {
           final unreadCount = list.where((n) => !n.isRead).length;

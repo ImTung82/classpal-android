@@ -11,7 +11,8 @@ abstract class DutyRepository {
   Future<List<GroupScore>> fetchScoreBoard(String classId);
   Future<List<DutyTask>> fetchActiveDuties(String classId);
   Future<List<DutyTask>> fetchNextWeekDuties(String classId);
-  Future<DutyTask?> fetchMyDuty(String classId, String userId);
+  // [MODIFIED] Changed return type from Future<DutyTask?> to Future<List<DutyTask>>
+  Future<List<DutyTask>> fetchMyDuty(String classId, String userId);
   Future<List<DutyTask>> fetchUpcomingDuties(String classId);
 
   Future<void> createDutyRotation({
@@ -157,7 +158,7 @@ class SupabaseDutyRepository implements DutyRepository {
   }
 
   @override
-  Future<DutyTask?> fetchMyDuty(String classId, String userId) async {
+  Future<List<DutyTask>> fetchMyDuty(String classId, String userId) async {
     try {
       final memberData = await _supabase
           .from('class_members')
@@ -166,10 +167,11 @@ class SupabaseDutyRepository implements DutyRepository {
           .eq('user_id', userId)
           .maybeSingle();
 
-      if (memberData == null || memberData['team_id'] == null) return null;
+      if (memberData == null || memberData['team_id'] == null) return [];
       final teamId = memberData['team_id'];
       final now = DateTime.now().toUtc().toIso8601String();
 
+      // [FIX] Removed .maybeSingle() to allow multiple tasks per week
       final data = await _supabase
           .from('duties')
           .select('*, teams(id, name)')
@@ -177,10 +179,9 @@ class SupabaseDutyRepository implements DutyRepository {
           .eq('team_id', teamId)
           .lte('start_time', now)
           .gte('end_time', now)
-          .maybeSingle();
+          .order('start_time', ascending: true);
 
-      if (data == null) return null;
-      return DutyTask.fromMap(data);
+      return (data as List).map((e) => DutyTask.fromMap(e)).toList();
     } catch (e) {
       throw Exception('Lỗi khi tải nhiệm vụ cá nhân: $e');
     }
@@ -245,7 +246,7 @@ class SupabaseDutyRepository implements DutyRepository {
             (member) => {
               'user_id': member['user_id'],
               'class_id': dutyData['class_id'],
-              'title': 'Nhắc nhở trực nhật 🧹',
+              'title': 'Nhắc nhở trực nhật',
               'body':
                   'Đã đến lịch trực nhật của tổ ${dutyData['teams']['name']} tuần này. Các bạn hãy chú ý nhé!',
               'type': 'duty_reminder',
@@ -261,7 +262,6 @@ class SupabaseDutyRepository implements DutyRepository {
     }
   }
 
-  // Xóa hàng loạt theo general_id
   @override
   Future<void> deleteDutySeries(String generalId) async {
     try {

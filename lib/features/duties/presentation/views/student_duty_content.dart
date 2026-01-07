@@ -52,13 +52,29 @@ class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
             ),
             const SizedBox(height: 16),
 
-            // --- Card nhiệm vụ tuần này ---
+            // --- [CẬP NHẬT] Hiển thị danh sách nhiệm vụ tuần này ---
+            // Sửa lỗi: Hiển thị nhiều Card nếu tổ có nhiều nhiệm vụ
             myDutyAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Text('Lỗi: $e'),
-              data: (task) => task != null
-                  ? StudentDutyCard(task: task, classId: widget.classId)
-                  : _buildNoDutyCard(),
+              error: (e, s) => Text('Lỗi tải dữ liệu: $e'),
+              data: (tasks) {
+                if (tasks.isEmpty) {
+                  return _buildNoDutyCard();
+                }
+                return Column(
+                  children: tasks
+                      .map(
+                        (task) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: StudentDutyCard(
+                            task: task,
+                            classId: widget.classId,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -122,8 +138,9 @@ class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, s) => const SizedBox(),
                 data: (tasks) {
-                  if (tasks.isEmpty)
+                  if (tasks.isEmpty) {
                     return const Center(child: Text("Chưa có lịch mới"));
+                  }
 
                   // Quyết định số lượng item hiển thị
                   final displayTasks = _isExpanded

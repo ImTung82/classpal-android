@@ -21,13 +21,14 @@ final activeDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
   return ref.watch(dutyRepositoryProvider).fetchActiveDuties(classId);
 });
 
-// Provider lấy nhiệm vụ cá nhân của người dùng hiện tại (Tuần này)
-final myDutyProvider = FutureProvider.family<DutyTask?, String>((
+// [CẬP NHẬT] Provider lấy danh sách nhiệm vụ cá nhân của người dùng hiện tại (Tuần này)
+// Thay đổi kiểu dữ liệu từ DutyTask? sang List<DutyTask> để tránh lỗi khi có nhiều nhiệm vụ
+final myDutyProvider = FutureProvider.family<List<DutyTask>, String>((
   ref,
   classId,
 ) async {
   final userId = Supabase.instance.client.auth.currentUser?.id;
-  if (userId == null) return null;
+  if (userId == null) return [];
   return ref.watch(dutyRepositoryProvider).fetchMyDuty(classId, userId);
 });
 
@@ -51,7 +52,6 @@ final nextWeekDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
 // LẤY THÀNH VIÊN TỔ VÀ PHÂN QUYỀN CHUẨN
 // -----------------------------------------------------------------------------
 
-/// Provider lấy danh sách thành viên CÙNG TỔ với người dùng hiện tại
 final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
   ref,
   classId,
@@ -89,7 +89,6 @@ final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
   }).toList();
 });
 
-/// Provider kiểm tra quyền hạn (Owner lớp hoặc Tổ trưởng của tổ mình)
 final isLeaderProvider = FutureProvider.family<bool, String>((
   ref,
   classId,
@@ -133,7 +132,6 @@ class DutyController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
-  /// Tạo nhiệm vụ mới (Owner thực hiện)
   Future<void> createDuty({
     required String classId,
     required DateTime startDate,
@@ -164,7 +162,6 @@ class DutyController extends AsyncNotifier<void> {
     }
   }
 
-  /// Xác nhận hoàn thành (Tổ trưởng thực hiện)
   Future<void> markAsCompleted({
     required String classId,
     required String dutyId,
@@ -186,7 +183,6 @@ class DutyController extends AsyncNotifier<void> {
     }
   }
 
-  /// [NEW] Xóa toàn bộ chu kỳ trực nhật (Owner thực hiện)
   Future<void> deleteDutySeries({
     required String classId,
     required String generalId,
@@ -197,7 +193,6 @@ class DutyController extends AsyncNotifier<void> {
     try {
       await ref.read(dutyRepositoryProvider).deleteDutySeries(generalId);
 
-      // Làm mới toàn bộ dữ liệu để mất các bản ghi đã xóa trên UI
       _refreshAllDutyProviders(classId);
 
       onSuccess();
@@ -208,7 +203,6 @@ class DutyController extends AsyncNotifier<void> {
     }
   }
 
-  /// Gửi nhắc nhở
   Future<void> sendReminder({
     required String classId,
     required String dutyId,
@@ -226,7 +220,6 @@ class DutyController extends AsyncNotifier<void> {
     }
   }
 
-  /// Hàm phụ để làm mới danh sách nhiệm vụ ở các màn hình khác nhau
   void _refreshAllDutyProviders(String classId) {
     ref.invalidate(activeDutiesProvider(classId));
     ref.invalidate(upcomingDutiesProvider(classId));

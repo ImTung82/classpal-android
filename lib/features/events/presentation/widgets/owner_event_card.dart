@@ -10,6 +10,7 @@ import 'edit_event_dialog.dart';
 import 'delete_event_dialog.dart';
 import 'event_details_dialog.dart';
 import 'export_event_excel.dart';
+import 'unregister_event_dialog.dart';
 
 class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;
@@ -245,6 +246,7 @@ class OwnerEventCard extends ConsumerWidget {
   }
 
   // --- [NEW] WIDGET ĐĂNG KÝ CHO OWNER ---
+  // --- [FIXED] WIDGET ĐĂNG KÝ CHO OWNER GIỐNG 100% SINH VIÊN ---
   Widget _buildOwnerRegistrationSection(
     BuildContext context,
     WidgetRef ref,
@@ -261,114 +263,150 @@ class OwnerEventCard extends ConsumerWidget {
             color: const Color(0xFF101727),
           ),
         ),
-        const SizedBox(height: 8),
-        if (isRegistered) ...[
-          // Trạng thái: ĐÃ ĐĂNG KÝ
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              border: Border.all(color: const Color(0xFFB8F7CF)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  size: 20,
-                  color: Color(0xFF008235),
+        const SizedBox(height: 12), // Tăng khoảng cách một chút cho thoáng
+
+        // 1. NẾU ĐÃ ĐĂNG KÝ
+        if (isRegistered)
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  border: Border.all(color: const Color(0xFFB8F7CF)),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Bạn đã đăng ký tham gia',
-                    style: GoogleFonts.roboto(
-                      color: const Color(0xFF008235),
-                      fontWeight: FontWeight.w500,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check, size: 16, color: Color(0xFF008235)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Đã đăng ký',
+                      style: GoogleFonts.roboto(
+                        color: const Color(0xFF008235),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                if (event.isOpen) // Chỉ cho hủy nếu còn hạn
-                  TextButton(
-                    onPressed: () {
-                      ref
-                          .read(eventControllerProvider.notifier)
-                          .leaveEvent(
-                            classId: classId,
-                            eventId: event.id,
-                            onSuccess: () => _showSnackbar(
-                              context,
-                              "Đã hủy tham gia",
-                              Colors.orange,
-                            ),
-                            onError: (e) =>
-                                _showSnackbar(context, "Lỗi: $e", Colors.red),
-                          );
+              ),
+              if (event.isOpen) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      // Hiển thị Dialog Hủy đăng ký (unregister_event_dialog.dart)
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) =>
+                            UnregisterEventDialog(eventName: event.title),
+                      );
+
+                      if (confirm == true && context.mounted) {
+                        ref
+                            .read(eventControllerProvider.notifier)
+                            .leaveEvent(
+                              classId: classId,
+                              eventId: event.id,
+                              onSuccess: () => _showSnackbar(
+                                context,
+                                "Đã hủy đăng ký thành công",
+                                Colors.orange,
+                              ),
+                              onError: (e) => _showSnackbar(
+                                  context, "Lỗi: $e", Colors.red),
+                            );
+                      }
                     },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEF4444),
+                      side: const BorderSide(color: Color(0xFFFECACA)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: const Color(0xFFFEF2F2),
+                    ),
                     child: Text(
-                      "Hủy",
-                      style: GoogleFonts.roboto(color: Colors.red),
+                      'Hủy đăng ký',
+                      style: GoogleFonts.roboto(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
+                ),
               ],
+            ],
+          )
+        
+        // 2. NẾU CHƯA ĐĂNG KÝ VÀ ĐÃ HẾT HẠN
+        else if (!event.isOpen)
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: null, // Vô hiệu hóa nút
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Đã đóng đăng ký',
+                style: GoogleFonts.roboto(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          )
+
+        // 3. NẾU CHƯA ĐĂNG KÝ VÀ CÒN HẠN
+        else
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: () {
+                ref
+                    .read(eventControllerProvider.notifier)
+                    .joinEvent(
+                      classId: classId,
+                      eventId: event.id,
+                      onSuccess: () => _showSnackbar(
+                          context, "Đăng ký thành công!", Colors.green),
+                      onError: (e) =>
+                          _showSnackbar(context, "Lỗi: $e", Colors.red),
+                    );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF407CFF), // Màu xanh Primary giống Student
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Đăng ký tham gia',
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
-        ] else ...[
-          // Trạng thái: CHƯA ĐĂNG KÝ
-          if (event.isOpen)
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ref
-                      .read(eventControllerProvider.notifier)
-                      .joinEvent(
-                        classId: classId,
-                        eventId: event.id,
-                        onSuccess: () => _showSnackbar(
-                          context,
-                          "Đăng ký thành công!",
-                          Colors.green,
-                        ),
-                        onError: (e) =>
-                            _showSnackbar(context, "Lỗi: $e", Colors.red),
-                      );
-                },
-                icon: const Icon(LucideIcons.hand, size: 18),
-                label: const Text("Đăng ký tham gia ngay"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF155DFC),
-                  side: const BorderSide(color: Color(0xFF155DFC)),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Text(
-                  "Bạn chưa đăng ký (Đã hết hạn)",
-                  style: GoogleFonts.roboto(color: Colors.grey[600]),
-                ),
-              ),
-            ),
-        ],
       ],
     );
   }
-
   // --- CÁC WIDGET CON ---
   Widget _buildProgressBar() {
     return Row(

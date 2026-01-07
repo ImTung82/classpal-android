@@ -35,7 +35,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
     super.initState();
     // Khởi tạo danh sách page tại đây để truy cập được widget.classModel
     _pages = [
-      const OwnerDashboardContent(),
+      OwnerDashboardContent(classId: widget.classModel.id),
       OwnerTeamContent(classId: widget.classModel.id),
       OwnerDutyContent(classId: widget.classModel.id),
       OwnerAssetContent(classId: widget.classModel.id),

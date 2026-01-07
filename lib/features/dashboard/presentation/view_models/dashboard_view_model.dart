@@ -17,6 +17,7 @@ final eventsProvider = FutureProvider.family<List<EventData>, String>((
   return ref.watch(dashboardRepositoryProvider).fetchEvents(classId);
 });
 
+
 // --- Owner Providers (Dành riêng cho Quản lý/Lớp trưởng) ---
 
 /// Provider lấy số liệu thống kê (Sinh viên, Đội nhóm, Sự kiện, Quỹ)
@@ -35,20 +36,21 @@ final dutiesProvider = FutureProvider.family<List<DutyData>, String>((
   return ref.watch(dashboardRepositoryProvider).fetchDuties(classId);
 });
 
+
 // --- Student Providers (Dành riêng cho Thành viên/Sinh viên) ---
 
 /// Trả về List để hiển thị toàn bộ nhiệm vụ trực nhật đang diễn ra của cá nhân
 final studentTaskProvider =
     FutureProvider.family<List<StudentTaskData>, String>((ref, classId) async {
-      final authRepo = ref.watch(authRepositoryProvider);
-      final currentUser = authRepo.currentUser;
+  final authRepo = ref.watch(authRepositoryProvider);
+  final currentUser = authRepo.currentUser;
 
-      if (currentUser == null) return [];
+  if (currentUser == null) return [];
 
-      return ref
-          .watch(dashboardRepositoryProvider)
-          .fetchStudentTask(classId, currentUser.id);
-    });
+  return ref
+      .watch(dashboardRepositoryProvider)
+      .fetchStudentTask(classId, currentUser.id);
+});
 
 /// Lấy danh sách thành viên cùng tổ kèm theo flag isLeader
 final groupMembersProvider = FutureProvider.family<List<GroupMemberData>, String?>((

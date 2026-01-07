@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/dashboard_models.dart';
+import '../../../../core/utils/currency_utils.dart'; // Đảm bảo import tiện ích format tiền
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
   return SupabaseDashboardRepository(Supabase.instance.client);
@@ -22,6 +23,7 @@ class SupabaseDashboardRepository implements DashboardRepository {
   @override
   Future<List<StatData>> fetchStats(String classId) async {
     try {
+      // 1. Đếm sinh viên, đội nhóm, sự kiện
       final studentsCount = await _supabase
           .from('class_members')
           .select('id')
@@ -36,6 +38,7 @@ class SupabaseDashboardRepository implements DashboardRepository {
           .eq('class_id', classId)
           .gte('end_time', DateTime.now().toIso8601String());
 
+      // 2. Tính toán quỹ lớp thực tế
       final fundData = await _supabase
           .from('fund_transactions')
           .select('amount, is_expense')
@@ -43,9 +46,11 @@ class SupabaseDashboardRepository implements DashboardRepository {
 
       int totalFund = 0;
       for (var item in (fundData as List)) {
-        totalFund += (item['is_expense'] == true)
-            ? -(item['amount'] as num).toInt()
-            : (item['amount'] as num).toInt();
+        if (item['is_expense'] == true) {
+          totalFund -= (item['amount'] as num).toInt();
+        } else {
+          totalFund += (item['amount'] as num).toInt();
+        }
       }
 
       return [
@@ -70,7 +75,8 @@ class SupabaseDashboardRepository implements DashboardRepository {
           3,
           0xFFA855F7,
         ),
-        StatData("Quỹ lớp", "${totalFund ~/ 1000}K", "", 4, 0xFF22C55E),
+        // [CẬP NHẬT] Hiển thị quỹ lớp thật đã format VNĐ
+        StatData("Quỹ lớp", CurrencyUtils.format(totalFund), "", 4, 0xFF22C55E),
       ];
     } catch (e) {
       return [];
@@ -141,7 +147,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
           .limit(2);
 
       return (data as List).map((e) {
-        // Đếm số người 'joined' thực tế
         final participants = e['event_participants'] as List? ?? [];
         final int joinedCount = participants
             .where((p) => p['status'] == 'joined')
@@ -152,8 +157,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
             ? DateTime.parse(e['registration_deadline']).toLocal()
             : DateTime.parse(e['start_time']).toLocal();
 
-        final bool isOpen = now.isBefore(deadline);
-
         return EventData(
           id: e['id'],
           title: e['title'] ?? 'N/A',
@@ -162,11 +165,10 @@ class SupabaseDashboardRepository implements DashboardRepository {
           ).format(DateTime.parse(e['start_time']).toLocal()),
           current: joinedCount,
           total: totalInClass,
-          isOpen: isOpen,
+          isOpen: now.isBefore(deadline),
         );
       }).toList();
     } catch (e) {
-      print("Error Dashboard fetchEvents: $e");
       return [];
     }
   }
@@ -220,7 +222,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
           .select('leader_id')
           .eq('id', teamId)
           .maybeSingle();
-
       final String? leaderIdInTeam = teamData?['leader_id'];
 
       final membersData = await _supabase

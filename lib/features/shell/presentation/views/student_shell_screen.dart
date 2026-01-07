@@ -41,7 +41,7 @@ class _StudentShellScreenState extends ConsumerState<StudentShellScreen> {
       StudentAssetContent(classId: widget.classModel.id),
       StudentEventContent(classId: widget.classModel.id),
       StudentFundContent(classId: widget.classModel.id),
-      const StudentNotificationContent(),
+      StudentNotificationContent(classId: widget.classModel.id),
     ];
   }
 

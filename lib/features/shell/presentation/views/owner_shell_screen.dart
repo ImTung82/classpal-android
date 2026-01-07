@@ -44,7 +44,7 @@ class _OwnerShellScreenState extends ConsumerState<OwnerShellScreen> {
         className: widget.classModel.name,
       ),
       OwnerFundContent(classId: widget.classModel.id),
-      const OwnerNotificationContent(),
+      OwnerNotificationContent(classId: widget.classModel.id),
     ];
   }
 

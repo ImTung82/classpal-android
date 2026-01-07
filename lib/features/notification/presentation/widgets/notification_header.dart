@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class NotificationHeader extends StatelessWidget {
-  const NotificationHeader({super.key});
+  final VoidCallback? onMarkAllRead;
+
+  const NotificationHeader({
+    super.key,
+    this.onMarkAllRead,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,22 +25,20 @@ class NotificationHeader extends StatelessWidget {
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: const [
             Text(
               "Thông báo",
-              style: GoogleFonts.roboto(
-                  fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              "2 thông báo chưa đọc",
-              style: GoogleFonts.roboto(
-                  fontSize: 12, color: Colors.grey),
+              "Thông báo của bạn",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
         const Spacer(),
         TextButton(
-          onPressed: () {},
+          onPressed: onMarkAllRead,
           child: const Text(
             "Đánh dấu tất cả đã đọc",
             style: TextStyle(fontSize: 12),
@@ -46,3 +48,4 @@ class NotificationHeader extends StatelessWidget {
     );
   }
 }
+

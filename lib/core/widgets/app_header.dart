@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../features/classes/data/models/class_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/notification/presentation/view_models/notification_view_model.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final ClassModel classModel;
@@ -123,15 +125,57 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               const SizedBox(width: 8),
 
               // Nút Thông báo (Mới thêm)
-              IconButton(
-                icon: const Icon(
-                  LucideIcons.bell,
-                  size: 22,
-                  color: Colors.black54,
-                ),
-                onPressed: onNotificationPressed,
-                constraints: const BoxConstraints(), // Thu gọn
-                padding: const EdgeInsets.all(8),
+              Consumer(
+                builder: (context, ref, _) {
+                  final unreadCount = ref.watch(
+                    unreadNotificationCountProvider(classModel.id),
+                  );
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          LucideIcons.bell,
+                          size: 22,
+                          color: Colors.black54,
+                        ),
+                        onPressed: onNotificationPressed,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : unreadCount.toString(),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(width: 4),

@@ -129,5 +129,17 @@ final notificationRealtimeProvider =
   });
 });
 
+final unreadNotificationCountProvider =
+    Provider.family<int, String>((ref, classId) {
+  final asyncList =
+      ref.watch(notificationListProvider(classId));
+
+  return asyncList.maybeWhen(
+    data: (list) => list.where((n) => !n.isRead).length,
+    orElse: () => 0,
+  );
+});
+
+
 
 

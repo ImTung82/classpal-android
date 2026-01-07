@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../models/dashboard_models.dart';
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
@@ -122,23 +123,50 @@ class SupabaseDashboardRepository implements DashboardRepository {
   @override
   Future<List<EventData>> fetchEvents(String classId) async {
     try {
+      // 1. Lấy tổng số thành viên (Sử dụng length để tránh lỗi FetchOptions)
+      final membersData = await _supabase
+          .from('class_members')
+          .select('id')
+          .eq('class_id', classId)
+          .eq('is_active', true);
+
+      final int totalInClass = (membersData as List).length;
+
+      // 2. Lấy 2 sự kiện kèm trạng thái người tham gia
       final data = await _supabase
           .from('events')
-          .select('*, event_participants(count)')
+          .select('*, event_participants(status)')
           .eq('class_id', classId)
+          .order('start_time', ascending: true)
           .limit(2);
+
       return (data as List).map((e) {
-        final pCount = (e['event_participants'] as List).isEmpty
-            ? 0
-            : e['event_participants'][0]['count'];
+        // Đếm số người 'joined' thực tế
+        final participants = e['event_participants'] as List? ?? [];
+        final int joinedCount = participants
+            .where((p) => p['status'] == 'joined')
+            .length;
+
+        final DateTime now = DateTime.now();
+        final DateTime deadline = e['registration_deadline'] != null
+            ? DateTime.parse(e['registration_deadline']).toLocal()
+            : DateTime.parse(e['start_time']).toLocal();
+
+        final bool isOpen = now.isBefore(deadline);
+
         return EventData(
-          e['title'],
-          e['start_time'].toString().substring(0, 10),
-          pCount,
-          50,
+          id: e['id'],
+          title: e['title'] ?? 'N/A',
+          date: DateFormat(
+            'dd/MM/yyyy',
+          ).format(DateTime.parse(e['start_time']).toLocal()),
+          current: joinedCount,
+          total: totalInClass,
+          isOpen: isOpen,
         );
       }).toList();
     } catch (e) {
+      print("Error Dashboard fetchEvents: $e");
       return [];
     }
   }
@@ -187,7 +215,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
   Future<List<GroupMemberData>> fetchGroupMembers(String? teamId) async {
     if (teamId == null) return [];
     try {
-      // 1. Lấy thông tin team để xác định leader_id (đây là ID của class_members)
       final teamData = await _supabase
           .from('teams')
           .select('leader_id')
@@ -196,7 +223,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
 
       final String? leaderIdInTeam = teamData?['leader_id'];
 
-      // 2. Lấy danh sách thành viên trong tổ
       final membersData = await _supabase
           .from('class_members')
           .select('id, profiles(full_name, avatar_url)')
@@ -204,7 +230,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
 
       return (membersData as List).map((m) {
         final profile = m['profiles'];
-        // SO SÁNH: m['id'] là ID của class_members, so với leader_id lưu trong bảng teams
         final bool isLeader = m['id'].toString() == leaderIdInTeam?.toString();
 
         return GroupMemberData(
@@ -214,7 +239,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
         );
       }).toList();
     } catch (e) {
-      print("Error Dashboard GroupMembers: $e");
       return [];
     }
   }

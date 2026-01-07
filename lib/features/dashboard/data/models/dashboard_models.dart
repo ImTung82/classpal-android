@@ -13,29 +13,38 @@ class StatData {
 class DutyData {
   final String groupName;
   final String taskName;
-  final String status; 
+  final String status; // 'In Progress', 'Upcoming', 'Done', 'Missed'
   final String time;
 
   DutyData(this.groupName, this.taskName, this.status, this.time);
 }
 
-// Model sự kiện
+// [CẬP NHẬT] Model sự kiện
 class EventData {
+  final String id; // Thêm ID để định danh khi cần xử lý click
   final String title;
   final String date;
-  final int current;
-  final int total;
+  final int current; // Số người đã nhấn 'Tham gia' (status = joined)
+  final int total; // Tổng số thành viên trong lớp
+  final bool isOpen; // Trạng thái 'Đang mở' hoặc 'Đã đóng' dựa trên Deadline
 
-  EventData(this.title, this.date, this.current, this.total);
+  EventData({
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.current,
+    required this.total,
+    this.isOpen = true,
+  });
 }
 
 // Model nhiệm vụ cá nhân (Student & Leader Dashboard)
 class StudentTaskData {
-  final String id; 
+  final String id;
   final String title;
   final String dateRange;
   final bool isCompleted;
-  final String status; 
+  final String status;
 
   StudentTaskData({
     required this.id,
@@ -46,15 +55,15 @@ class StudentTaskData {
   });
 }
 
-//  Model thành viên tổ 
+// Model thành viên tổ
 class GroupMemberData {
   final String name;
   final String avatarColor;
-  final bool isLeader; 
+  final bool isLeader;
 
   GroupMemberData({
     required this.name,
     required this.avatarColor,
-    this.isLeader = false, 
+    this.isLeader = false,
   });
 }

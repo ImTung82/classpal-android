@@ -11,6 +11,7 @@ import 'delete_event_dialog.dart';
 import 'event_details_dialog.dart';
 import 'export_event_excel.dart';
 import 'unregister_event_dialog.dart';
+import '../../../notification/presentation/view_models/notification_view_model.dart';
 
 class OwnerEventCard extends ConsumerWidget {
   final ClassEvent event;
@@ -53,6 +54,10 @@ class OwnerEventCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final int unregisteredTotal =
         event.nonParticipants.length + event.unconfirmed.length;
+    final targetUserIds = [
+      ...event.nonParticipants.map((e) => e.id),
+      ...event.unconfirmed.map((e) => e.id),
+    ];
 
     // [NEW] Kiểm tra xem chính Owner đã đăng ký chưa
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
@@ -211,13 +216,27 @@ class OwnerEventCard extends ConsumerWidget {
                   text: 'Gửi nhắc nhở',
                   icon: LucideIcons.bell,
                   bgColor: const Color(0xFFF54900),
-                  onPressed: () => _showSnackbar(
-                    context,
-                    "Đã gửi thông báo thành công!",
-                    Colors.orange,
-                  ),
+                  onPressed: () async {
+                    final sendReminder = ref.read(sendEventReminderProvider);
+
+                    await sendReminder(
+                      classId: classId,
+                      eventTitle: event.title,
+                      startTime: event.startTime,
+                      userIds: targetUserIds,
+                    );
+
+                    if (context.mounted) {
+                      _showSnackbar(
+                        context,
+                        "Đã gửi nhắc nhở sự kiện thành công!",
+                        Colors.orange,
+                      );
+                    }
+                  },
                 ),
               ),
+
               const SizedBox(width: 12),
               Expanded(
                 child: _buildButton(
@@ -264,14 +283,16 @@ class OwnerEventCard extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12), // Tăng khoảng cách một chút cho thoáng
-
         // 1. NẾU ĐÃ ĐĂNG KÝ
         if (isRegistered)
           Column(
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FDF4),
                   border: Border.all(color: const Color(0xFFB8F7CF)),
@@ -318,8 +339,8 @@ class OwnerEventCard extends ConsumerWidget {
                                 "Đã hủy đăng ký thành công",
                                 Colors.orange,
                               ),
-                              onError: (e) => _showSnackbar(
-                                  context, "Lỗi: $e", Colors.red),
+                              onError: (e) =>
+                                  _showSnackbar(context, "Lỗi: $e", Colors.red),
                             );
                       }
                     },
@@ -343,7 +364,6 @@ class OwnerEventCard extends ConsumerWidget {
               ],
             ],
           )
-        
         // 2. NẾU CHƯA ĐĂNG KÝ VÀ ĐÃ HẾT HẠN
         else if (!event.isOpen)
           SizedBox(
@@ -368,7 +388,6 @@ class OwnerEventCard extends ConsumerWidget {
               ),
             ),
           )
-
         // 3. NẾU CHƯA ĐĂNG KÝ VÀ CÒN HẠN
         else
           SizedBox(
@@ -382,13 +401,18 @@ class OwnerEventCard extends ConsumerWidget {
                       classId: classId,
                       eventId: event.id,
                       onSuccess: () => _showSnackbar(
-                          context, "Đăng ký thành công!", Colors.green),
+                        context,
+                        "Đăng ký thành công!",
+                        Colors.green,
+                      ),
                       onError: (e) =>
                           _showSnackbar(context, "Lỗi: $e", Colors.red),
                     );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF407CFF), // Màu xanh Primary giống Student
+                backgroundColor: const Color(
+                  0xFF407CFF,
+                ), // Màu xanh Primary giống Student
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -407,6 +431,7 @@ class OwnerEventCard extends ConsumerWidget {
       ],
     );
   }
+
   // --- CÁC WIDGET CON ---
   Widget _buildProgressBar() {
     return Row(

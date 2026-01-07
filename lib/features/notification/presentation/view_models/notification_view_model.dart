@@ -140,6 +140,27 @@ final unreadNotificationCountProvider =
   );
 });
 
+final sendEventReminderProvider = Provider(
+  (ref) {
+    final repo = ref.read(notificationRepositoryProvider);
+
+    return ({
+      required String classId,
+      required String eventTitle,
+      required DateTime startTime,
+      required List<String> userIds,
+    }) async {
+      await repo.sendEventReminder(
+        classId: classId,
+        eventTitle: eventTitle,
+        startTime: startTime,
+        userIds: userIds,
+      );
+    };
+  },
+);
+
+
 
 
 

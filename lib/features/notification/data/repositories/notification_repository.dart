@@ -130,4 +130,33 @@ class NotificationRepository {
 
     await _client.from('notifications').insert(rows);
   }
+
+  Future<void> sendEventReminder({
+  required String classId,
+  required String eventTitle,
+  required DateTime startTime,
+  required List<String> userIds,
+}) async {
+  if (userIds.isEmpty) return;
+
+  final rows = userIds.map((uid) {
+    return {
+      'user_id': uid,
+      'class_id': classId,
+      'title': 'Nhắc nhở sự kiện',
+      'body':
+          'Sự kiện "$eventTitle" sẽ diễn ra vào '
+          '${startTime.day.toString().padLeft(2, '0')}/'
+          '${startTime.month.toString().padLeft(2, '0')}/'
+          '${startTime.year} '
+          '${startTime.hour.toString().padLeft(2, '0')}:'
+          '${startTime.minute.toString().padLeft(2, '0')}.',
+      'type': 'event_reminder',
+      'is_read': false,
+    };
+  }).toList();
+
+  await _client.from('notifications').insert(rows);
+}
+
 }

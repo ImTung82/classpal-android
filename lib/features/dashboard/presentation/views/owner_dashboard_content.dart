@@ -8,7 +8,8 @@ import '../view_models/dashboard_view_model.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/duty_list_item.dart';
 import '../widgets/event_card_item.dart';
-import '../widgets/unpaid_student_item.dart';
+// Import widget mới đã tách riêng
+import '../widgets/fund_card_item.dart';
 
 // Import thêm ViewModels và Utils của Quỹ lớp
 import '../../../funds/presentation/view_models/fund_view_model.dart';
@@ -27,7 +28,7 @@ class OwnerDashboardContent extends ConsumerWidget {
     final dutiesAsync = ref.watch(dutiesProvider(classId));
     final eventsAsync = ref.watch(eventsProvider(classId));
 
-    // 2. [QUAN TRỌNG] Lấy dữ liệu Quỹ lớp thật
+    // 2. Lấy dữ liệu danh sách các chiến dịch Quỹ lớp
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
 
     // 3. Lấy thông tin User hiện tại
@@ -135,10 +136,8 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. [FIX] SINH VIÊN CHƯA NỘP QUỸ (DỮ LIỆU THẬT)
+            // IV. [CẬP NHẬT] SINH VIÊN CHƯA NỘP QUỸ - GỌN GÀNG VỚI FUNDCARDITEM
             _buildSectionTitle("Sinh viên chưa nộp quỹ"),
-            const SizedBox(height: 4),
-
             campaignsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (e, s) => Text("Lỗi tải quỹ: $e"),
@@ -150,79 +149,18 @@ class OwnerDashboardContent extends ConsumerWidget {
                   );
                 }
 
-                // Lấy chiến dịch (Campaign) mới nhất để hiển thị danh sách chưa nộp
-                final latestCampaign = campaigns.first;
-
-                // Lắng nghe danh sách chưa nộp của campaign này
-                final unpaidAsync = ref.watch(
-                  fundUnpaidProvider((
-                    classId: classId,
-                    campaignId: latestCampaign.id,
-                  )),
-                );
-
-                return unpaidAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, s) => const SizedBox(),
-                  data: (members) {
-                    final unpaidList = members
-                        .where((m) => !m.isPaid)
-                        .take(5)
-                        .toList();
-
-                    if (unpaidList.isEmpty) {
-                      return const Text(
-                        "Tuyệt vời! Cả lớp đã nộp đủ quỹ.",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text(
-                            "Chiến dịch: ${latestCampaign.title}",
-                            style: GoogleFonts.roboto(
-                              fontSize: 13,
-                              color: Colors.blueAccent,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        ...unpaidList.map(
-                          (m) => UnpaidStudentItem(
-                            name: m.fullName,
-                            desc: "Mã SV: ${m.studentCode}",
-                            amount: CurrencyUtils.format(
-                              latestCampaign.amountPerPerson,
-                            ),
-                          ),
-                        ),
-                        if (members.where((m) => !m.isPaid).length > 5)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              "Và ${members.where((m) => !m.isPaid).length - 5} sinh viên khác chưa nộp...",
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                      ],
+                return Column(
+                  children: campaigns.map((campaign) {
+                    return FundCardItem(
+                      classId: classId,
+                      campaignId: campaign.id,
+                      campaignTitle: campaign.title,
+                      amountPerPerson: campaign.amountPerPerson.toInt(),
                     );
-                  },
+                  }).toList(),
                 );
               },
             ),
-
             const SizedBox(height: 80),
           ],
         ),

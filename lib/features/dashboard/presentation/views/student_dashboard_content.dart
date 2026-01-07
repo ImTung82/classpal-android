@@ -247,7 +247,6 @@ class StudentDashboardContent extends ConsumerWidget {
     );
   }
 
-  // Widget con hỗ trợ tạo thẻ sự kiện đồng bộ với Quỹ lớp
   Widget _buildEnhancedEventCard(EventData event) {
     double progress = event.total > 0 ? event.current / event.total : 0;
 
@@ -344,7 +343,6 @@ class StudentDashboardContent extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Thanh tiến trình và Text nằm trên cùng 1 hàng ngang
           Row(
             children: [
               Expanded(

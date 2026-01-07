@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/duty_models.dart';
-import '../../../teams/data/models/team_model.dart'; 
+import '../../../teams/data/models/team_model.dart';
 import '../../data/repositories/duty_repository.dart';
 
 // Provider lấy bảng điểm (Bảng Vàng)
@@ -48,7 +48,7 @@ final nextWeekDutiesProvider = FutureProvider.family<List<DutyTask>, String>((
 });
 
 // -----------------------------------------------------------------------------
-// [SỬA LỖI] LẤY THÀNH VIÊN TỔ VÀ PHÂN QUYỀN CHUẨN
+// LẤY THÀNH VIÊN TỔ VÀ PHÂN QUYỀN CHUẨN
 // -----------------------------------------------------------------------------
 
 /// Provider lấy danh sách thành viên CÙNG TỔ với người dùng hiện tại
@@ -59,7 +59,6 @@ final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
   final userId = Supabase.instance.client.auth.currentUser?.id;
   if (userId == null) return [];
 
-  // 1. Tìm thông tin member hiện tại để lấy team_id
   final currentUserMemberInfo = await Supabase.instance.client
       .from('class_members')
       .select('team_id')
@@ -71,7 +70,6 @@ final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
     return [];
   final String teamId = currentUserMemberInfo['team_id'];
 
-  // 2. Lấy thông tin tổ để biết leader_id (Id của class_members)
   final teamData = await Supabase.instance.client
       .from('teams')
       .select('leader_id')
@@ -79,7 +77,6 @@ final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
       .single();
   final String? leaderIdInDb = teamData['leader_id'];
 
-  // 3. Lấy toàn bộ thành viên trong tổ đó
   final membersData = await Supabase.instance.client
       .from('class_members')
       .select('*, profiles(*)')
@@ -88,7 +85,6 @@ final myTeamMembersProvider = FutureProvider.family<List<TeamMember>, String>((
   final List<dynamic> list = membersData as List;
   return list.map((m) {
     final member = TeamMember.fromMap(m);
-    // So khớp ID class_members với leader_id của bảng teams để set cờ isLeader
     return member.copyWith(isLeader: member.id == leaderIdInDb);
   }).toList();
 });
@@ -101,7 +97,6 @@ final isLeaderProvider = FutureProvider.family<bool, String>((
   final userId = Supabase.instance.client.auth.currentUser?.id;
   if (userId == null) return false;
 
-  // 1. Lấy role và id member của user hiện tại
   final memberData = await Supabase.instance.client
       .from('class_members')
       .select('id, role, team_id')
@@ -111,10 +106,8 @@ final isLeaderProvider = FutureProvider.family<bool, String>((
 
   if (memberData == null) return false;
 
-  // Quyền 1: Nếu là Owner (Lớp trưởng) -> Auto true
   if (memberData['role'] == 'owner') return true;
 
-  // Quyền 2: Nếu là leader của team (Tổ trưởng)
   if (memberData['team_id'] != null) {
     final teamData = await Supabase.instance.client
         .from('teams')
@@ -122,7 +115,6 @@ final isLeaderProvider = FutureProvider.family<bool, String>((
         .eq('id', memberData['team_id'])
         .single();
 
-    // So sánh ID class_members với leader_id được lưu trong bảng teams
     return teamData['leader_id'] == memberData['id'];
   }
 
@@ -163,11 +155,7 @@ class DutyController extends AsyncNotifier<void> {
             selectedTeamIds: selectedTeamIds,
           );
 
-      // Refresh dữ liệu
-      ref.invalidate(activeDutiesProvider(classId));
-      ref.invalidate(upcomingDutiesProvider(classId));
-      ref.invalidate(nextWeekDutiesProvider(classId));
-
+      _refreshAllDutyProviders(classId);
       onSuccess();
     } catch (e) {
       onError(e.toString());
@@ -187,12 +175,30 @@ class DutyController extends AsyncNotifier<void> {
     try {
       await ref.read(dutyRepositoryProvider).markAsCompleted(dutyId);
 
-      // Cập nhật UI ngay lập tức
-      ref.invalidate(myDutyProvider(classId));
-      ref.invalidate(activeDutiesProvider(classId));
-      ref.invalidate(upcomingDutiesProvider(classId));
-      ref.invalidate(nextWeekDutiesProvider(classId));
+      _refreshAllDutyProviders(classId);
       ref.invalidate(scoreBoardProvider(classId));
+
+      onSuccess();
+    } catch (e) {
+      onError(e.toString());
+    } finally {
+      state = const AsyncValue.data(null);
+    }
+  }
+
+  /// [NEW] Xóa toàn bộ chu kỳ trực nhật (Owner thực hiện)
+  Future<void> deleteDutySeries({
+    required String classId,
+    required String generalId,
+    required Function onSuccess,
+    required Function(String) onError,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(dutyRepositoryProvider).deleteDutySeries(generalId);
+
+      // Làm mới toàn bộ dữ liệu để mất các bản ghi đã xóa trên UI
+      _refreshAllDutyProviders(classId);
 
       onSuccess();
     } catch (e) {
@@ -218,5 +224,13 @@ class DutyController extends AsyncNotifier<void> {
     } finally {
       state = const AsyncValue.data(null);
     }
+  }
+
+  /// Hàm phụ để làm mới danh sách nhiệm vụ ở các màn hình khác nhau
+  void _refreshAllDutyProviders(String classId) {
+    ref.invalidate(activeDutiesProvider(classId));
+    ref.invalidate(upcomingDutiesProvider(classId));
+    ref.invalidate(nextWeekDutiesProvider(classId));
+    ref.invalidate(myDutyProvider(classId));
   }
 }

@@ -10,22 +10,21 @@ final dutyRepositoryProvider = Provider<DutyRepository>((ref) {
 abstract class DutyRepository {
   Future<List<GroupScore>> fetchScoreBoard(String classId);
   Future<List<DutyTask>> fetchActiveDuties(String classId);
-  Future<List<DutyTask>> fetchNextWeekDuties(
-    String classId,
-  ); // Lấy duy nhất tuần sau
+  Future<List<DutyTask>> fetchNextWeekDuties(String classId);
   Future<DutyTask?> fetchMyDuty(String classId, String userId);
   Future<List<DutyTask>> fetchUpcomingDuties(String classId);
 
   Future<void> createDutyRotation({
     required String classId,
     required DateTime startDate,
-    required DateTime endDate, // Thêm ngày kết thúc tổng quát
+    required DateTime endDate,
     required List<String> taskTitles,
     List<String>? selectedTeamIds,
   });
 
   Future<void> markAsCompleted(String dutyId);
   Future<void> sendReminder(String dutyId);
+  Future<void> deleteDutySeries(String generalId);
 }
 
 class SupabaseDutyRepository implements DutyRepository {
@@ -69,8 +68,8 @@ class SupabaseDutyRepository implements DutyRepository {
   @override
   Future<void> createDutyRotation({
     required String classId,
-    required DateTime startDate, // Ngày Thứ 2 người dùng chọn
-    required DateTime endDate, // Ngày Thứ 7 người dùng chọn
+    required DateTime startDate,
+    required DateTime endDate,
     required List<String> taskTitles,
     List<String>? selectedTeamIds,
   }) async {
@@ -80,33 +79,27 @@ class SupabaseDutyRepository implements DutyRepository {
 
       List<Map<String, dynamic>> batchDuties = [];
 
-      // Tính toán số tuần thực tế từ ngày bắt đầu đến ngày kết thúc
-      // Ví dụ: 12/1 (T2) -> 24/1 (T7 tuần sau) = 12 ngày chênh lệch -> ceil(12/7) + 1 = 2 tuần
       int totalDays = endDate.difference(startDate).inDays;
       int totalWeeks = (totalDays / 7).ceil() + 1;
       String general_id = const Uuid().v4();
 
       for (int week = 0; week < totalWeeks; week++) {
-        // Ngày bắt đầu của tuần thứ i (luôn là Thứ 2)
         DateTime currentStart = startDate.add(Duration(days: week * 7));
-        // Ngày kết thúc của tuần thứ i (luôn là Thứ 7)
         DateTime currentEnd = currentStart.add(
           const Duration(days: 5, hours: 23, minutes: 59),
         );
 
-        // Kiểm tra nếu ngày bắt đầu tuần này đã vượt quá ngày kết thúc tổng quát thì dừng
         if (currentStart.isAfter(endDate)) break;
 
         for (int i = 0; i < taskTitles.length; i++) {
-          // Xoay vòng tổ theo danh sách chọn: (Tuần hiện tại + STT công việc) % Tổng số tổ chọn
           int assignedTeamIdx = (week + i) % teamIds.length;
 
           batchDuties.add({
             'general_id': general_id,
             'class_id': classId,
             'team_id': teamIds[assignedTeamIdx],
-            'start_time': currentStart.toIso8601String(),
-            'end_time': currentEnd.toIso8601String(),
+            'start_time': currentStart.toUtc().toIso8601String(),
+            'end_time': currentEnd.toUtc().toIso8601String(),
             'note': taskTitles[i],
             'status': 'pending',
           });
@@ -122,8 +115,7 @@ class SupabaseDutyRepository implements DutyRepository {
   @override
   Future<List<DutyTask>> fetchActiveDuties(String classId) async {
     try {
-      final now = DateTime.now().toIso8601String();
-      // start_time <= NOW <= end_time: Chỉ lấy nhiệm vụ đang trong tuần thực hiện
+      final now = DateTime.now().toUtc().toIso8601String();
       final data = await _supabase
           .from('duties')
           .select('*, teams(id, name)')
@@ -142,12 +134,10 @@ class SupabaseDutyRepository implements DutyRepository {
   Future<List<DutyTask>> fetchNextWeekDuties(String classId) async {
     try {
       final now = DateTime.now();
-      // Tìm Thứ 2 tuần sau
       int daysUntilNextMonday = 8 - now.weekday;
       DateTime nextMonday = now.add(Duration(days: daysUntilNextMonday));
       nextMonday = DateTime(nextMonday.year, nextMonday.month, nextMonday.day);
 
-      // Tìm Thứ 7 tuần sau
       DateTime nextSaturday = nextMonday.add(
         const Duration(days: 5, hours: 23, minutes: 59),
       );
@@ -156,8 +146,8 @@ class SupabaseDutyRepository implements DutyRepository {
           .from('duties')
           .select('*, teams(id, name)')
           .eq('class_id', classId)
-          .gte('start_time', nextMonday.toIso8601String())
-          .lte('end_time', nextSaturday.toIso8601String())
+          .gte('start_time', nextMonday.toUtc().toIso8601String())
+          .lte('end_time', nextSaturday.toUtc().toIso8601String())
           .order('start_time', ascending: true);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
@@ -178,7 +168,7 @@ class SupabaseDutyRepository implements DutyRepository {
 
       if (memberData == null || memberData['team_id'] == null) return null;
       final teamId = memberData['team_id'];
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now().toUtc().toIso8601String();
 
       final data = await _supabase
           .from('duties')
@@ -200,14 +190,13 @@ class SupabaseDutyRepository implements DutyRepository {
   Future<List<DutyTask>> fetchUpcomingDuties(String classId) async {
     try {
       final now = DateTime.now();
-      // Chỉ lấy nhiệm vụ từ sau tuần hiện tại (bắt đầu từ T2 tuần tới trở đi)
       int daysUntilNextMonday = 8 - now.weekday;
       final nextMonday = now.add(Duration(days: daysUntilNextMonday));
       final nextMondayStr = DateTime(
         nextMonday.year,
         nextMonday.month,
         nextMonday.day,
-      ).toIso8601String();
+      ).toUtc().toIso8601String();
 
       final data = await _supabase
           .from('duties')
@@ -271,4 +260,24 @@ class SupabaseDutyRepository implements DutyRepository {
       throw Exception('Lỗi khi gửi nhắc nhở: $e');
     }
   }
+
+  // Xóa hàng loạt theo general_id
+  @override
+  Future<void> deleteDutySeries(String generalId) async {
+    try {
+      final List<dynamic> deletedRows = await _supabase
+          .from('duties')
+          .delete()
+          .eq('general_id', generalId)
+          .select();
+
+      if (deletedRows.isEmpty) {
+        throw Exception(
+          'Không tìm thấy dữ liệu để xóa hoặc bạn không có quyền xóa (RLS).',
+        );
+      }
+    } catch (e) {
+      throw Exception('Lỗi xóa: $e');
+    }
+  } 
 }

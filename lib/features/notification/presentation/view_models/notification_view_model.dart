@@ -12,7 +12,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return NotificationRepository(ref.read(supabaseProvider));
 });
 
-/// Fetch list notifications cho 1 class cụ thể
+
 final notificationListProvider =
     FutureProvider.family<List<NotificationModel>, String>((ref, classId) async {
   final client = ref.read(supabaseProvider);
@@ -22,3 +22,24 @@ final notificationListProvider =
   final repo = ref.read(notificationRepositoryProvider);
   return repo.fetchNotificationsForClass(classId: classId, userId: user.id);
 });
+
+final markNotificationReadProvider = Provider((ref) {
+  final repo = ref.read(notificationRepositoryProvider);
+  final client = ref.read(supabaseProvider);
+
+  return ({
+    required String notificationId,
+    required String classId,
+  }) async {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    await repo.markAsRead(
+      notificationId: notificationId,
+      userId: user.id,
+    );
+
+    ref.invalidate(notificationListProvider(classId));
+  };
+});
+

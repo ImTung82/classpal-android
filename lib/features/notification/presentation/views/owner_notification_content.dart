@@ -10,17 +10,15 @@ import '../view_models/notification_view_model.dart';
 class OwnerNotificationContent extends ConsumerStatefulWidget {
   final String classId; // truyền classId vào để lọc theo lớp
 
-  const OwnerNotificationContent({
-    super.key,
-    required this.classId,
-  });
+  const OwnerNotificationContent({super.key, required this.classId});
 
   @override
   ConsumerState<OwnerNotificationContent> createState() =>
       _OwnerNotificationContentState();
 }
 
-class _OwnerNotificationContentState extends ConsumerState<OwnerNotificationContent> {
+class _OwnerNotificationContentState
+    extends ConsumerState<OwnerNotificationContent> {
   int _tabIndex = 0;
 
   String _formatTime(DateTime dt) {
@@ -73,13 +71,26 @@ class _OwnerNotificationContentState extends ConsumerState<OwnerNotificationCont
               return Column(
                 children: [
                   for (final n in filtered)
-                    NotificationCard(
-                      icon: n.icon,
-                      iconBg: n.iconBg,
-                      title: n.title,
-                      content: n.body,
-                      time: _formatTime(n.createdAt),
-                      unread: !n.isRead,
+                    GestureDetector(
+                      onTap: n.isRead
+                          ? null
+                          : () {
+                              final markRead = ref.read(
+                                markNotificationReadProvider,
+                              );
+                              markRead(
+                                notificationId: n.id,
+                                classId: widget.classId,
+                              );
+                            },
+                      child: NotificationCard(
+                        icon: n.icon,
+                        iconBg: n.iconBg,
+                        title: n.title,
+                        content: n.body,
+                        time: _formatTime(n.createdAt),
+                        unread: !n.isRead,
+                      ),
                     ),
                 ],
               );

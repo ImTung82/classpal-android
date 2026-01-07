@@ -42,4 +42,15 @@ class NotificationRepository {
         .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> markAsRead({
+    required String notificationId,
+    required String userId,
+  }) async {
+    await _client
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('id', notificationId)
+        .eq('user_id', userId);
+  }
 }

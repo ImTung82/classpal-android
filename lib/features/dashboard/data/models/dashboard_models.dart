@@ -9,11 +9,11 @@ class StatData {
   StatData(this.title, this.value, this.subValue, this.iconCode, this.color);
 }
 
-// Model nhiệm vụ chung (Owner xem list)
+// Model nhiệm vụ chung (Owner xem list tổng quát)
 class DutyData {
   final String groupName;
   final String taskName;
-  final String status; // 'In Progress', 'Upcoming', 'Done'
+  final String status; 
   final String time;
 
   DutyData(this.groupName, this.taskName, this.status, this.time);
@@ -29,19 +29,32 @@ class EventData {
   EventData(this.title, this.date, this.current, this.total);
 }
 
-// Model nhiệm vụ cá nhân (Student)
+// Model nhiệm vụ cá nhân (Student & Leader Dashboard)
 class StudentTaskData {
-  final String title;       
-  final String dateRange;   
+  final String id; 
+  final String title;
+  final String dateRange;
   final bool isCompleted;
+  final String status; 
 
-  StudentTaskData(this.title, this.dateRange, {this.isCompleted = false});
+  StudentTaskData({
+    required this.id,
+    required this.title,
+    required this.dateRange,
+    this.isCompleted = false,
+    this.status = 'Active',
+  });
 }
 
-// Model thành viên tổ (Dùng hiển thị avatar nhỏ)
+//  Model thành viên tổ 
 class GroupMemberData {
   final String name;
-  final String avatarColor; 
+  final String avatarColor;
+  final bool isLeader; 
 
-  GroupMemberData(this.name, this.avatarColor);
+  GroupMemberData({
+    required this.name,
+    required this.avatarColor,
+    this.isLeader = false, 
+  });
 }

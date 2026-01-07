@@ -33,25 +33,25 @@ final eventsProvider = FutureProvider.family<List<EventData>, String>((
 
 // --- Student Providers (Dành cho Thành viên/Sinh viên) ---
 
-/// Provider lấy nhiệm vụ cá nhân của sinh viên hiện tại
-final studentTaskProvider = FutureProvider.family<StudentTaskData?, String>((
-  ref,
-  classId,
-) async {
-  final authRepo = ref.watch(authRepositoryProvider);
-  final currentUser = authRepo.currentUser;
+/// [CẬP NHẬT] Trả về List thay vì một item duy nhất để hiện đầy đủ nhiệm vụ
+final studentTaskProvider =
+    FutureProvider.family<List<StudentTaskData>, String>((ref, classId) async {
+      final authRepo = ref.watch(authRepositoryProvider);
+      final currentUser = authRepo.currentUser;
 
-  if (currentUser == null) return null;
+      if (currentUser == null) return [];
 
-  return ref
-      .watch(dashboardRepositoryProvider)
-      .fetchStudentTask(classId, currentUser.id);
-});
+      return ref
+          .watch(dashboardRepositoryProvider)
+          .fetchStudentTask(classId, currentUser.id);
+    });
 
-/// Provider lấy danh sách thành viên cùng tổ với sinh viên hiện tại
-/// Lưu ý: Cần truyền teamId của sinh viên đó vào
+/// [CẬP NHẬT] Lấy danh sách thành viên tổ
+/// Provider này nên được watch dựa trên teamId lấy từ thông tin thành viên
 final groupMembersProvider =
     FutureProvider.family<List<GroupMemberData>, String?>((ref, teamId) async {
       if (teamId == null) return [];
+
+      // Gọi Repo để lấy thành viên kèm flag isLeader
       return ref.watch(dashboardRepositoryProvider).fetchGroupMembers(teamId);
     });

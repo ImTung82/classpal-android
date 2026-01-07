@@ -85,7 +85,6 @@ class NotificationRepository {
 
     if (members.isEmpty) return;
 
-    final now = DateTime.now().toIso8601String();
 
     final rows = members.map((userId) {
       return {
@@ -94,6 +93,30 @@ class NotificationRepository {
         'title': title,
         'body': body,
         'type': type,
+        'is_read': false,
+      };
+    }).toList();
+
+    await _client.from('notifications').insert(rows);
+  }
+
+  Future<void> sendFundReminderToUsers({
+    required String classId,
+    required String campaignTitle,
+    required int amountPerPerson,
+    required List<String> userIds,
+  }) async {
+    if (userIds.isEmpty) return;
+
+    final rows = userIds.map((uid) {
+      return {
+        'user_id': uid,
+        'class_id': classId,
+        'title': 'Nhắc nhở nộp quỹ',
+        'body':
+            'Bạn chưa nộp quỹ "$campaignTitle" '
+            '(${amountPerPerson}đ). Vui lòng hoàn thành sớm.',
+        'type': 'fund_reminder',
         'is_read': false,
       };
     }).toList();

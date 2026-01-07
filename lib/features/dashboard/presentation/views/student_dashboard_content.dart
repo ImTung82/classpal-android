@@ -7,7 +7,6 @@ import '../../data/models/dashboard_models.dart';
 import '../view_models/dashboard_view_model.dart';
 import '../widgets/task_gradient_card.dart';
 import '../widgets/group_member_item.dart';
-import '../widgets/event_card_item.dart';
 
 // Import thêm view model của Quỹ và Tổ để lấy dữ liệu thật
 import '../../../funds/presentation/view_models/fund_view_model.dart';
@@ -86,7 +85,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // II. [CẬP NHẬT] THÔNG BÁO QUỸ LỚP (Chỉ hiển thị, không nút bấm)
+            // II. THÔNG BÁO QUỸ LỚP
             summaryAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (e, s) => const SizedBox(),
@@ -94,7 +93,6 @@ class StudentDashboardContent extends ConsumerWidget {
                 loading: () => const SizedBox(),
                 error: (e, s) => const SizedBox(),
                 data: (campaigns) {
-                  // Tính tổng tiền cần nộp từ các campaign đang mở
                   int totalPending = 0;
                   for (var cp in campaigns) {
                     totalPending += (cp.amountPerPerson ?? 0).toInt();
@@ -107,7 +105,7 @@ class StudentDashboardContent extends ConsumerWidget {
                       color: totalPending > 0
                           ? const Color(0xFFFFF5F5)
                           : const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: totalPending > 0
                             ? const Color(0xFFFED7D7)
@@ -116,11 +114,21 @@ class StudentDashboardContent extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          LucideIcons.wallet,
-                          color: totalPending > 0 ? Colors.red : Colors.green,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            LucideIcons.wallet,
+                            color: totalPending > 0
+                                ? const Color(0xFFE53E3E)
+                                : Colors.green,
+                            size: 24,
+                          ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,20 +137,17 @@ class StudentDashboardContent extends ConsumerWidget {
                                 "Quỹ lớp: ${CurrencyUtils.format(summary.balance)}",
                                 style: GoogleFonts.roboto(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                                  fontSize: 17,
                                   color: const Color(0xFF101727),
                                 ),
                               ),
                               if (totalPending > 0)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    "Bạn còn thiếu: ${CurrencyUtils.format(totalPending)}",
-                                    style: GoogleFonts.roboto(
-                                      fontSize: 13,
-                                      color: Colors.red.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                Text(
+                                  "Bạn còn thiếu: ${CurrencyUtils.format(totalPending)}",
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 14,
+                                    color: const Color(0xFFE53E3E),
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                             ],
@@ -171,7 +176,9 @@ class StudentDashboardContent extends ConsumerWidget {
                   );
                 }
                 return Column(
-                  children: events.map((e) => EventCardItem(data: e)).toList(),
+                  children: events
+                      .map((event) => _buildEnhancedEventCard(event))
+                      .toList(),
                 );
               },
             ),
@@ -197,8 +204,15 @@ class StudentDashboardContent extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +228,6 @@ class StudentDashboardContent extends ConsumerWidget {
                             (a, b) =>
                                 (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0),
                           );
-
                           return Column(
                             children: sortedMembers
                                 .map((m) => GroupMemberItem(member: m))
@@ -230,6 +243,138 @@ class StudentDashboardContent extends ConsumerWidget {
             const SizedBox(height: 80),
           ],
         ),
+      ),
+    );
+  }
+
+  // Widget con hỗ trợ tạo thẻ sự kiện đồng bộ với Quỹ lớp
+  Widget _buildEnhancedEventCard(EventData event) {
+    double progress = event.total > 0 ? event.current / event.total : 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon to tương đương Quỹ lớp
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F7FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  LucideIcons.calendarDays,
+                  color: Color(0xFF3B82F6),
+                  size: 24, // Size to 24 tương đương icon Wallet
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            style: GoogleFonts.roboto(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Trạng thái tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: event.isOpen
+                                ? const Color(0xFFE8F5E9)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            event.isOpen ? "Đang mở" : "Đã đóng",
+                            style: TextStyle(
+                              color: event.isOpen
+                                  ? const Color(0xFF2E7D32)
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Ngày: ${event.date}",
+                      style: GoogleFonts.roboto(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Thanh tiến trình và Text nằm trên cùng 1 hàng ngang
+          Row(
+            children: [
+              Expanded(
+                flex: 7,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    color: const Color(0xFF3B82F6),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  "${event.current}/${event.total} Sinh viên",
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.roboto(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

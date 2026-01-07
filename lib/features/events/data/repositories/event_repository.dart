@@ -128,6 +128,7 @@ class SupabaseEventRepository implements EventRepository {
           .from('events')
           .select(_baseSelectQuery)
           .eq('class_id', classId)
+          .order('created_at', ascending: false)
           .order('start_time', ascending: false);
 
       final enrichedData = await _enrichEventsWithStudentInfo(

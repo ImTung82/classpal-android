@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/dashboard_models.dart';
-import '../../../../core/utils/currency_utils.dart'; // Đảm bảo import tiện ích format tiền
+import '../../../../core/utils/currency_utils.dart';
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
   return SupabaseDashboardRepository(Supabase.instance.client);
@@ -23,7 +23,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
   @override
   Future<List<StatData>> fetchStats(String classId) async {
     try {
-      // 1. Đếm sinh viên, đội nhóm, sự kiện
       final studentsCount = await _supabase
           .from('class_members')
           .select('id')
@@ -38,7 +37,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
           .eq('class_id', classId)
           .gte('end_time', DateTime.now().toIso8601String());
 
-      // 2. Tính toán quỹ lớp thực tế
       final fundData = await _supabase
           .from('fund_transactions')
           .select('amount, is_expense')
@@ -75,7 +73,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
           3,
           0xFFA855F7,
         ),
-        // [CẬP NHẬT] Hiển thị quỹ lớp thật đã format VNĐ
         StatData("Quỹ lớp", CurrencyUtils.format(totalFund), "", 4, 0xFF22C55E),
       ];
     } catch (e) {
@@ -129,33 +126,29 @@ class SupabaseDashboardRepository implements DashboardRepository {
   @override
   Future<List<EventData>> fetchEvents(String classId) async {
     try {
-      // 1. Lấy tổng số thành viên (Sử dụng length để tránh lỗi FetchOptions)
+      final now = DateTime.now().toUtc().toIso8601String();
+
+      // 1. Lấy tổng số thành viên lớp
       final membersData = await _supabase
           .from('class_members')
           .select('id')
           .eq('class_id', classId)
           .eq('is_active', true);
-
       final int totalInClass = (membersData as List).length;
 
-      // 2. Lấy 2 sự kiện kèm trạng thái người tham gia
+      // 2. Lấy sự kiện chưa hết hạn đăng ký
       final data = await _supabase
           .from('events')
           .select('*, event_participants(status)')
           .eq('class_id', classId)
-          .order('start_time', ascending: true)
-          .limit(2);
+          .gte('registration_deadline', now) // CHỈ LẤY sự kiện còn hạn đăng ký
+          .order('start_time', ascending: true);
 
       return (data as List).map((e) {
         final participants = e['event_participants'] as List? ?? [];
         final int joinedCount = participants
             .where((p) => p['status'] == 'joined')
             .length;
-
-        final DateTime now = DateTime.now();
-        final DateTime deadline = e['registration_deadline'] != null
-            ? DateTime.parse(e['registration_deadline']).toLocal()
-            : DateTime.parse(e['start_time']).toLocal();
 
         return EventData(
           id: e['id'],
@@ -165,7 +158,8 @@ class SupabaseDashboardRepository implements DashboardRepository {
           ).format(DateTime.parse(e['start_time']).toLocal()),
           current: joinedCount,
           total: totalInClass,
-          isOpen: now.isBefore(deadline),
+          isOpen:
+              true, // Vì đã lọc bằng gte registration_deadline nên chắc chắn là true
           isMandatory: e['is_mandatory'] ?? false,
         );
       }).toList();

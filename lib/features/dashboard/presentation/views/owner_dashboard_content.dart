@@ -9,6 +9,7 @@ import '../widgets/stat_card.dart';
 import '../widgets/duty_list_item.dart';
 import '../widgets/event_card_item.dart';
 import '../widgets/unpaid_student_item.dart';
+import '../widgets/expandable_list_wrapper.dart'; // Import wrapper mới
 
 // Import ViewModels và Utils
 import '../../../funds/presentation/view_models/fund_view_model.dart';
@@ -22,12 +23,9 @@ class OwnerDashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lắng nghe các provider Dashboard
     final statsAsync = ref.watch(statsProvider(classId));
     final dutiesAsync = ref.watch(dutiesProvider(classId));
     final eventsAsync = ref.watch(eventsProvider(classId));
-
-    // 2. Lấy danh sách chiến dịch để tính nợ gộp
     final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
 
     final authRepo = ref.watch(authRepositoryProvider);
@@ -133,7 +131,7 @@ class OwnerDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP (ĐÃ BỎ FRAME)
+            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP - SỬ DỤNG WRAPPER XEM THÊM
             _buildSectionTitle("Sinh viên chưa nộp quỹ lớp"),
             campaignsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
@@ -156,7 +154,6 @@ class OwnerDashboardContent extends ConsumerWidget {
                       campaignId: campaign.id,
                     )),
                   );
-
                   unpaidData.whenData((members) {
                     final int amount = campaign.amountPerPerson.toInt();
                     for (final m in members) {
@@ -187,40 +184,26 @@ class OwnerDashboardContent extends ConsumerWidget {
                   );
                 }
 
-                // Sắp xếp theo số tiền nợ giảm dần
                 final sortedDebtList = aggregatedDebts.values.toList()
                   ..sort(
                     (a, b) => (b['debt'] as int).compareTo(a['debt'] as int),
                   );
 
-                // HIỂN THỊ TRỰC TIẾP DANH SÁCH CARD SINH VIÊN
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...sortedDebtList
-                        .take(5)
-                        .map(
-                          (data) => UnpaidStudentItem(
-                            name: data['name'] as String,
-                            studentCode: data['code'] as String,
-                            totalAmount: CurrencyUtils.format(
-                              data['debt'] as int,
-                            ),
+                // SỬ DỤNG EXPANDABLE LIST WRAPPER TẠI ĐÂY
+                return ExpandableListWrapper(
+                  initialItems: 5,
+                  seeMoreLabel: "sinh viên chưa đóng",
+                  children: sortedDebtList
+                      .map(
+                        (data) => UnpaidStudentItem(
+                          name: data['name'] as String,
+                          studentCode: data['code'] as String,
+                          totalAmount: CurrencyUtils.format(
+                            data['debt'] as int,
                           ),
                         ),
-                    if (sortedDebtList.length > 5)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 4),
-                        child: Text(
-                          "Và ${sortedDebtList.length - 5} sinh viên khác chưa nộp...",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                  ],
+                      )
+                      .toList(),
                 );
               },
             ),

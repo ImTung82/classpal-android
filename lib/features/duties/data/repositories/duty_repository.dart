@@ -11,7 +11,6 @@ abstract class DutyRepository {
   Future<List<GroupScore>> fetchScoreBoard(String classId);
   Future<List<DutyTask>> fetchActiveDuties(String classId);
   Future<List<DutyTask>> fetchNextWeekDuties(String classId);
-  // [MODIFIED] Changed return type from Future<DutyTask?> to Future<List<DutyTask>>
   Future<List<DutyTask>> fetchMyDuty(String classId, String userId);
   Future<List<DutyTask>> fetchUpcomingDuties(String classId);
 
@@ -123,7 +122,7 @@ class SupabaseDutyRepository implements DutyRepository {
           .eq('class_id', classId)
           .lte('start_time', now)
           .gte('end_time', now)
-          .order('start_time', ascending: true);
+          .order('created_at', ascending: false);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
     } catch (e) {
@@ -179,7 +178,7 @@ class SupabaseDutyRepository implements DutyRepository {
           .eq('team_id', teamId)
           .lte('start_time', now)
           .gte('end_time', now)
-          .order('start_time', ascending: true);
+          .order('created_at', ascending: false);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
     } catch (e) {
@@ -204,6 +203,7 @@ class SupabaseDutyRepository implements DutyRepository {
           .select('*, teams(id, name)')
           .eq('class_id', classId)
           .gte('start_time', nextMondayStr)
+          .order('created_at', ascending: false)
           .order('start_time', ascending: true);
 
       return (data as List).map((e) => DutyTask.fromMap(e)).toList();
@@ -279,5 +279,5 @@ class SupabaseDutyRepository implements DutyRepository {
     } catch (e) {
       throw Exception('Lỗi xóa: $e');
     }
-  } 
+  }
 }

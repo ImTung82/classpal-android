@@ -27,6 +27,7 @@ class GroupScore {
 
 class DutyTask {
   final String id;
+  final String generalId;
   final String title;
   final String description;
   final String assignedTo;
@@ -38,6 +39,7 @@ class DutyTask {
 
   DutyTask({
     required this.id,
+    required this.generalId,
     required this.title,
     required this.description,
     required this.assignedTo,
@@ -51,14 +53,14 @@ class DutyTask {
   factory DutyTask.fromMap(Map<String, dynamic> map) {
     final team = map['teams'];
     final start = map['start_time'] != null
-        ? DateTime.parse(map['start_time'])
+        ? DateTime.parse(map['start_time']).toLocal()
         : null;
     final end = map['end_time'] != null
-        ? DateTime.parse(map['end_time'])
+        ? DateTime.parse(map['end_time']).toLocal()
         : null;
     final rawStatus = map['status'] ?? 'pending';
 
-    // Xử lý note
+    // Xử lý note để tách title và description
     String rawNote = map['note'] ?? '';
     String title = 'Trực nhật';
     String description = '';
@@ -70,7 +72,7 @@ class DutyTask {
       title = rawNote.isNotEmpty ? rawNote : 'Trực nhật';
     }
 
-    // Logic trạng thái theo thời gian thực
+    // Logic tính toán trạng thái hiển thị
     String displayStatus = 'Upcoming';
     final now = DateTime.now();
 
@@ -79,14 +81,15 @@ class DutyTask {
     } else if (start != null && end != null) {
       if (now.isAfter(start) &&
           now.isBefore(end.add(const Duration(days: 1)))) {
-        displayStatus = 'Active'; // Đang trong tuần thực hiện
+        displayStatus = 'Active';
       } else if (now.isAfter(end)) {
-        displayStatus = 'Missed'; // Đã qua tuần nhưng chưa hoàn thành
+        displayStatus = 'Missed';
       }
     }
 
     return DutyTask(
       id: map['id'] ?? '',
+      generalId: map['general_id'] ?? '',
       title: title,
       description: description.isNotEmpty
           ? description

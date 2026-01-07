@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'dart:async';
 import '../../data/models/notification_models.dart';
 import '../../data/repositories/notification_repository.dart';
 
@@ -84,3 +84,36 @@ final createNotificationProvider = Provider((ref) {
     ref.invalidate(notificationListProvider(classId));
   };
 });
+
+final notificationRealtimeProvider =
+    Provider.family<void, String>((ref, classId) {
+  final client = Supabase.instance.client;
+
+  final channel = client.channel('notifications-realtime-$classId');
+
+  channel
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'notifications',
+        callback: (payload) {
+
+          final newRow = payload.newRecord;
+          final oldRow = payload.oldRecord;
+
+          if (newRow != null && newRow['class_id'] == classId) {
+            ref.invalidate(notificationListProvider(classId));
+          } else if (oldRow != null && oldRow['class_id'] == classId) {
+            ref.invalidate(notificationListProvider(classId));
+          } else {
+            print('❌ Not match class_id');
+          }
+        },
+      )
+      .subscribe();
+
+  ref.onDispose(() {
+    client.removeChannel(channel);
+  });
+});
+

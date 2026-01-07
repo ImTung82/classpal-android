@@ -36,7 +36,7 @@ class _OwnerNotificationContentState
   @override
   Widget build(BuildContext context) {
     final asyncList = ref.watch(notificationListProvider(widget.classId));
-
+    ref.watch(notificationRealtimeProvider(widget.classId));
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: asyncList.when(
@@ -59,7 +59,6 @@ class _OwnerNotificationContentState
 
               const SizedBox(height: 16),
 
-              /// ✅ Tabs nằm TRONG data
               NotificationTabs(
                 currentIndex: _tabIndex,
                 totalCount: list.length,

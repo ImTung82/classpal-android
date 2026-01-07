@@ -35,7 +35,7 @@ class _StudentNotificationContentState
   @override
   Widget build(BuildContext context) {
     final asyncList = ref.watch(notificationListProvider(widget.classId));
-
+    ref.watch(notificationRealtimeProvider(widget.classId));
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: asyncList.when(

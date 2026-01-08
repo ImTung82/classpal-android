@@ -10,132 +10,207 @@ import '../widgets/duty_list_item.dart';
 import '../widgets/event_card_item.dart';
 import '../widgets/unpaid_student_item.dart';
 
+// Import ViewModels và Utils
+import '../../../funds/presentation/view_models/fund_view_model.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 
 class OwnerDashboardContent extends ConsumerWidget {
-  const OwnerDashboardContent({super.key});
+  final String classId;
+
+  const OwnerDashboardContent({super.key, required this.classId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lấy dữ liệu Dashboard
-    final statsAsync = ref.watch(statsProvider);
-    final dutiesAsync = ref.watch(dutiesProvider);
-    final eventsAsync = ref.watch(eventsProvider);
+    final statsAsync = ref.watch(statsProvider(classId));
+    final dutiesAsync = ref.watch(dutiesProvider(classId));
+    final eventsAsync = ref.watch(eventsProvider(classId));
+    final campaignsAsync = ref.watch(fundCampaignsProvider(classId));
 
-    // 2. Lấy thông tin User hiện tại
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Lớp trưởng";
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Đổi Header thành "Xin chào" giống Student
-          Text(
-            "Xin chào, $fullName!",
-            style: GoogleFonts.roboto(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          // Subtext đổi lại chút cho hợp ngữ cảnh quản lý
-          Text(
-            "Đây là tổng quan lớp học của bạn",
-            style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14),
-          ),
-
-          const SizedBox(height: 16),
-
-          statsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Text('Lỗi: $err'),
-            data: (stats) => GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.25,
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(statsProvider(classId));
+        ref.invalidate(dutiesProvider(classId));
+        ref.invalidate(eventsProvider(classId));
+        ref.invalidate(fundCampaignsProvider(classId));
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Xin chào, $fullName!",
+              style: GoogleFonts.roboto(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              itemCount: stats.length,
-              itemBuilder: (context, index) {
-                final item = stats[index];
-                IconData iconData = LucideIcons.box;
-                if (item.iconCode == 1) iconData = LucideIcons.users;
-                if (item.iconCode == 2) iconData = LucideIcons.calendar;
-                if (item.iconCode == 3) iconData = LucideIcons.dollarSign;
-                return StatCard(
-                  title: item.title,
-                  value: item.value,
-                  subValue: item.subValue,
-                  color: Color(item.color),
-                  icon: iconData,
+            ),
+            Text(
+              "Đây là tổng quan lớp học của bạn",
+              style: GoogleFonts.roboto(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+
+            // I. THỐNG KÊ
+            statsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('Lỗi: $err')),
+              data: (stats) => GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.25,
+                ),
+                itemCount: stats.length,
+                itemBuilder: (context, index) {
+                  final item = stats[index];
+                  IconData iconData = LucideIcons.box;
+                  if (item.iconCode == 1) iconData = LucideIcons.users;
+                  if (item.iconCode == 2) iconData = LucideIcons.userPlus;
+                  if (item.iconCode == 3) iconData = LucideIcons.calendar;
+                  if (item.iconCode == 4) iconData = LucideIcons.dollarSign;
+
+                  return StatCard(
+                    title: item.title,
+                    value: item.value,
+                    subValue: item.subValue,
+                    color: Color(item.color),
+                    icon: iconData,
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // II. NHIỆM VỤ TRỰC NHẬT (ÁP DỤNG XEM THÊM)
+            _buildSectionTitle("Nhiệm vụ trực nhật"),
+            dutiesAsync.when(
+              loading: () => const SizedBox(),
+              error: (e, s) => const Text("Lỗi tải nhiệm vụ"),
+              data: (duties) => duties.isEmpty
+                  ? const Text(
+                      "Chưa có lịch trực nhật",
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  : ExpandableListWrapper(
+                      initialItems: 3,
+                      seeMoreLabel: "nhiệm vụ khác",
+                      children: duties
+                          .map((d) => DutyListItem(data: d))
+                          .toList(),
+                    ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // III. SỰ KIỆN ĐANG MỞ (ÁP DỤNG XEM THÊM)
+            _buildSectionTitle("Sự kiện đang mở"),
+            eventsAsync.when(
+              loading: () => const SizedBox(),
+              error: (e, s) => const Text("Lỗi tải sự kiện"),
+              data: (events) => events.isEmpty
+                  ? const Text(
+                      "Không có sự kiện sắp tới",
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  : ExpandableListWrapper(
+                      initialItems: 3,
+                      seeMoreLabel: "sự kiện khác",
+                      children: events
+                          .map((e) => EventCardItem(data: e))
+                          .toList(),
+                    ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // IV. SINH VIÊN CHƯA NỘP QUỸ LỚP (ÁP DỤNG XEM THÊM)
+            _buildSectionTitle("Sinh viên chưa nộp quỹ lớp"),
+            campaignsAsync.when(
+              loading: () => const Center(child: LinearProgressIndicator()),
+              error: (e, s) => Text("Lỗi tải quỹ: $e"),
+              data: (campaigns) {
+                if (campaigns.isEmpty) {
+                  return const Text(
+                    "Không có khoản thu nào đang mở",
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+
+                final Map<String, Map<String, dynamic>> aggregatedDebts = {};
+
+                for (var campaign in campaigns) {
+                  final unpaidData = ref.watch(
+                    fundUnpaidProvider((
+                      classId: classId,
+                      campaignId: campaign.id,
+                    )),
+                  );
+                  unpaidData.whenData((members) {
+                    final int amount = campaign.amountPerPerson.toInt();
+                    for (final m in members) {
+                      if (m.isPaid == false) {
+                        final String sCode = m.studentCode?.toString() ?? "N/A";
+                        if (aggregatedDebts.containsKey(sCode)) {
+                          aggregatedDebts[sCode]!['debt'] =
+                              (aggregatedDebts[sCode]!['debt'] as int) + amount;
+                        } else {
+                          aggregatedDebts[sCode] = {
+                            'name': m.fullName ?? "Ẩn danh",
+                            'code': sCode,
+                            'debt': amount,
+                          };
+                        }
+                      }
+                    }
+                  });
+                }
+
+                if (aggregatedDebts.isEmpty) {
+                  return const Text(
+                    "Cả lớp đã hoàn thành nộp quỹ!",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }
+
+                final sortedDebtList = aggregatedDebts.values.toList()
+                  ..sort(
+                    (a, b) => (b['debt'] as int).compareTo(a['debt'] as int),
+                  );
+
+                return ExpandableListWrapper(
+                  initialItems: 5,
+                  seeMoreLabel: "sinh viên chưa đóng",
+                  children: sortedDebtList
+                      .map(
+                        (data) => UnpaidStudentItem(
+                          name: data['name'] as String,
+                          studentCode: data['code'] as String,
+                          totalAmount: CurrencyUtils.format(
+                            data['debt'] as int,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 );
               },
             ),
-          ),
-
-          const SizedBox(height: 24),
-          _buildSectionTitle("Nhiệm vụ trực nhật"),
-          dutiesAsync.when(
-            loading: () => const SizedBox(),
-            error: (e, s) => const SizedBox(),
-            data: (duties) => Column(
-              children: duties.map((d) => DutyListItem(data: d)).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          _buildSectionTitle("Sự kiện đang mở"),
-          eventsAsync.when(
-            loading: () => const SizedBox(),
-            error: (e, s) => const SizedBox(),
-            data: (events) => Column(
-              children: events.map((e) => EventCardItem(data: e)).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSectionTitle("Sinh viên chưa nộp quỹ"),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  "3 người",
-                  style: GoogleFonts.roboto(
-                    color: Colors.red,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const UnpaidStudentItem(
-            name: "Nguyễn Văn A",
-            desc: "Quỹ lớp HK1",
-            amount: "100.000đ",
-          ),
-          const UnpaidStudentItem(
-            name: "Trần Thị B",
-            desc: "Quỹ lớp HK1",
-            amount: "100.000đ",
-          ),
-          const SizedBox(height: 80),
-        ],
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }
@@ -147,6 +222,75 @@ class OwnerDashboardContent extends ConsumerWidget {
         title,
         style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
       ),
+    );
+  }
+}
+
+// --- WIDGET XỬ LÝ XEM THÊM ---
+class ExpandableListWrapper extends StatefulWidget {
+  final List<Widget> children;
+  final int initialItems;
+  final String seeMoreLabel;
+
+  const ExpandableListWrapper({
+    super.key,
+    required this.children,
+    this.initialItems = 5,
+    this.seeMoreLabel = "mục khác",
+  });
+
+  @override
+  State<ExpandableListWrapper> createState() => _ExpandableListWrapperState();
+}
+
+class _ExpandableListWrapperState extends State<ExpandableListWrapper> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canExpand = widget.children.length > widget.initialItems;
+
+    final displayList = isExpanded
+        ? widget.children
+        : widget.children.take(widget.initialItems).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...displayList,
+        if (canExpand)
+          GestureDetector(
+            onTap: () => setState(() => isExpanded = !isExpanded),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              color: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isExpanded
+                        ? "Thu gọn"
+                        : "Xem thêm ${widget.children.length - widget.initialItems} ${widget.seeMoreLabel}",
+                    style: GoogleFonts.roboto(
+                      fontSize: 13,
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded
+                        ? LucideIcons.chevronUp
+                        : LucideIcons.chevronDown,
+                    size: 16,
+                    color: Colors.blueAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

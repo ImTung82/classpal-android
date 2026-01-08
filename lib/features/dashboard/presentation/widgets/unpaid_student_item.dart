@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 
 class UnpaidStudentItem extends StatelessWidget {
   final String name;
   final String studentCode;
-  final String totalAmount; // Tổng tiền cộng dồn của SV này
+  final String totalAmount;
+  final Color? avatarColor;
 
   const UnpaidStudentItem({
     super.key,
     required this.name,
     required this.studentCode,
     required this.totalAmount,
+    this.avatarColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color effectiveColor =
+        avatarColor ?? Colors.primaries[name.length % Colors.primaries.length];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -32,20 +36,28 @@ class UnpaidStudentItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Icon người dùng bổ trợ giống style Student Dashboard
+          // 1. Thay thế Icon bằng Avatar Text giống GroupMemberItem
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
+              color: effectiveColor,
+              shape: BoxShape.circle,
             ),
-            child: const Icon(
-              LucideIcons.user,
-              color: Color(0xFF64748B),
-              size: 18,
+            child: Center(
+              child: Text(
+                name.isNotEmpty ? name.substring(0, 1).toUpperCase() : "?",
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
+
+          // 2. Thông tin tên và mã số
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,11 +77,13 @@ class UnpaidStudentItem extends StatelessWidget {
               ],
             ),
           ),
+
+          // 3. Số tiền nợ
           Text(
             totalAmount,
             style: GoogleFonts.roboto(
               fontWeight: FontWeight.bold,
-              color: const Color(0xFFE53E3E), 
+              color: const Color(0xFFE53E3E),
               fontSize: 14,
             ),
           ),

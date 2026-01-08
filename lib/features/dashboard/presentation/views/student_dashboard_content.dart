@@ -26,6 +26,7 @@ class StudentDashboardContent extends ConsumerWidget {
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
     final String fullName = user?.userMetadata?['full_name'] ?? "Bạn";
+    final String currentUserId = user?.id ?? "";
 
     // 2. Lấy danh sách dữ liệu Dashboard
     final taskAsync = ref.watch(studentTaskProvider(classId));
@@ -65,14 +66,14 @@ class StudentDashboardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // I. DANH SÁCH NHIỆM VỤ TRỰC NHẬT (Áp dụng xem thêm)
+            // I. DANH SÁCH NHIỆM VỤ TRỰC NHẬT
             taskAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text("Lỗi tải nhiệm vụ: $e"),
               data: (tasks) {
                 if (tasks.isEmpty) return _buildEmptyTaskCard();
                 return ExpandableListWrapper(
-                  initialItems: 2, // Mặc định hiện 2 nhiệm vụ đầu tiên
+                  initialItems: 2,
                   seeMoreLabel: "nhiệm vụ khác",
                   children: tasks
                       .map(
@@ -88,7 +89,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // II. THÔNG BÁO QUỸ LỚP
+            // II. THÔNG BÁO QUỸ LỚP (ĐÃ CẬP NHẬT LOGIC TRỪ TIỀN)
             summaryAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
               error: (e, s) => const SizedBox(),
@@ -96,21 +97,54 @@ class StudentDashboardContent extends ConsumerWidget {
                 loading: () => const SizedBox(),
                 error: (e, s) => const SizedBox(),
                 data: (campaigns) {
-                  int totalPending = 0;
-                  for (var cp in campaigns) {
-                    totalPending += (cp.amountPerPerson ?? 0).toInt();
+                  // --- LOGIC TÍNH TIỀN THỰC TẾ CÒN THIẾU ---
+                  int totalRemaining = 0;
+
+                  for (var campaign in campaigns) {
+                    final unpaidAsync = ref.watch(
+                      fundUnpaidProvider((
+                        classId: classId,
+                        campaignId: campaign.id,
+                      )),
+                    );
+
+                    unpaidAsync.whenData((members) {
+                      try {
+                        // Tìm bản ghi của bạn trong campaign này (dùng dynamic để tránh báo đỏ)
+                        final dynamic myRecord = members.cast<dynamic>().firstWhere(
+                          (m) => m.userId == currentUserId,
+                        );
+
+                        if (myRecord != null && myRecord.isPaid == false) {
+                          final int totalMustPay = (campaign.amountPerPerson ?? 0).toInt();
+                          
+                          // Lấy số tiền đã nộp (thường là trường 'amount' trong fund_members)
+                          // Nếu nộp 5k/55k thì remainingAmount/debt sẽ là 50k
+                          final int alreadyPaid = (myRecord.amount ?? 0).toInt();
+                          
+                          final int debt = totalMustPay - alreadyPaid;
+
+                          if (debt > 0) {
+                            totalRemaining += debt;
+                          }
+                        }
+                      } catch (e) {
+                        // Nếu chưa có record nộp tiền, coi như nợ đủ số tiền chiến dịch
+                        totalRemaining += (campaign.amountPerPerson ?? 0).toInt();
+                      }
+                    });
                   }
 
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: totalPending > 0
+                      color: totalRemaining > 0
                           ? const Color(0xFFFFF5F5)
                           : const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: totalPending > 0
+                        color: totalRemaining > 0
                             ? const Color(0xFFFED7D7)
                             : const Color(0xFFDCFCE7),
                       ),
@@ -125,7 +159,7 @@ class StudentDashboardContent extends ConsumerWidget {
                           ),
                           child: Icon(
                             LucideIcons.wallet,
-                            color: totalPending > 0
+                            color: totalRemaining > 0
                                 ? const Color(0xFFE53E3E)
                                 : Colors.green,
                             size: 24,
@@ -144,12 +178,21 @@ class StudentDashboardContent extends ConsumerWidget {
                                   color: const Color(0xFF101727),
                                 ),
                               ),
-                              if (totalPending > 0)
+                              if (totalRemaining > 0)
                                 Text(
-                                  "Bạn còn thiếu: ${CurrencyUtils.format(totalPending)}",
+                                  "Bạn còn thiếu: ${CurrencyUtils.format(totalRemaining)}",
                                   style: GoogleFonts.roboto(
                                     fontSize: 14,
                                     color: const Color(0xFFE53E3E),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                )
+                              else
+                                Text(
+                                  "Bạn đã hoàn thành đóng quỹ",
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 14,
+                                    color: Colors.green,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -165,7 +208,7 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // III. SỰ KIỆN ĐANG DIỄN RA (Áp dụng xem thêm)
+            // III. SỰ KIỆN ĐANG DIỄN RA
             _buildSectionTitle("Sự kiện đang diễn ra"),
             eventsAsync.when(
               loading: () => const Center(child: LinearProgressIndicator()),
@@ -178,7 +221,7 @@ class StudentDashboardContent extends ConsumerWidget {
                   );
                 }
                 return ExpandableListWrapper(
-                  initialItems: 3, // Mặc định hiện 3 sự kiện đầu
+                  initialItems: 3,
                   seeMoreLabel: "sự kiện khác",
                   children: events.map((e) => EventCardItem(data: e)).toList(),
                 );
@@ -187,13 +230,13 @@ class StudentDashboardContent extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI (Áp dụng xem thêm)
+            // IV. PHẦN HIỂN THỊ ĐỒNG ĐỘI
             groupsAsync.when(
               loading: () => const SizedBox(),
               error: (e, s) => const Text("Không thể tải thông tin tổ"),
               data: (groups) {
                 final myTeamList = groups
-                    .where((g) => g.members.any((m) => m.userId == user?.id))
+                    .where((g) => g.members.any((m) => m.userId == currentUserId))
                     .toList();
                 if (myTeamList.isEmpty) return const SizedBox();
 
@@ -227,12 +270,11 @@ class StudentDashboardContent extends ConsumerWidget {
                         data: (membersDetailed) {
                           final sortedMembers = [...membersDetailed];
                           sortedMembers.sort(
-                            (a, b) =>
-                                (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0),
+                            (a, b) => (b.isLeader ? 1 : 0) - (a.isLeader ? 1 : 0),
                           );
 
                           return ExpandableListWrapper(
-                            initialItems: 4, // Mặc định hiện 4 thành viên
+                            initialItems: 4,
                             seeMoreLabel: "thành viên khác",
                             children: sortedMembers
                                 .map((m) => GroupMemberItem(member: m))

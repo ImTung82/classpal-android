@@ -9,41 +9,89 @@ class DutyListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
-    Color iconColor;
+    final bool isDone = data.status == 'Done';
+    final bool isInProgress = data.status == 'In Progress';
 
-    if (data.status == 'In Progress') {
-      statusColor = const Color(0xFFFFE4C8); statusText = "Đang thực hiện"; statusIcon = LucideIcons.alertCircle; iconColor = Colors.orange;
-    } else if (data.status == 'Upcoming') {
-      statusColor = Colors.grey[200]!; statusText = "Sắp tới"; statusIcon = LucideIcons.clock; iconColor = Colors.grey;
-    } else {
-      statusColor = const Color(0xFFDCFCE7); statusText = "Hoàn thành"; statusIcon = LucideIcons.checkCircle; iconColor = Colors.green;
-    }
+    final Color themeColor = isDone
+        ? const Color(0xFF22C55E)
+        : (isInProgress ? const Color(0xFFF59E0B) : const Color(0xFF64748B));
+    final Color bgColor = isDone
+        ? const Color(0xFFF0FFF4)
+        : (isInProgress ? const Color(0xFFFFFBEB) : const Color(0xFFF8FAFC));
+    final String statusText = isDone
+        ? "Hoàn thành"
+        : (isInProgress ? "Đang thực hiện" : "Sắp tới");
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          Icon(statusIcon, color: iconColor, size: 20),
-          const SizedBox(width: 12),
+          // Icon đại diện nhiệm vụ (VD: dùng biểu tượng danh sách)
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isDone ? LucideIcons.checkCircle2 : LucideIcons.clipboardList,
+              color: themeColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Thông tin nhiệm vụ
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data.groupName, style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(data.taskName, style: GoogleFonts.roboto(color: Colors.grey[600], fontSize: 12)),
+                Text(
+                  data.groupName, // Tên tổ
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                Text(
+                  data.taskName, // Tên nhiệm vụ (VD: Dọn rác, Lau bảng)
+                  style: GoogleFonts.roboto(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
+          // Nhãn trạng thái
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(20)),
-            child: Text(statusText, style: GoogleFonts.roboto(fontSize: 11, fontWeight: FontWeight.bold, color: data.status == 'Done' ? Colors.green[800] : (data.status == 'In Progress' ? Colors.orange[800] : Colors.grey[700]))),
-          )
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              statusText,
+              style: GoogleFonts.roboto(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: themeColor,
+              ),
+            ),
+          ),
         ],
       ),
     );

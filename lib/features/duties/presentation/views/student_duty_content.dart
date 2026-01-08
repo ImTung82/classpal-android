@@ -19,6 +19,8 @@ class StudentDutyContent extends ConsumerStatefulWidget {
 }
 
 class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
+  // Trạng thái mở rộng danh sách nhiệm vụ của tôi
+  bool _isMyDutyExpanded = false;
   // Trạng thái mở rộng danh sách tuần sau
   bool _isExpanded = false;
 
@@ -52,8 +54,7 @@ class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
             ),
             const SizedBox(height: 16),
 
-            // --- [CẬP NHẬT] Hiển thị danh sách nhiệm vụ tuần này ---
-            // Sửa lỗi: Hiển thị nhiều Card nếu tổ có nhiều nhiệm vụ
+            // ---  Hiển thị danh sách nhiệm vụ tuần này ---
             myDutyAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Text('Lỗi tải dữ liệu: $e'),
@@ -61,18 +62,58 @@ class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
                 if (tasks.isEmpty) {
                   return _buildNoDutyCard();
                 }
+
+                final displayTasks = _isMyDutyExpanded
+                    ? tasks
+                    : tasks.take(2).toList();
+
                 return Column(
-                  children: tasks
-                      .map(
-                        (task) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: StudentDutyCard(
-                            task: task,
-                            classId: widget.classId,
+                  children: [
+                    ...displayTasks
+                        .map(
+                          (task) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: StudentDutyCard(
+                              task: task,
+                              classId: widget.classId,
+                            ),
+                          ),
+                        )
+                        .toList(),
+
+                    // Nút Xem thêm / Thu gọn cho Nhiệm vụ của bạn
+                    if (tasks.length > 2)
+                      GestureDetector(
+                        onTap: () => setState(
+                          () => _isMyDutyExpanded = !_isMyDutyExpanded,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _isMyDutyExpanded
+                                    ? "Thu gọn"
+                                    : "Xem thêm nhiệm vụ (${tasks.length - 2})",
+                                style: GoogleFonts.roboto(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Icon(
+                                _isMyDutyExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: Colors.blue.shade700,
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                      .toList(),
+                      ),
+                  ],
                 );
               },
             ),

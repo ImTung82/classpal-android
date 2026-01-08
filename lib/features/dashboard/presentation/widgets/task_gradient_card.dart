@@ -8,7 +8,7 @@ import '../../../duties/presentation/view_models/duty_view_model.dart';
 
 class TaskGradientCard extends ConsumerWidget {
   final StudentTaskData data;
-  final String classId; // Nhận classId để xử lý logic xác nhận
+  final String classId;
 
   const TaskGradientCard({
     super.key,
@@ -18,153 +18,203 @@ class TaskGradientCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Theo dõi trạng thái loading của controller
     final isLoading = ref.watch(dutyControllerProvider).isLoading;
-    
-    // 2. Kiểm tra quyền (Tổ trưởng hoặc Owner) từ Provider
+    // Kiểm tra quyền tổ trưởng
     final isLeader = ref.watch(isLeaderProvider(classId)).value ?? false;
 
+    // Tách tiêu đề chính và phụ
+    final List<String> titleParts = data.title.split(':');
+    final String mainTitle = titleParts[0].trim();
+    final String subTitle = titleParts.length > 1 ? titleParts[1].trim() : "";
+
+    // Xác định màu sắc chủ đạo dựa trên trạng thái
+    final isDone = data.status == 'Done';
+    final isActive = data.status == 'Active';
+    final Color themeColor = isDone
+        ? const Color(0xFF22C55E)
+        : const Color(0xFF3B82F6);
+    final Color bgColor = isDone
+        ? const Color(0xFFF0FFF4)
+        : const Color(0xFFF0F7FF);
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: _getCardColors(data.status),
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: _getCardColors(data.status).first.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
-            offset: const Offset(0, 5),
-          )
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                data.dateRange,
-                style: GoogleFonts.roboto(color: Colors.white70, fontSize: 12),
-              ),
+              // Icon Trực nhật (Sử dụng clipboard giống ảnh mẫu hoặc broom)
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _getStatusIcon(data.status),
-                  color: Colors.white,
-                  size: 16,
+                  mainTitle.toLowerCase().contains('dọn') ||
+                          mainTitle.toLowerCase().contains('lau')
+                      ? LucideIcons.brush
+                      : LucideIcons
+                            .clipboardList, 
+                  color: themeColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            mainTitle,
+                            style: GoogleFonts.roboto(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          data.dateRange,
+                          style: GoogleFonts.roboto(
+                            color: Colors.grey.shade500,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    if (subTitle.isNotEmpty)
+                      Text(
+                        subTitle,
+                        style: GoogleFonts.roboto(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            data.title, // Hiển thị đầy đủ: "Tổ 1: Đổ rác và Lau bảng"
-            style: GoogleFonts.roboto(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(height: 16),
+          // Chỉ tổ trưởng mới thấy nút bấm khi nhiệm vụ đang Active
+          if (isLeader && isActive)
+            _buildLeaderAction(context, ref, isLoading)
+          else
+            _buildMemberStatus(),
+        ],
+      ),
+    );
+  }
+
+  // Nút bấm xác nhận dành riêng cho Tổ trưởng
+  Widget _buildLeaderAction(
+    BuildContext context,
+    WidgetRef ref,
+    bool isLoading,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton.icon(
+        onPressed: isLoading ? null : () => _markCompleted(context, ref),
+        icon: isLoading
+            ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Icon(LucideIcons.checkCircle2, size: 18),
+        label: Text(
+          "Xác nhận hoàn thành (Tổ trưởng)",
+          style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF3B82F6),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 20),
-          
-          // Khu vực hiển thị nút bấm hoặc nhãn trạng thái dựa trên phân quyền
-          SizedBox(
-            width: double.infinity,
-            child: _buildActionButton(context, ref, isLeader, isLoading),
+        ),
+      ),
+    );
+  }
+
+  // Nhãn trạng thái dành cho Sinh viên hoặc khi đã xong
+  Widget _buildMemberStatus() {
+    final bool isDone = data.status == 'Done';
+    final String text = isDone
+        ? "Nhiệm vụ đã hoàn thành"
+        : "Đang chờ Tổ trưởng xác nhận...";
+    final IconData icon = isDone ? LucideIcons.checkCircle : LucideIcons.clock;
+    final Color color = isDone
+        ? const Color(0xFF2E7D32)
+        : const Color(0xFF64748B);
+    final Color bg = isDone ? const Color(0xFFE8F5E9) : const Color(0xFFF1F5F9);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.roboto(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(
-    BuildContext context,
-    WidgetRef ref,
-    bool isLeader,
-    bool isLoading,
-  ) {
-    // 1. Nếu đã hoàn thành
-    if (data.status == 'Done') {
-      return _buildStatusLabel("✅ Nhiệm vụ đã hoàn thành");
-    }
-
-    // 2. Nếu đã quá hạn (Missed)
-    if (data.status == 'Missed') {
-      return _buildStatusLabel("❌ Không hoàn thành");
-    }
-
-    // 3. Nếu là Tổ trưởng và nhiệm vụ đang diễn ra (Active)
-    if (isLeader && data.status == 'Active') {
-      return ElevatedButton(
-        onPressed: isLoading ? null : () => _markCompleted(context, ref),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: _getCardColors(data.status).first,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(
-                "Xác nhận hoàn thành (Tổ trưởng)",
-                style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
-              ),
-      );
-    }
-
-    // 4. Nếu là Sinh viên thường hoặc nhiệm vụ sắp tới
-    return _buildStatusLabel(
-      data.status == 'Active'
-          ? "Đang chờ Tổ trưởng xác nhận..."
-          : "Nhiệm vụ sắp tới",
-    );
-  }
-
-  Widget _buildStatusLabel(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.roboto(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-
   void _markCompleted(BuildContext context, WidgetRef ref) {
-    ref.read(dutyControllerProvider.notifier).markAsCompleted(
+    ref
+        .read(dutyControllerProvider.notifier)
+        .markAsCompleted(
           classId: classId,
-          dutyId: data.id, // Sử dụng ID thật từ database
+          dutyId: data.id,
           onSuccess: () {
-            // Refresh lại dữ liệu Dashboard sau khi hoàn thành
             ref.invalidate(studentTaskProvider(classId));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Đã xác nhận hoàn thành!"), backgroundColor: Colors.green),
+              const SnackBar(
+                content: Text("Đã xác nhận hoàn thành!"),
+                backgroundColor: Colors.green,
+              ),
             );
           },
           onError: (e) {
@@ -173,31 +223,5 @@ class TaskGradientCard extends ConsumerWidget {
             );
           },
         );
-  }
-
-  List<Color> _getCardColors(String status) {
-    switch (status) {
-      case 'Done':
-        return [const Color(0xFF10B981), const Color(0xFF059669)]; // Xanh lá
-      case 'Missed':
-        return [const Color(0xFFEF4444), const Color(0xFFB91C1C)]; // Đỏ
-      case 'Active':
-        return [const Color(0xFF3B82F6), const Color(0xFF2563EB)]; // Xanh dương
-      default:
-        return [const Color(0xFF6366F1), const Color(0xFF9333EA)]; // Tím mặc định
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'Done':
-        return LucideIcons.checkCircle;
-      case 'Missed':
-        return LucideIcons.alertCircle;
-      case 'Active':
-        return LucideIcons.clock;
-      default:
-        return LucideIcons.calendar;
-    }
   }
 }

@@ -25,26 +25,22 @@ class SupabaseDashboardRepository implements DashboardRepository {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
 
-      // 1. Đếm số lượng sinh viên
       final studentsCount = await _supabase
           .from('class_members')
           .select('id')
           .eq('class_id', classId);
 
-      // 2. Đếm số lượng đội nhóm
       final teamsCount = await _supabase
           .from('teams')
           .select('id')
           .eq('class_id', classId);
 
-      // 3. [CẬP NHẬT] Chỉ đếm sự kiện CÒN HẠN đăng ký để khớp với UI
       final eventsCount = await _supabase
           .from('events')
           .select('id')
           .eq('class_id', classId)
           .gte('registration_deadline', now);
 
-      // 4. Tính toán quỹ lớp
       final fundData = await _supabase
           .from('fund_transactions')
           .select('amount, is_expense')
@@ -77,7 +73,7 @@ class SupabaseDashboardRepository implements DashboardRepository {
         StatData(
           "Sự kiện",
           "${(eventsCount as List).length}",
-          "Đang mở", // Cập nhật label để người dùng hiểu rõ
+          "Đang mở",
           3,
           0xFFA855F7,
         ),
@@ -92,40 +88,37 @@ class SupabaseDashboardRepository implements DashboardRepository {
   Future<List<DutyData>> fetchDuties(String classId) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
+
+      // ĐIỀU CHỈNH: Lấy nhiệm vụ đang diễn ra (Active) cho TOÀN BỘ các tổ trong lớp
+      // Logic lọc: thời gian hiện tại nằm giữa start_time và end_time
       final data = await _supabase
           .from('duties')
           .select('*, teams(name)')
           .eq('class_id', classId)
-          .gte('end_time', now)
-          .order('created_at', ascending: false)
-          .limit(15);
+          .lte('start_time', now) // Đã bắt đầu
+          .gte('end_time', now) // Chưa kết thúc
+          .order('created_at', ascending: false);
 
-      final allowedKeywords = [
-        "Đổ rác",
-        "Lau bảng",
-        "Tắt đèn",
-        "Sắp xếp bàn ghế",
-      ];
+      // Nếu bạn muốn hiển thị cả nhiệm vụ "Sắp tới", hãy bỏ .lte('start_time', now)
+      // và chỉ giữ lại .gte('end_time', now)
 
-      return (data as List)
-          .where((d) {
-            final String note = d['note']?.toString() ?? "";
-            return allowedKeywords.any((keyword) => note.contains(keyword));
-          })
-          .map((d) {
-            final String fullNote = d['note']?.toString() ?? "Trực nhật";
-            String displayTaskName = fullNote.contains(':')
-                ? fullNote.split(':').first.trim()
-                : fullNote;
-            final start = DateTime.parse(d['start_time']).toLocal();
-            return DutyData(
-              d['teams']?['name'] ?? "N/A",
-              displayTaskName,
-              d['status'] == 'completed' ? 'Done' : 'In Progress',
-              "${start.day}/${start.month}",
-            );
-          })
-          .toList();
+      return (data as List).map((d) {
+        final String fullNote = d['note']?.toString() ?? "Trực nhật";
+
+        // Tách chuỗi để lấy phần hành động trước dấu ":" cho UI đồng bộ
+        String displayTaskName = fullNote.contains(':')
+            ? fullNote.split(':').first.trim()
+            : fullNote;
+
+        final start = DateTime.parse(d['start_time']).toLocal();
+
+        return DutyData(
+          d['teams']?['name'] ?? "N/A",
+          displayTaskName,
+          d['status'] == 'completed' ? 'Done' : 'In Progress',
+          "${start.day}/${start.month}",
+        );
+      }).toList();
     } catch (e) {
       return [];
     }
@@ -136,7 +129,6 @@ class SupabaseDashboardRepository implements DashboardRepository {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
 
-      // 1. Lấy tổng số thành viên lớp
       final membersData = await _supabase
           .from('class_members')
           .select('id')
@@ -144,12 +136,11 @@ class SupabaseDashboardRepository implements DashboardRepository {
           .eq('is_active', true);
       final int totalInClass = (membersData as List).length;
 
-      // 2. [CẬP NHẬT] Chỉ lấy sự kiện còn hạn đăng ký và ẩn sự kiện đã đóng
       final data = await _supabase
           .from('events')
           .select('*, event_participants(status)')
           .eq('class_id', classId)
-          .gte('registration_deadline', now) // Tự động ẩn khi hết hạn
+          .gte('registration_deadline', now)
           .order('start_time', ascending: true);
 
       return (data as List).map((e) {
@@ -166,7 +157,7 @@ class SupabaseDashboardRepository implements DashboardRepository {
           ).format(DateTime.parse(e['start_time']).toLocal()),
           current: joinedCount,
           total: totalInClass,
-          isOpen: true, // Luôn true vì query đã lọc gte registration_deadline
+          isOpen: true,
           isMandatory: e['is_mandatory'] ?? false,
         );
       }).toList();

@@ -22,20 +22,24 @@ class TaskGradientCard extends ConsumerWidget {
     // Kiểm tra quyền tổ trưởng
     final isLeader = ref.watch(isLeaderProvider(classId)).value ?? false;
 
-    // Tách tiêu đề chính và phụ
+    // Tách tiêu đề chính và phụ bằng dấu ":"
     final List<String> titleParts = data.title.split(':');
     final String mainTitle = titleParts[0].trim();
     final String subTitle = titleParts.length > 1 ? titleParts[1].trim() : "";
 
-    // Xác định màu sắc chủ đạo dựa trên trạng thái
-    final isDone = data.status == 'Done';
-    final isActive = data.status == 'Active';
+    // Trạng thái nhiệm vụ
+    final bool isDone = data.status == 'Done';
+    final bool isActive = data.status == 'Active';
+
+    // --- CẬP NHẬT LOGIC MÀU SẮC ---
+    // Hoàn thành: Xanh lá | Đang chờ/Chưa xong: Vàng hổ phách (Amber)
     final Color themeColor = isDone
         ? const Color(0xFF22C55E)
-        : const Color(0xFF3B82F6);
+        : const Color(0xFFF59E0B); // Màu vàng Amber cho trạng thái Active
+
     final Color bgColor = isDone
         ? const Color(0xFFF0FFF4)
-        : const Color(0xFFF0F7FF);
+        : const Color(0xFFFFFBEB); // Nền vàng nhạt cho trạng thái Active
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -58,7 +62,7 @@ class TaskGradientCard extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Trực nhật (Sử dụng clipboard giống ảnh mẫu hoặc broom)
+              // Icon Trực nhật - Cố định clipboardList
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -66,12 +70,8 @@ class TaskGradientCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  mainTitle.toLowerCase().contains('dọn') ||
-                          mainTitle.toLowerCase().contains('lau')
-                      ? LucideIcons.brush
-                      : LucideIcons
-                            .clipboardList, 
-                  color: themeColor,
+                  LucideIcons.clipboardList,
+                  color: themeColor, // Sẽ là màu vàng nếu chưa xong
                   size: 24,
                 ),
               ),
@@ -119,18 +119,19 @@ class TaskGradientCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Chỉ tổ trưởng mới thấy nút bấm khi nhiệm vụ đang Active
+
+          // Logic hiển thị Action: Chỉ Tổ trưởng thấy nút bấm xanh khi Active
           if (isLeader && isActive)
-            _buildLeaderAction(context, ref, isLoading)
+            _buildLeaderButton(context, ref, isLoading)
           else
-            _buildMemberStatus(),
+            _buildStatusLabel(isDone, isActive),
         ],
       ),
     );
   }
 
-  // Nút bấm xác nhận dành riêng cho Tổ trưởng
-  Widget _buildLeaderAction(
+  // Nút bấm xác nhận dành riêng cho Tổ trưởng (Giữ nguyên CSS xanh dương cho nút hành động)
+  Widget _buildLeaderButton(
     BuildContext context,
     WidgetRef ref,
     bool isLoading,
@@ -153,9 +154,12 @@ class TaskGradientCard extends ConsumerWidget {
         label: Text(
           "Xác nhận hoàn thành (Tổ trưởng)",
           style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 14),
+          
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF3B82F6),
+          backgroundColor: const Color(
+            0xFF3B82F6,
+          ), // Nút hành động vẫn giữ màu xanh để nổi bật
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -166,17 +170,24 @@ class TaskGradientCard extends ConsumerWidget {
     );
   }
 
-  // Nhãn trạng thái dành cho Sinh viên hoặc khi đã xong
-  Widget _buildMemberStatus() {
-    final bool isDone = data.status == 'Done';
-    final String text = isDone
-        ? "Nhiệm vụ đã hoàn thành"
-        : "Đang chờ Tổ trưởng xác nhận...";
-    final IconData icon = isDone ? LucideIcons.checkCircle : LucideIcons.clock;
-    final Color color = isDone
-        ? const Color(0xFF2E7D32)
-        : const Color(0xFF64748B);
-    final Color bg = isDone ? const Color(0xFFE8F5E9) : const Color(0xFFF1F5F9);
+  // Nhãn trạng thái (Sẽ đổi sang màu vàng nếu đang Active/Chờ xác nhận)
+  Widget _buildStatusLabel(bool isDone, bool isActive) {
+    String text = "Nhiệm vụ sắp tới";
+    IconData icon = LucideIcons.calendarDays;
+    Color color = const Color(0xFF64748B);
+    Color bg = const Color(0xFFF1F5F9);
+
+    if (isDone) {
+      text = "Nhiệm vụ đã hoàn thành";
+      icon = LucideIcons.checkCircle;
+      color = const Color(0xFF2E7D32); // Xanh lá
+      bg = const Color(0xFFE8F5E9);
+    } else if (isActive) {
+      text = "Đang chờ Tổ trưởng xác nhận...";
+      icon = LucideIcons.alertCircle; // Icon cảnh báo
+      color = const Color(0xFFB45309); // Vàng đậm (Dark Amber)
+      bg = const Color(0xFFFFFBEB); // Vàng nhạt
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),

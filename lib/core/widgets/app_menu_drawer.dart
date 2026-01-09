@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// [IMPORT AUTH & CLASS]
+// [IMPORT AUTH & CLASS] - Đảm bảo đường dẫn import đúng với project của bạn
 import '../../features/auth/presentation/views/login_register_screen.dart';
 import '../../features/classes/presentation/views/classroom_page_screen.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
@@ -14,7 +14,7 @@ import '../../features/classes/data/models/class_model.dart';
 // [IMPORT PROFILE]
 import '../../features/profile/presentation/views/edit_profile_screen.dart';
 import '../../features/profile/presentation/views/change_password_screen.dart';
-import '../../features/profile/presentation/view_models/profile_view_model.dart'; // Import view model mới
+import '../../features/profile/presentation/view_models/profile_view_model.dart';
 
 class AppMenuDrawer extends ConsumerWidget {
   final ClassModel? classModel;
@@ -23,37 +23,32 @@ class AppMenuDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lấy thông tin User từ Auth (Backup)
+    // 1. Lấy thông tin User từ Auth (Dữ liệu dự phòng)
     final authRepo = ref.watch(authRepositoryProvider);
     final authUser = authRepo.currentUser;
 
     // 2. Lắng nghe dữ liệu Profile từ Database (Ưu tiên)
     final profileAsync = ref.watch(currentProfileProvider);
-    final profileData = profileAsync.hasValue ? profileAsync.value : null;
+    
+    // [FIX CHO RIVERPOD 3.0.3]: Dùng .value thay vì .valueOrNull
+    final profileData = profileAsync.value;
 
-    // Logic ưu tiên: Dữ liệu DB > Dữ liệu Auth
-    final String fullName =
-        profileData?['full_name'] ??
-        authUser?.userMetadata?['full_name'] ??
-        "Người dùng";
-
+    // Logic ưu tiên: Dữ liệu DB (profileData) > Dữ liệu Auth (authUser)
+    final String fullName = profileData?['full_name'] ?? 
+                            authUser?.userMetadata?['full_name'] ?? 
+                            "Người dùng";
+                            
     final String email = authUser?.email ?? "Chưa cập nhật email";
-    final String avatarChar = fullName.isNotEmpty
-        ? fullName[0].toUpperCase()
-        : "U";
-
+    final String avatarChar = fullName.isNotEmpty ? fullName[0].toUpperCase() : "U";
+    
     // Lấy URL Avatar
     final String? avatarUrl = profileData?['avatar_url'];
 
     // Logic hiển thị thông tin lớp (Giữ nguyên)
     final bool isInClass = classModel != null;
     final bool isOwner = isInClass && classModel!.role == 'owner';
-    final badgeColor = isOwner
-        ? const Color(0xFF6A5AE0)
-        : const Color(0xFFFF8A00);
-    final badgeBgColor = isOwner
-        ? const Color(0xFFF3E8FF)
-        : const Color(0xFFFFF4E5);
+    final badgeColor = isOwner ? const Color(0xFF6A5AE0) : const Color(0xFFFF8A00);
+    final badgeBgColor = isOwner ? const Color(0xFFF3E8FF) : const Color(0xFFFFF4E5);
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
 
     return Drawer(
@@ -67,7 +62,7 @@ class AppMenuDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // 1. HEADER USER (Gradient Tím ClassPal)
+          // 1. HEADER USER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             decoration: const BoxDecoration(
@@ -108,14 +103,13 @@ class AppMenuDrawer extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      // [CẬP NHẬT] Phần hiển thị Avatar
+                      // Avatar Section
                       Container(
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.3),
                           shape: BoxShape.circle,
-                          // Nếu có ảnh thì hiển thị ảnh nền
                           image: avatarUrl != null && avatarUrl.isNotEmpty
                               ? DecorationImage(
                                   image: NetworkImage(avatarUrl),
@@ -124,7 +118,6 @@ class AppMenuDrawer extends ConsumerWidget {
                               : null,
                         ),
                         alignment: Alignment.center,
-                        // Nếu KHÔNG có ảnh thì hiển thị chữ cái
                         child: (avatarUrl == null || avatarUrl.isEmpty)
                             ? Text(
                                 avatarChar,
@@ -137,8 +130,8 @@ class AppMenuDrawer extends ConsumerWidget {
                             : null,
                       ),
                       const SizedBox(width: 12),
-
-                      // Thông tin tên & email
+                      
+                      // Text Info Section
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,14 +163,13 @@ class AppMenuDrawer extends ConsumerWidget {
             ),
           ),
 
-          // 2. NỘI DUNG CHÍNH (Giữ nguyên phần dưới)
+          // 2. MENU LIST
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // ... (Phần logic lớp học giữ nguyên như cũ)
                 if (isInClass) ...[
-                  Text(
+                   Text(
                     "LỚP HỌC HIỆN TẠI",
                     style: GoogleFonts.roboto(
                       color: Colors.grey,
@@ -186,7 +178,6 @@ class AppMenuDrawer extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // ... Copy lại đoạn hiển thị Class Info từ file cũ vào đây
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -197,7 +188,7 @@ class AppMenuDrawer extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -237,14 +228,117 @@ class AppMenuDrawer extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        // ... Copy tiếp các phần hiển thị mã lớp, mã sv ...
+                        
+                        if (classModel!.schoolName != null &&
+                            classModel!.schoolName!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.school,
+                                size: 14,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  classModel!.schoolName!,
+                                  style: GoogleFonts.roboto(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        const SizedBox(height: 12),
+
+                        // Mã lớp & Mã Sinh Viên
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF6A5AE0).withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "Mã lớp: ",
+                                    style: GoogleFonts.roboto(
+                                      color: Colors.grey[600],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  SelectableText(
+                                    classModel!.code,
+                                    style: GoogleFonts.roboto(
+                                      color: const Color(0xFF6A5AE0),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            if (classModel!.studentCode != null && 
+                                classModel!.studentCode!.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.orange.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "Mã SV: ",
+                                      style: GoogleFonts.roboto(
+                                        color: Colors.grey[600],
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    SelectableText(
+                                      classModel!.studentCode!,
+                                      style: GoogleFonts.roboto(
+                                        color: Colors.deepOrange,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                 ],
 
-                // [SECTION TÀI KHOẢN] (Giữ nguyên)
                 Text(
                   "TÀI KHOẢN",
                   style: GoogleFonts.roboto(
@@ -286,8 +380,8 @@ class AppMenuDrawer extends ConsumerWidget {
                     );
                   },
                 ),
-                // ... Các menu item còn lại giữ nguyên
                 const SizedBox(height: 12),
+
                 _buildMenuItem(
                   icon: LucideIcons.lock,
                   title: "Đổi mật khẩu",
@@ -303,6 +397,7 @@ class AppMenuDrawer extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 12),
+
                 _buildMenuItem(
                   icon: LucideIcons.logOut,
                   title: "Đăng xuất",
@@ -326,7 +421,7 @@ class AppMenuDrawer extends ConsumerWidget {
             ),
           ),
 
-          // 3. FOOTER (Giữ nguyên)
+          // 3. FOOTER
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(

@@ -31,13 +31,19 @@ class _StudentDutyContentState extends ConsumerState<StudentDutyContent> {
     final upcomingAsync = ref.watch(upcomingDutiesProvider(widget.classId));
     final teamMembersAsync = ref.watch(myTeamMembersProvider(widget.classId));
 
+    // Thêm logic refresh và màu sắc giống owner_duty_content
+    Future<void> refreshData() async {
+      await Future.wait([
+        ref.refresh(scoreBoardProvider(widget.classId).future),
+        ref.refresh(myDutyProvider(widget.classId).future),
+        ref.refresh(upcomingDutiesProvider(widget.classId).future),
+        ref.refresh(myTeamMembersProvider(widget.classId).future),
+      ]);
+    }
+
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(scoreBoardProvider(widget.classId));
-        ref.invalidate(myDutyProvider(widget.classId));
-        ref.invalidate(upcomingDutiesProvider(widget.classId));
-        ref.invalidate(myTeamMembersProvider(widget.classId));
-      },
+      onRefresh: refreshData,
+      color: const Color(0xFF2563EB), // [THÊM] Màu xanh giống owner
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),

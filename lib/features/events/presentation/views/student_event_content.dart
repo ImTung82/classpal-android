@@ -14,11 +14,14 @@ class StudentEventContent extends ConsumerWidget {
     // Gọi Provider lấy danh sách sự kiện cho sinh viên theo classId
     final eventsAsync = ref.watch(studentEventsProvider(classId));
 
+    // [MỚI] Hàm refresh
+    Future<void> refreshData() async {
+      await ref.refresh(studentEventsProvider(classId).future);
+    }
+
     return RefreshIndicator(
-      onRefresh: () async {
-        // Làm mới danh sách sự kiện
-        ref.invalidate(studentEventsProvider(classId));
-      },
+      onRefresh: refreshData,
+      color: const Color(0xFF155DFC), // [THÊM] Màu xanh
       child: eventsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(

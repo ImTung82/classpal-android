@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// [IMPORT AUTH & CLASS]
+// [IMPORT AUTH & CLASS] - Đảm bảo đường dẫn import đúng với project của bạn
 import '../../features/auth/presentation/views/login_register_screen.dart';
 import '../../features/classes/presentation/views/classroom_page_screen.dart';
 import '../../features/auth/presentation/view_models/auth_view_model.dart';
@@ -14,27 +14,39 @@ import '../../features/classes/data/models/class_model.dart';
 // [IMPORT PROFILE]
 import '../../features/profile/presentation/views/edit_profile_screen.dart';
 import '../../features/profile/presentation/views/change_password_screen.dart';
+import '../../features/profile/presentation/view_models/profile_view_model.dart';
 
 class AppMenuDrawer extends ConsumerWidget {
-  final ClassModel? classModel; // Có thể null (nếu đang ở màn hình danh sách lớp)
+  final ClassModel? classModel;
 
   const AppMenuDrawer({super.key, this.classModel});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Lấy thông tin User
+    // 1. Lấy thông tin User từ Auth (Dữ liệu dự phòng)
     final authRepo = ref.watch(authRepositoryProvider);
-    final user = authRepo.currentUser;
+    final authUser = authRepo.currentUser;
 
-    final String fullName = user?.userMetadata?['full_name'] ?? "Người dùng";
-    final String email = user?.email ?? "Chưa cập nhật email";
+    // 2. Lắng nghe dữ liệu Profile từ Database (Ưu tiên)
+    final profileAsync = ref.watch(currentProfileProvider);
+    
+    // [FIX CHO RIVERPOD 3.0.3]: Dùng .value thay vì .valueOrNull
+    final profileData = profileAsync.value;
+
+    // Logic ưu tiên: Dữ liệu DB (profileData) > Dữ liệu Auth (authUser)
+    final String fullName = profileData?['full_name'] ?? 
+                            authUser?.userMetadata?['full_name'] ?? 
+                            "Người dùng";
+                            
+    final String email = authUser?.email ?? "Chưa cập nhật email";
     final String avatarChar = fullName.isNotEmpty ? fullName[0].toUpperCase() : "U";
+    
+    // Lấy URL Avatar
+    final String? avatarUrl = profileData?['avatar_url'];
 
-    // 2. Logic hiển thị thông tin lớp (nếu có)
+    // Logic hiển thị thông tin lớp (Giữ nguyên)
     final bool isInClass = classModel != null;
     final bool isOwner = isInClass && classModel!.role == 'owner';
-
-    // Màu sắc Role
     final badgeColor = isOwner ? const Color(0xFF6A5AE0) : const Color(0xFFFF8A00);
     final badgeBgColor = isOwner ? const Color(0xFFF3E8FF) : const Color(0xFFFFF4E5);
     final roleText = isOwner ? "Lớp trưởng" : "Thành viên";
@@ -50,7 +62,7 @@ class AppMenuDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // 1. HEADER USER (Gradient Tím ClassPal)
+          // 1. HEADER USER
           Container(
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
             decoration: const BoxDecoration(
@@ -91,24 +103,35 @@ class AppMenuDrawer extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
+                      // Avatar Section
                       Container(
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.3),
                           shape: BoxShape.circle,
+                          image: avatarUrl != null && avatarUrl.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(avatarUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          avatarChar,
-                          style: GoogleFonts.roboto(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
+                        child: (avatarUrl == null || avatarUrl.isEmpty)
+                            ? Text(
+                                avatarChar,
+                                style: GoogleFonts.roboto(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 12),
+                      
+                      // Text Info Section
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,14 +163,13 @@ class AppMenuDrawer extends ConsumerWidget {
             ),
           ),
 
-          // 2. NỘI DUNG CHÍNH
+          // 2. MENU LIST
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // [SECTION LỚP HỌC - CHỈ HIỆN KHI ĐANG TRONG LỚP]
                 if (isInClass) ...[
-                  Text(
+                   Text(
                     "LỚP HỌC HIỆN TẠI",
                     style: GoogleFonts.roboto(
                       color: Colors.grey,
@@ -166,8 +188,7 @@ class AppMenuDrawer extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Hàng 1: Tên Lớp + Badge Role
-                        Row(
+                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -207,8 +228,7 @@ class AppMenuDrawer extends ConsumerWidget {
                             ),
                           ],
                         ),
-
-                        // Hàng 2: Tên Trường (Nếu có)
+                        
                         if (classModel!.schoolName != null &&
                             classModel!.schoolName!.isNotEmpty) ...[
                           const SizedBox(height: 6),
@@ -237,12 +257,11 @@ class AppMenuDrawer extends ConsumerWidget {
 
                         const SizedBox(height: 12),
 
-                        // Hàng 3: Mã lớp & Mã Sinh Viên [CẬP NHẬT]
+                        // Mã lớp & Mã Sinh Viên
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            // Mã lớp
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
@@ -277,7 +296,6 @@ class AppMenuDrawer extends ConsumerWidget {
                               ),
                             ),
 
-                            // Mã Sinh Viên (Nếu có)
                             if (classModel!.studentCode != null && 
                                 classModel!.studentCode!.isNotEmpty)
                               Container(
@@ -321,7 +339,6 @@ class AppMenuDrawer extends ConsumerWidget {
                   const SizedBox(height: 24),
                 ],
 
-                // [SECTION TÀI KHOẢN]
                 Text(
                   "TÀI KHOẢN",
                   style: GoogleFonts.roboto(
@@ -332,7 +349,6 @@ class AppMenuDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Nút Đổi lớp / Danh sách lớp
                 _buildMenuItem(
                   icon: LucideIcons.arrowLeftRight,
                   title: isInClass ? "Đổi lớp học" : "Danh sách lớp học",
@@ -348,16 +364,14 @@ class AppMenuDrawer extends ConsumerWidget {
                     );
                   },
                 ),
-
                 const SizedBox(height: 12),
 
-                // Nút Hồ sơ cá nhân
                 _buildMenuItem(
                   icon: LucideIcons.user,
                   title: "Hồ sơ cá nhân",
                   subtitle: "Chỉnh sửa thông tin",
                   onTap: () {
-                    Navigator.pop(context); // Đóng drawer
+                    Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -366,16 +380,14 @@ class AppMenuDrawer extends ConsumerWidget {
                     );
                   },
                 ),
-
                 const SizedBox(height: 12),
 
-                // Nút Đổi mật khẩu
                 _buildMenuItem(
                   icon: LucideIcons.lock,
                   title: "Đổi mật khẩu",
                   subtitle: "Cập nhật mật khẩu mới",
                   onTap: () {
-                    Navigator.pop(context); // Đóng drawer
+                    Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -384,10 +396,8 @@ class AppMenuDrawer extends ConsumerWidget {
                     );
                   },
                 ),
-
                 const SizedBox(height: 12),
 
-                // Nút Đăng xuất
                 _buildMenuItem(
                   icon: LucideIcons.logOut,
                   title: "Đăng xuất",

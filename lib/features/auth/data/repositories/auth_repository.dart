@@ -16,6 +16,7 @@ abstract class AuthRepository {
   Future<void> signOut();
   Future<void> resetPassword(String email);
   Future<void> updatePassword(String newPassword);
+  Future<User?> refreshSession();
   User? get currentUser;
 }
 
@@ -60,5 +61,11 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> updatePassword(String newPassword) async {
     await _auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  @override
+  Future<User?> refreshSession() async {
+    final response = await _auth.refreshSession();
+    return response.user;
   }
 }

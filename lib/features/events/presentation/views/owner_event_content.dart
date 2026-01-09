@@ -61,10 +61,15 @@ class _OwnerEventContentState extends ConsumerState<OwnerEventContent> {
       }
     });
 
+    // [MỚI] Hàm refresh
+    Future<void> refreshData() async {
+      await ref.refresh(ownerEventsProvider(widget.classId).future);
+    }
+
     // 3. Giao diện chính (Bỏ Stack cũ vì đã dùng Dialog)
     return RefreshIndicator(
-      onRefresh: () async =>
-          ref.invalidate(ownerEventsProvider(widget.classId)),
+      onRefresh: refreshData,
+      color: const Color(0xFF155DFC), // [THÊM] Màu xanh
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),

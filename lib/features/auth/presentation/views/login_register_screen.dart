@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../view_models/auth_view_model.dart';
 import '../../../classes/presentation/views/classroom_page_screen.dart';
+import '../../../profile/presentation/view_models/profile_view_model.dart';
 import 'forgot_password_screen.dart';
 
 class LoginRegisterScreen extends ConsumerStatefulWidget {
@@ -638,6 +639,9 @@ class _LoginRegisterScreenState extends ConsumerState<LoginRegisterScreen> {
                     );
 
                     if (isLogin) {
+                      // Invalidate profile provider để fetch lại dữ liệu mới
+                      ref.invalidate(currentProfileProvider);
+                      
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
                           builder: (_) => const ClassroomPageScreen(),

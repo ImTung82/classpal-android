@@ -99,131 +99,136 @@ Future<void> showCreateCampaignOverlay(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: borderColor),
             ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.9,
-                maxHeight: MediaQuery.of(context).size.height * 0.85,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Tạo khoản thu mới",
-                      style: GoogleFonts.roboto(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _label("Tên khoản thu"),
-                    _inputField(
-                      controller: titleController,
-                      hint: "VD: Quỹ lớp Học kỳ 2",
-                      borderColor: borderColor,
-                    ),
-                    _error(titleError),
-
-                    const SizedBox(height: 12),
-
-                    _label("Số tiền/người (VNĐ)"),
-                    _inputField(
-                      controller: amountController,
-                      hint: "100000",
-                      keyboardType: TextInputType.number,
-                      borderColor: borderColor,
-                    ),
-                    _error(amountError),
-
-                    const SizedBox(height: 12),
-
-                    _label("Hạn nộp"),
-                    TextField(
-                      controller: deadlineController,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        suffixIcon: const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 18,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: borderColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: borderColor),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Tạo khoản thu mới",
+                        style: GoogleFonts.roboto(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date != null) {
-                          setState(() {
-                            selectedDeadline = date;
-                            deadlineController.text =
-                                "${date.day.toString().padLeft(2, '0')}/"
-                                "${date.month.toString().padLeft(2, '0')}/"
-                                "${date.year}";
-                            deadlineError = null;
-                          });
-                        }
-                      },
-                    ),
-                    _error(deadlineError),
+                      const SizedBox(height: 20),
 
-                    const SizedBox(height: 24),
+                      _label("Tên khoản thu"),
+                      _inputField(
+                        controller: titleController,
+                        hint: "VD: Quỹ lớp Học kỳ 2",
+                        borderColor: borderColor,
+                      ),
+                      _error(titleError),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Hủy"),
+                      const SizedBox(height: 12),
+
+                      _label("Số tiền/người (VNĐ)"),
+                      _inputField(
+                        controller: amountController,
+                        hint: "100000",
+                        keyboardType: TextInputType.number,
+                        borderColor: borderColor,
+                      ),
+                      _error(amountError),
+
+                      const SizedBox(height: 12),
+
+                      _label("Hạn nộp"),
+                      TextField(
+                        controller: deadlineController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          suffixIcon: const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 18,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: primaryBlue),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isSubmitting ? null : validateAndSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryBlue,
-                              minimumSize: const Size(0, 44),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              selectedDeadline = date;
+                              deadlineController.text =
+                                  "${date.day.toString().padLeft(2, '0')}/"
+                                  "${date.month.toString().padLeft(2, '0')}/"
+                                  "${date.year}";
+                              deadlineError = null;
+                            });
+                          }
+                        },
+                      ),
+                      _error(deadlineError),
+
+                      const SizedBox(height: 24),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Hủy"),
                             ),
-                            child: isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    "Tạo khoản thu",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : validateAndSubmit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryBlue,
+                                minimumSize: const Size(0, 44),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Tạo khoản thu",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

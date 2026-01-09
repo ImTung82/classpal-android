@@ -15,7 +15,6 @@ Future<bool?> showAddAssetOverlay(
   );
 }
 
-
 class AddAssetOverlay extends ConsumerStatefulWidget {
   final String classId;
 
@@ -31,7 +30,6 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
   final _noteController = TextEditingController();
-
 
   bool _isSubmitting = false;
 
@@ -137,130 +135,133 @@ class _AddAssetOverlayState extends ConsumerState<AddAssetOverlay> {
     return Center(
       child: Material(
         color: Colors.transparent,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thêm tài sản mới',
-                  style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Thêm tài sản mới',
+                    style: GoogleFonts.roboto(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                /// NAME
-                const Text('Tên tài sản'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _nameController,
-                  validator: _validateName,
-                  decoration: _inputDecoration(hint: 'VD: Remote điều hòa'),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// QUANTITY
-                const Text('Số lượng'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _quantityController,
-                  keyboardType: TextInputType.number,
-                  validator: _validateQuantity,
-                  decoration: _inputDecoration(hint: 'VD: 1'),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// NOTE
-                const Text('Ghi chú'),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _noteController,
-                  maxLines: 2,
-                  validator: _validateNote,
-                  decoration: _inputDecoration(
-                    hint: 'Không bắt buộc (tối đa 200 ký tự)',
+                  /// NAME
+                  const Text('Tên tài sản'),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _nameController,
+                    validator: _validateName,
+                    decoration: _inputDecoration(hint: 'VD: Remote điều hòa'),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                /// ACTIONS
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 45,
-                        child: TextButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () => Navigator.pop(context, false),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            backgroundColor: const Color(0xFFF5F5F5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  /// QUANTITY
+                  const Text('Số lượng'),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _quantityController,
+                    keyboardType: TextInputType.number,
+                    validator: _validateQuantity,
+                    decoration: _inputDecoration(hint: 'VD: 1'),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// NOTE
+                  const Text('Ghi chú'),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    validator: _validateNote,
+                    decoration: _inputDecoration(
+                      hint: 'Không bắt buộc (tối đa 200 ký tự)',
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  /// ACTIONS
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 45,
+                          child: TextButton(
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => Navigator.pop(context, false),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.black,
+                              backgroundColor: const Color(0xFFF5F5F5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          ),
-                          child: const Text(
-                            'Hủy',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
+                            child: const Text(
+                              'Hủy',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(width: 12),
+                      const SizedBox(width: 12),
 
-                    Expanded(
-                      child: SizedBox(
-                        height: 45,
-                        child: ElevatedButton(
-                          onPressed: _isSubmitting ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF155DFC),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 45,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF155DFC),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Thêm tài sản',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
                           ),
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Thêm tài sản',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

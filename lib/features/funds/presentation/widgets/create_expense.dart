@@ -125,166 +125,171 @@ Future<void> showCreateExpenseOverlay(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: Colors.grey.shade300),
             ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.85,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Thêm khoản chi",
-                      style: GoogleFonts.roboto(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Thêm khoản chi",
+                        style: GoogleFonts.roboto(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    _label("Mô tả"),
-                    _input(titleController, hint: "VD: Tiền photo tài liệu"),
-                    _error(titleError),
+                      _label("Mô tả"),
+                      _input(titleController, hint: "VD: Tiền photo tài liệu"),
+                      _error(titleError),
 
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                    _label("Số tiền (VNĐ)"),
-                    _input(
-                      amountController,
-                      hint: "50000",
-                      keyboardType: TextInputType.number,
-                    ),
-                    _error(amountError),
+                      _label("Số tiền (VNĐ)"),
+                      _input(
+                        amountController,
+                        hint: "50000",
+                        keyboardType: TextInputType.number,
+                      ),
+                      _error(amountError),
 
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                    _label("Ngày chi"),
-                    _input(
-                      dateController,
-                      readOnly: true,
-                      suffix: Icons.calendar_today_outlined,
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date != null) {
-                          setState(() {
-                            selectedDate = date;
-                            dateController.text =
-                                "${date.day}/${date.month}/${date.year}";
-                            dateError = null;
-                          });
-                        }
-                      },
-                    ),
-                    _error(dateError),
+                      _label("Ngày chi"),
+                      _input(
+                        dateController,
+                        readOnly: true,
+                        suffix: Icons.calendar_today_outlined,
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              selectedDate = date;
+                              dateController.text =
+                                  "${date.day}/${date.month}/${date.year}";
+                              dateError = null;
+                            });
+                          }
+                        },
+                      ),
+                      _error(dateError),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    _label("Hóa đơn (nếu có)"),
-                    const SizedBox(height: 6),
+                      _label("Hóa đơn (nếu có)"),
+                      const SizedBox(height: 6),
 
-                    GestureDetector(
-                      onTap: () async {
-                        final image = await picker.pickImage(
-                          source: ImageSource.gallery,
-                          imageQuality: 80,
-                        );
-                        if (image != null) {
-                          setState(() {
-                            selectedImage = image;
-                            evidenceController.text = image.name;
-                          });
-                        }
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
+                      GestureDetector(
+                        onTap: () async {
+                          final image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            imageQuality: 80,
+                          );
+                          if (image != null) {
+                            setState(() {
+                              selectedImage = image;
+                              evidenceController.text = image.name;
+                            });
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.image_outlined, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  evidenceController.text.isEmpty
+                                      ? "Chọn ảnh hóa đơn"
+                                      : evidenceController.text,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.image_outlined, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                side: BorderSide(color: Colors.grey.shade400),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                               child: Text(
-                                evidenceController.text.isEmpty
-                                    ? "Chọn ảnh hóa đơn"
-                                    : evidenceController.text,
-                                overflow: TextOverflow.ellipsis,
+                                "Hủy",
+                                style: GoogleFonts.roboto(
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : validateAndSubmit,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                backgroundColor: const Color(0xFFDC2626),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      "Thêm khoản chi",
+                                      style: GoogleFonts.roboto(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: isSubmitting
-                                ? null
-                                : () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 44),
-                              side: BorderSide(color: Colors.grey.shade400),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              "Hủy",
-                              style: GoogleFonts.roboto(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isSubmitting ? null : validateAndSubmit,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 44),
-                              backgroundColor: const Color(0xFFDC2626),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    "Thêm khoản chi",
-                                    style: GoogleFonts.roboto(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
